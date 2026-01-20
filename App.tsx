@@ -18,6 +18,9 @@ const App: React.FC = () => {
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [showAPISettings, setShowAPISettings] = useState(false);
 
+  // ⚠️ 임시: Auth 기능 비활성화 (Google Sheets 준비 전까지)
+  // TODO: Google Sheets 준비되면 아래 주석 해제
+  /*
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
     const savedUser = localStorage.getItem('sagunbok_user');
@@ -50,6 +53,12 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
+  */
+
+  // 임시 로그아웃 핸들러 (Auth 활성화 전까지 사용)
+  const handleLogout = () => {
+    alert('Auth 기능이 준비되면 로그아웃이 활성화됩니다.');
+  };
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
     companyName: '',
@@ -181,23 +190,19 @@ const App: React.FC = () => {
         </div>
 
         <div className="mt-auto space-y-6">
-          {/* 사용자 정보 */}
+          {/* 사용자 정보 - 임시 비활성화 */}
+          {/* TODO: Google Sheets Auth 준비되면 활성화 */}
           <div className="p-5 bg-black/30 rounded-2xl border border-white/10 backdrop-blur-md">
-            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-              {currentUser?.userType === 'company' ? '기업회원' : '컨설턴트'}
+            <div className="text-[10px] text-yellow-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
+              테스트 모드
             </div>
             <div className="text-sm font-black truncate text-white">
-              {currentUser?.name || '사용자'}
+              익명 사용자
             </div>
             <div className="text-[11px] text-slate-300 mt-1">
-              {currentUser?.companyName || currentUser?.position || ''}
+              Auth 기능 준비 중
             </div>
-            {currentUser?.businessUnit && (
-              <div className="text-[10px] text-slate-400 mt-1">
-                {currentUser.businessUnit} {currentUser.branchOffice && `· ${currentUser.branchOffice}`}
-              </div>
-            )}
           </div>
 
           <button 
@@ -214,12 +219,15 @@ const App: React.FC = () => {
             ADMIN DASHBOARD
           </button>
 
+          {/* 로그아웃 버튼 - 임시 비활성화 */}
+          {/* 
           <button 
             onClick={handleLogout}
             className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 hover:border-red-400"
           >
             🚪 로그아웃
           </button>
+          */}
           
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
             <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
