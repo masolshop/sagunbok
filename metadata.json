@@ -1,0 +1,8 @@
+{
+  "name": "Sagunbok AI Studio MVP",
+  "description": "A comprehensive inter-company welfare fund simulation and risk diagnosis platform with AI integration and administrative reporting.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,12 @@
+
+version: '3.8'
+services:
+  sagunbok-ai-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: always
+    environment:
+      - API_KEY=${API_KEY} # 서버의 .env 파일에서 키를 읽어옴
