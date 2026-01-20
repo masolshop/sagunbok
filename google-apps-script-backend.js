@@ -496,9 +496,12 @@ function doPost(e) {
 
 function doGet(e) {
   // OPTIONS 요청 처리 (CORS preflight)
+  const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  
   return ContentService.createTextOutput(JSON.stringify({
     status: 'ok',
-    message: 'Sagunbok Auth API is running'
+    message: 'Sagunbok Auth API is running',
+    timestamp: now
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
