@@ -18,9 +18,6 @@ const App: React.FC = () => {
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [showAPISettings, setShowAPISettings] = useState(false);
 
-  // ⚠️ 임시: Auth 기능 비활성화 (Google Sheets 준비 전까지)
-  // TODO: Google Sheets 준비되면 아래 주석 해제
-  /*
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
     const savedUser = localStorage.getItem('sagunbok_user');
@@ -40,6 +37,7 @@ const App: React.FC = () => {
   const handleLoginSuccess = (user: any) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
+    localStorage.setItem('sagunbok_user', JSON.stringify(user));
   };
 
   // 로그아웃 핸들러
@@ -53,12 +51,6 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
-  */
-
-  // 임시 로그아웃 핸들러 (Auth 활성화 전까지 사용)
-  const handleLogout = () => {
-    alert('Auth 기능이 준비되면 로그아웃이 활성화됩니다.');
-  };
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
     companyName: '',

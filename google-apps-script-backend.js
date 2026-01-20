@@ -6,7 +6,7 @@
 // ====================================
 // 설정
 // ====================================
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; // 스프레드시트 ID를 여기에 입력
+const SPREADSHEET_ID = '1PmVNfdxXrYSKAWgYLAywqo0IJXTPPL7eJnLd14-_vaU'; // 스프레드시트 ID
 
 // 시트 이름
 const SHEET_NAMES = {

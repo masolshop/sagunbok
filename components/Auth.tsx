@@ -7,7 +7,7 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-const BACKEND_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // Apps Script 웹 앱 URL로 교체
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxMcJ82NqcvWOh5ODzo9ZyQ0zxotgT5oKRJL9CH66JGuNi2V7WpT7XI4CRYWYb11WOB/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
