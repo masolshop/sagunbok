@@ -1,3 +1,42 @@
+# 🔧 CORS 오류 해결 가이드
+
+## ❌ 문제 상황
+
+스크린샷에서 확인된 오류:
+```
+3.34.186.174 내용:
+로그인 중 오류가 발생했습니다.
+```
+
+**원인**: Google Apps Script 웹 앱이 CORS 헤더를 반환하지 않아 브라우저가 요청을 차단합니다.
+
+---
+
+## ✅ 해결 방법
+
+### **1단계: Google Apps Script 코드 업데이트**
+
+1. **Google Sheets 열기**:
+   ```
+   https://docs.google.com/spreadsheets/d/1PmVNfdxXrYSKAWgYLAywqo0IJXTPPL7eJnLd14-_vaU/edit
+   ```
+
+2. **Apps Script 열기**:
+   - 상단 메뉴: **확장 프로그램 → Apps Script**
+
+3. **Code.gs 파일 열기**
+
+4. **전체 코드 교체**:
+   - 기존 코드를 **모두 삭제**
+   - 아래의 **업데이트된 코드**를 복사해서 붙여넣기
+
+---
+
+## 📝 업데이트된 Google Apps Script 코드
+
+**중요**: `doGet` 함수가 추가되었습니다! (CORS 지원)
+
+```javascript
 /**
  * 사근복 AI - Google Apps Script 백엔드
  * 회원가입, 로그인, ID/비밀번호 찾기 API
@@ -445,9 +484,12 @@ function findPassword(data) {
 }
 
 // ====================================
-// 웹 앱 엔트리 포인트 (doPost)
+// 웹 앱 엔트리 포인트
 // ====================================
 
+/**
+ * POST 요청 처리
+ */
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -478,7 +520,6 @@ function doPost(e) {
         result = { success: false, error: 'Invalid action' };
     }
     
-    // CORS 헤더 추가
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
       
@@ -490,15 +531,14 @@ function doPost(e) {
   }
 }
 
-// ====================================
-// CORS 지원을 위한 doGet 핸들러 추가
-// ====================================
-
+/**
+ * GET 요청 처리 (CORS 지원)
+ */
 function doGet(e) {
-  // OPTIONS 요청 처리 (CORS preflight)
   return ContentService.createTextOutput(JSON.stringify({
     status: 'ok',
-    message: 'Sagunbok Auth API is running'
+    message: 'Sagunbok Auth API is running',
+    timestamp: getCurrentTimestamp()
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -544,3 +584,131 @@ function testLoginConsultant() {
   });
   Logger.log(result);
 }
+```
+
+---
+
+## 🔄 **2단계: 웹 앱 재배포**
+
+코드를 업데이트한 후 **반드시 재배포**해야 합니다!
+
+### **재배포 방법**
+
+1. Apps Script 편집기에서 **저장** 버튼 클릭 (💾)
+
+2. 상단 메뉴: **배포 → 배포 관리**
+
+3. **✏️ (연필 아이콘)** 클릭 (기존 배포 수정)
+
+4. **버전**: "새 버전" 선택
+
+5. **설명**: "CORS 지원 추가 v2"
+
+6. **배포** 클릭
+
+7. ✅ **웹 앱 URL은 변경되지 않습니다!**
+   ```
+   https://script.google.com/macros/s/AKfycbxMcJ82NqcvWOh5ODzo9ZyQ0zxotgT5oKRJL9CH66JGuNi2V7WpT7XI4CRYWYb11WOB/exec
+   ```
+
+---
+
+## 🧪 **3단계: 테스트**
+
+### **A. API 테스트 (브라우저에서)**
+
+웹 앱 URL을 브라우저 주소창에 입력:
+```
+https://script.google.com/macros/s/AKfycbxMcJ82NqcvWOh5ODzo9ZyQ0zxotgT5oKRJL9CH66JGuNi2V7WpT7XI4CRYWYb11WOB/exec
+```
+
+**기대 결과**:
+```json
+{
+  "status": "ok",
+  "message": "Sagunbok Auth API is running",
+  "timestamp": "2026-01-20 13:30:00"
+}
+```
+
+### **B. 웹사이트 로그인 테스트**
+
+1. **http://3.34.186.174** 접속
+2. **F12 (개발자 도구)** 열기
+3. **Console 탭** 확인
+4. 로그인 시도
+5. ✅ **CORS 오류가 사라진 것 확인!**
+
+---
+
+## 🔍 **변경 사항 요약**
+
+### **추가된 코드**
+
+```javascript
+/**
+ * GET 요청 처리 (CORS 지원)
+ */
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'ok',
+    message: 'Sagunbok Auth API is running',
+    timestamp: getCurrentTimestamp()
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+```
+
+### **이유**
+
+Google Apps Script 웹 앱은 기본적으로 CORS를 지원하지만, `doGet` 함수가 있어야 브라우저의 preflight 요청을 처리할 수 있습니다.
+
+---
+
+## 📋 **체크리스트**
+
+배포 전 확인:
+- [ ] Apps Script 코드 업데이트 완료
+- [ ] `doGet` 함수 추가 확인
+- [ ] 저장 버튼 (💾) 클릭
+- [ ] **배포 → 배포 관리** 메뉴 열기
+- [ ] **✏️ (연필 아이콘)** 클릭
+- [ ] "새 버전" 선택
+- [ ] **배포** 클릭
+- [ ] 웹 앱 URL 변경되지 않은 것 확인
+- [ ] 브라우저에서 URL 테스트
+- [ ] 웹사이트에서 로그인 테스트
+
+---
+
+## 🚀 **다음 단계**
+
+재배포 후:
+
+1. **브라우저 캐시 삭제** (Ctrl+Shift+Del)
+2. **웹사이트 새로고침** (F5)
+3. **로그인 테스트**
+4. ✅ **성공!**
+
+---
+
+## ❓ **문제 해결**
+
+### **Q: 재배포 후에도 CORS 오류가 발생합니다**
+- 브라우저 캐시 삭제 (Ctrl+Shift+Del)
+- 시크릿 모드로 테스트
+- 웹 앱 URL이 정확한지 확인
+
+### **Q: "승인이 필요합니다" 팝업이 다시 나타납니다**
+- **고급** → **사근복_인증API(안전하지 않음)로 이동** 클릭
+- **허용** 클릭
+
+### **Q: 웹 앱 URL이 변경되었습니다**
+- 잘못된 배포 방법입니다
+- **배포 → 배포 관리 → ✏️ (수정)** 사용해야 합니다
+- 새 배포를 만들면 URL이 변경됩니다
+
+---
+
+**코드를 업데이트하고 재배포하면 CORS 오류가 해결됩니다!** 🚀
+
+재배포 후 결과를 알려주세요!
