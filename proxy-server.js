@@ -8,8 +8,9 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Apps Script URL (Updated 2026-01-21 18:10 - V5.4 FINAL)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5c6wArjU15_l6bXfMNe2oMpQXMQtwqvO4eyNQ1BcP1LtSXmYECNj2EatGWP09pDnYQw/exec';
+// Apps Script URL (Updated 2026-01-21 20:30 - V5.4.2 FINAL - 신규 시트)
+// 신규 시트: https://docs.google.com/spreadsheets/d/1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc/edit
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxnsxHIL1nBUpG6wPs286FbprA2u5BNkW4ynJvaX5kfmgkFeDK0vDmojWbQLa4T-6_4Q/exec';
 
 // 프록시 엔드포인트
 app.post('/api/auth', async (req, res) => {
