@@ -7,7 +7,8 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxrHrk25rNmxtKsySrM-Ru_lnSkexHzryQl38HCLss6XZsBdgKm_uGTl329TR3l9u4g/exec';
+// 🔥 CORS 우회를 위한 프록시 서버 사용
+const PROXY_URL = 'https://3001-ibupgf3p7cll7kpgwy3n6-0e616f0a.sandbox.novita.ai/api';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -42,7 +43,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    const response = await fetch(BACKEND_URL, {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...data }),

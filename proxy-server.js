@@ -1,66 +1,92 @@
+/**
+ * CORS 프록시 서버
+ * Google Apps Script 백엔드에 대한 요청을 프록시합니다.
+ */
+
 import express from 'express';
 import cors from 'cors';
+import fetch from 'node-fetch';
 
 const app = express();
 const PORT = 3001;
 
-// CORS 모든 도메인 허용
-app.use(cors());
+// Google Apps Script 백엔드 URL
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxrHrk25rNmxtKsySrM-Ru_lnSkexHzryQl38HCLss6XZsBdgKm_uGTl329TR3l9u4g/exec';
+
+// CORS 미들웨어 설정 (모든 origin 허용)
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// JSON 파싱
 app.use(express.json());
 
-// Apps Script URL (Updated 2026-01-21 20:30 - V5.4.2 FINAL - 신규 시트)
-// 신규 시트: https://docs.google.com/spreadsheets/d/1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc/edit
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxnsxHIL1nBUpG6wPs286FbprA2u5BNkW4ynJvaX5kfmgkFeDK0vDmojWbQLa4T-6_4Q/exec';
+// 헬스 체크
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'CORS Proxy Server is running',
+    backend: BACKEND_URL,
+    timestamp: new Date().toISOString()
+  });
+});
 
-// 프록시 엔드포인트
-app.post('/api/auth', async (req, res) => {
+// GET 요청 프록시 (테스트용)
+app.get('/api', async (req, res) => {
   try {
-    console.log('=== Proxy Request ===');
-    console.log('Body:', req.body);
+    console.log('📥 GET Request to backend');
+    const response = await fetch(BACKEND_URL, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    const data = await response.json();
+    console.log('✅ Response:', data);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('❌ GET Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Proxy server error: ' + error.message 
+    });
+  }
+});
 
-    const response = await fetch(APPS_SCRIPT_URL, {
+// POST 요청 프록시 (회원가입, 로그인 등)
+app.post('/api', async (req, res) => {
+  try {
+    console.log('📥 POST Request:', req.body);
+    
+    const response = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(req.body),
+      redirect: 'follow'
     });
-
-    const text = await response.text();
-    console.log('Apps Script Response:', text);
-
-    // JSON으로 파싱 시도
-    try {
-      const data = JSON.parse(text);
-      res.json(data);
-    } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
-      res.status(500).json({
-        success: false,
-        error: 'Apps Script returned invalid JSON',
-        response: text.substring(0, 500)
-      });
-    }
-
+    
+    const data = await response.json();
+    console.log('✅ Response:', data);
+    
+    res.json(data);
   } catch (error) {
-    console.error('Proxy Error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
+    console.error('❌ POST Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Proxy server error: ' + error.message 
     });
   }
 });
 
-// 헬스 체크
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'Sagunbok Proxy Server is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
+// 서버 시작
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Proxy server running on port ${PORT}`);
-  console.log(`Apps Script URL: ${APPS_SCRIPT_URL}`);
+  console.log('🚀 CORS Proxy Server started!');
+  console.log(`📍 Server running at http://0.0.0.0:${PORT}`);
+  console.log(`🔗 Backend URL: ${BACKEND_URL}`);
+  console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
+  console.log(`📡 API endpoint: http://0.0.0.0:${PORT}/api`);
 });
