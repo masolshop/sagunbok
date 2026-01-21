@@ -7,8 +7,8 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-// 🔥 CORS 우회를 위한 프록시 서버 사용
-const PROXY_URL = 'https://3001-ibupgf3p7cll7kpgwy3n6-0e616f0a.sandbox.novita.ai/api';
+// 🔥 CORS 우회: Vite의 프록시 설정을 통해 localhost:3001로 전달
+const PROXY_URL = '/api';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
