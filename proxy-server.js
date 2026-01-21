@@ -10,8 +10,8 @@ import fetch from 'node-fetch';
 const app = express();
 const PORT = 3001;
 
-// Google Apps Script 백엔드 URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxrHrk25rNmxtKsySrM-Ru_lnSkexHzryQl38HCLss6XZsBdgKm_uGTl329TR3l9u4g/exec';
+// Google Apps Script 백엔드 URL - v2.8-DEBUG
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyXNblmD7q9iu1Ye91WuU2X2u3iAqi8P-YgG6WaZ-19gPfctqesCS9fQLjQFx9Pv0Go/exec';
 
 // CORS 미들웨어 설정 (모든 origin 허용)
 app.use(cors({
