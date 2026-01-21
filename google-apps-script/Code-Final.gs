@@ -381,6 +381,15 @@ function findPassword(data) {
 }
 
 /**
+ * CORS Preflight 요청 처리 (OPTIONS)
+ */
+function doOptions(e) {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
  * HTTP GET 요청 처리 (테스트용)
  */
 function doGet(e) {
@@ -389,8 +398,8 @@ function doGet(e) {
   output.setContent(JSON.stringify({
     status: 'ok',
     message: '사근복 AI 백엔드 API가 정상 작동 중입니다.',
-    version: '2.1',
-    features: ['로그기록', '승인여부', '추천인검증', '컨설턴트비밀번호저장'],
+    version: '2.2',
+    features: ['로그기록', '승인여부', '추천인검증', '컨설턴트비밀번호저장', 'CORS지원'],
     timestamp: new Date().toISOString()
   }));
   return output;
