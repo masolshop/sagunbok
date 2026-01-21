@@ -12,25 +12,37 @@ import APIKeySettings from './components/APIKeySettings';
 import Auth from './components/Auth';
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // 로그인 필요
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true); // 초기 로딩 상태
   const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [showAPISettings, setShowAPISettings] = useState(false);
 
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
+    // localStorage에서 사용자 정보 확인
     const savedUser = localStorage.getItem('sagunbok_user');
+    
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        setIsAuthenticated(true);
+        // 유효한 사용자 정보가 있는 경우에만 자동 로그인
+        if (user && user.phone) {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } else {
+          // 유효하지 않은 데이터 제거
+          localStorage.removeItem('sagunbok_user');
+        }
       } catch (error) {
         console.error('Failed to parse saved user:', error);
         localStorage.removeItem('sagunbok_user');
       }
     }
+    
+    // 로딩 완료
+    setIsLoading(false);
   }, []);
 
   // 로그인 성공 핸들러
@@ -47,6 +59,18 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
   };
 
+  // 로딩 중일 때 로딩 화면 표시
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-semibold">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+  
   // 인증되지 않은 경우 로그인 화면 표시
   if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
@@ -182,18 +206,17 @@ const App: React.FC = () => {
         </div>
 
         <div className="mt-auto space-y-6">
-          {/* 사용자 정보 - 임시 비활성화 */}
-          {/* TODO: Google Sheets Auth 준비되면 활성화 */}
+          {/* 사용자 정보 */}
           <div className="p-5 bg-black/30 rounded-2xl border border-white/10 backdrop-blur-md">
-            <div className="text-[10px] text-yellow-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
-              테스트 모드
+            <div className="text-[10px] text-green-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+              로그인 중
             </div>
             <div className="text-sm font-black truncate text-white">
-              익명 사용자
+              {currentUser?.name || '사용자'}
             </div>
             <div className="text-[11px] text-slate-300 mt-1">
-              Auth 기능 준비 중
+              {currentUser?.phone || ''}
             </div>
           </div>
 
@@ -211,15 +234,13 @@ const App: React.FC = () => {
             ADMIN DASHBOARD
           </button>
 
-          {/* 로그아웃 버튼 - 임시 비활성화 */}
-          {/* 
+          {/* 로그아웃 버튼 */}
           <button 
             onClick={handleLogout}
             className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 hover:border-red-400"
           >
             🚪 로그아웃
           </button>
-          */}
           
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
             <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">

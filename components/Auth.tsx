@@ -7,7 +7,7 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxMcJ82NqcvWOh5ODzo9ZyQ0zxotgT5oKRJL9CH66JGuNi2V7WpT7XI4CRYWYb11WOB/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwB26bKC8LI0MVYdmGptMYEXeiD4XtbrI5jsbxWheQbpBstq4ECHGQ_YfrhvEoOFKIM4g/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -20,11 +20,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   
   // 기업회원 가입 폼
   const [companyName, setCompanyName] = useState('');
+  const [companyType, setCompanyType] = useState('개인사업자'); // 추가: 기업회원분류
+  const [referrer, setReferrer] = useState(''); // 추가: 추천인
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState(''); // 복구
   
   // 컨설턴트 가입 폼
   const [consultantName, setConsultantName] = useState('');
@@ -78,8 +80,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
   
   const handleRegisterCompany = async () => {
-    if (!companyName || !name || !phone || !email || !password) {
-      alert('모든 필드를 입력해주세요.');
+    if (!companyName || !companyType || !referrer || !name || !phone || !email || !password || !passwordConfirm) {
+      alert('모든 필수 필드를 입력해주세요.');
+      return;
+    }
+    
+    if (password.length < 4) {
+      alert('비밀번호는 최소 4자리 이상이어야 합니다.');
       return;
     }
     
@@ -92,6 +99,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     try {
       const result = await callAPI('registerCompany', {
         companyName,
+        companyType,
+        referrer,
         name,
         phone,
         email,
@@ -104,6 +113,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         setUserType('company');
         // 폼 초기화
         setCompanyName('');
+        setCompanyType('개인사업자');
+        setReferrer('');
         setName('');
         setPhone('');
         setEmail('');
@@ -214,109 +225,149 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* 배경 애니메이션 원들 */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-white/20 relative z-10">
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-2xl text-blue-600 shadow-lg transform rotate-3">
-              S
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 text-white relative overflow-hidden">
+          {/* 헤더 배경 패턴 */}
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-14 h-14 bg-white/95 rounded-2xl flex items-center justify-center font-black text-3xl text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl backdrop-blur-sm">
+                S
+              </div>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">사근복 AI</h1>
+                <p className="text-xs text-white/80 font-semibold">Studio v2.5 • Pro Edition</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-black">사근복 AI</h1>
-              <p className="text-xs text-blue-200">Studio v2.5</p>
-            </div>
+            <p className="text-sm text-white/90 mt-4 font-medium">
+              {mode === 'login' && '💼 로그인하여 시작하세요'}
+              {mode === 'register' && '✨ 회원가입'}
+              {mode === 'findId' && '🔍 ID 찾기'}
+              {mode === 'findPassword' && '🔑 비밀번호 찾기'}
+            </p>
           </div>
-          <p className="text-sm text-blue-100 mt-4">
-            {mode === 'login' && '로그인하여 시작하세요'}
-            {mode === 'register' && '회원가입'}
-            {mode === 'findId' && 'ID 찾기'}
-            {mode === 'findPassword' && '비밀번호 찾기'}
-          </p>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 relative">
           {/* 로그인 모드 */}
           {mode === 'login' && (
             <div className="space-y-6">
-              {/* 회원 구분 탭 */}
-              <div className="flex space-x-2">
+              {/* 회원 구분 탭 - 모던 디자인 */}
+              <div className="flex space-x-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
                 <button
                   onClick={() => setUserType('company')}
-                  className={`flex-1 py-3 rounded-xl font-bold transition ${
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/50 hover:text-gray-800'
                   }`}
                 >
-                  기업회원
+                  🏢 기업회원
                 </button>
                 <button
                   onClick={() => setUserType('consultant')}
-                  className={`flex-1 py-3 rounded-xl font-bold transition ${
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/50 hover:text-gray-800'
                   }`}
                 >
-                  사근복 컨설턴트
+                  👔 사근복 컨설턴트
                 </button>
               </div>
 
-              {/* 로그인 폼 */}
+              {/* 로그인 폼 - 모던 디자인 */}
               <div className="space-y-4">
-                <input
-                  type="tel"
-                  placeholder="ID (전화번호: 010-1234-5678)"
-                  value={loginPhone}
-                  onChange={(e) => setLoginPhone(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <input
-                  type="password"
-                  placeholder={userType === 'consultant' ? '비밀번호 (12345)' : '비밀번호'}
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">📱</span>
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="ID (전화번호: 010-1234-5678)"
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
+                
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">🔒</span>
+                  </div>
+                  <input
+                    type="password"
+                    placeholder={userType === 'consultant' ? '비밀번호 (12345)' : '비밀번호'}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
                 
                 {userType === 'consultant' && (
-                  <p className="text-xs text-gray-500 text-center">
-                    💡 컨설턴트 비밀번호는 <strong>12345</strong> 입니다.
-                  </p>
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-4 text-center shadow-sm">
+                    <p className="text-sm text-amber-900 font-semibold">
+                      💡 컨설턴트 비밀번호는 <span className="text-lg font-black text-amber-700">12345</span> 입니다.
+                    </p>
+                  </div>
                 )}
               </div>
 
               <button
                 onClick={handleLogin}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
               >
-                {loading ? '로그인 중...' : '로그인'}
+                <span className="relative z-10 flex items-center justify-center space-x-2">
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>로그인 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀</span>
+                      <span>로그인</span>
+                    </>
+                  )}
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
               </button>
 
-              {/* 하단 링크 */}
-              <div className="flex justify-between text-sm">
+              {/* 하단 링크 - 모던 디자인 */}
+              <div className="flex justify-between items-center text-sm pt-2">
                 <button
                   onClick={() => setMode('register')}
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 hover:text-blue-700 font-semibold hover:underline flex items-center space-x-1 transition-all"
                 >
-                  회원가입
+                  <span>✨</span>
+                  <span>회원가입</span>
                 </button>
                 {userType === 'company' && (
-                  <div className="space-x-3">
+                  <div className="flex space-x-3">
                     <button
                       onClick={() => setMode('findId')}
-                      className="text-gray-600 hover:underline"
+                      className="text-gray-600 hover:text-gray-800 font-medium hover:underline transition-all"
                     >
-                      ID 찾기
+                      🔍 ID 찾기
                     </button>
                     <button
                       onClick={() => setMode('findPassword')}
-                      className="text-gray-600 hover:underline"
+                      className="text-gray-600 hover:text-gray-800 font-medium hover:underline transition-all"
                     >
-                      비밀번호 찾기
+                      🔑 비밀번호 찾기
                     </button>
                   </div>
                 )}
@@ -327,233 +378,390 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
           {/* 회원가입 모드 */}
           {mode === 'register' && (
             <div className="space-y-6">
-              {/* 회원 구분 탭 */}
-              <div className="flex space-x-2">
+              {/* 회원 구분 탭 - 모던 디자인 */}
+              <div className="flex space-x-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
                 <button
                   onClick={() => setUserType('company')}
-                  className={`flex-1 py-3 rounded-xl font-bold transition ${
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/50 hover:text-gray-800'
                   }`}
                 >
-                  기업회원
+                  🏢 기업회원
                 </button>
                 <button
                   onClick={() => setUserType('consultant')}
-                  className={`flex-1 py-3 rounded-xl font-bold transition ${
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/50 hover:text-gray-800'
                   }`}
                 >
-                  사근복 컨설턴트
+                  👔 사근복 컨설턴트
                 </button>
               </div>
 
-              {/* 기업회원 가입 폼 */}
+              {/* 기업회원 가입 폼 - 모던 디자인 */}
               {userType === 'company' && (
                 <div className="space-y-4">
                   <input
                     type="text"
-                    placeholder="회사명 *"
+                    placeholder="🏢 회사명 *"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
+                  
+                  {/* 기업회원분류 선택 */}
+                  <div className="relative">
+                    <select
+                      value={companyType}
+                      onChange={(e) => setCompanyType(e.target.value)}
+                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="개인사업자">🏪 개인사업자</option>
+                      <option value="법인">🏢 법인</option>
+                      <option value="병원">🏥 병원</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* 추천인 입력 */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="👔 추천인 (사근복 컨설턴트 이름) *"
+                      value={referrer}
+                      onChange={(e) => setReferrer(e.target.value)}
+                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
+                    />
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4">
+                    <p className="text-xs text-blue-900 font-semibold flex items-center space-x-2">
+                      <span>ℹ️</span>
+                      <span>추천인은 등록된 사근복 컨설턴트 이름이어야 합니다.</span>
+                    </p>
+                  </div>
+                  
                   <input
                     type="text"
-                    placeholder="이름 *"
+                    placeholder="👤 이름 *"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="tel"
-                    placeholder="전화번호 (ID로 사용됩니다) *"
+                    placeholder="📱 전화번호 (ID로 사용됩니다) *"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="email"
-                    placeholder="이메일 *"
+                    placeholder="📧 이메일 *"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="password"
-                    placeholder="비밀번호 (최소 4자리) *"
+                    placeholder="🔒 비밀번호 (최소 4자리) *"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="password"
-                    placeholder="비밀번호 확인 *"
+                    placeholder="✅ 비밀번호 확인 *"
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <button
                     onClick={handleRegisterCompany}
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                    className="w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
                   >
-                    {loading ? '가입 중...' : '회원가입'}
+                    <span className="relative z-10 flex items-center justify-center space-x-2">
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>가입 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨</span>
+                          <span>회원가입</span>
+                        </>
+                      )}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
                   </button>
                 </div>
               )}
 
-              {/* 컨설턴트 가입 폼 */}
+              {/* 컨설턴트 가입 폼 - 모던 디자인 */}
               {userType === 'consultant' && (
                 <div className="space-y-4">
                   <input
                     type="text"
-                    placeholder="이름 *"
+                    placeholder="👤 이름 *"
                     value={consultantName}
                     onChange={(e) => setConsultantName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="tel"
-                    placeholder="전화번호 (ID로 사용됩니다) *"
+                    placeholder="📱 전화번호 (ID로 사용됩니다) *"
                     value={consultantPhone}
                     onChange={(e) => setConsultantPhone(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="email"
-                    placeholder="이메일 *"
+                    placeholder="📧 이메일 *"
                     value={consultantEmail}
                     onChange={(e) => setConsultantEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="text"
-                    placeholder="직함 *"
+                    placeholder="👔 직함 *"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="text"
-                    placeholder="소속 사업단 (선택)"
+                    placeholder="🏢 소속 사업단 (선택)"
                     value={businessUnit}
                     onChange={(e) => setBusinessUnit(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
                     type="text"
-                    placeholder="소속 지사 (선택)"
+                    placeholder="🏛️ 소속 지사 (선택)"
                     value={branchOffice}
                     onChange={(e) => setBranchOffice(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-gray-700">
-                    <p className="font-bold text-yellow-800 mb-1">💡 안내</p>
-                    <p>컨설턴트 비밀번호는 <strong>12345</strong>로 고정됩니다.</p>
-                    <p>가입 승인 후 로그인 시 사용하세요.</p>
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm">
+                    <p className="font-bold text-amber-900 mb-2 flex items-center space-x-2">
+                      <span className="text-2xl">💡</span>
+                      <span className="text-lg">안내사항</span>
+                    </p>
+                    <div className="space-y-1 text-sm text-amber-900">
+                      <p>• 컨설턴트 비밀번호는 <span className="font-black text-lg text-amber-700">12345</span>로 고정됩니다.</p>
+                      <p>• 가입 승인 후 로그인 시 사용하세요.</p>
+                    </div>
                   </div>
                   
                   <button
                     onClick={handleRegisterConsultant}
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                    className="w-full bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
                   >
-                    {loading ? '가입 중...' : '회원가입'}
+                    <span className="relative z-10 flex items-center justify-center space-x-2">
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>가입 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨</span>
+                          <span>회원가입</span>
+                        </>
+                      )}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
                   </button>
                 </div>
               )}
 
               <button
                 onClick={() => setMode('login')}
-                className="w-full text-gray-600 text-sm hover:underline"
+                className="w-full text-gray-600 hover:text-gray-800 text-sm font-semibold hover:underline py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center space-x-2"
               >
-                ← 로그인으로 돌아가기
+                <span>←</span>
+                <span>로그인으로 돌아가기</span>
               </button>
             </div>
           )}
 
-          {/* ID 찾기 모드 */}
+          {/* ID 찾기 모드 - 모던 디자인 */}
           {mode === 'findId' && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 mb-4">
-                가입 시 입력한 이름과 이메일을 입력해주세요.
-              </p>
-              <input
-                type="text"
-                placeholder="이름"
-                value={findName}
-                onChange={(e) => setFindName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <input
-                type="email"
-                placeholder="이메일"
-                value={findEmail}
-                onChange={(e) => setFindEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-5 shadow-sm">
+                <p className="text-sm text-blue-900 font-semibold flex items-center space-x-2">
+                  <span className="text-xl">🔍</span>
+                  <span>가입 시 입력한 이름과 이메일을 입력해주세요.</span>
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">👤</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="이름"
+                    value={findName}
+                    onChange={(e) => setFindName(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
+                
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">📧</span>
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="이메일"
+                    value={findEmail}
+                    onChange={(e) => setFindEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
+              </div>
+              
               <button
                 onClick={handleFindId}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
               >
-                {loading ? '찾는 중...' : 'ID 찾기'}
+                <span className="relative z-10 flex items-center justify-center space-x-2">
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>찾는 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🔍</span>
+                      <span>ID 찾기</span>
+                    </>
+                  )}
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
               </button>
+              
               <button
                 onClick={() => setMode('login')}
-                className="w-full text-gray-600 text-sm hover:underline"
+                className="w-full text-gray-600 hover:text-gray-800 text-sm font-semibold hover:underline py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center space-x-2"
               >
-                ← 로그인으로 돌아가기
+                <span>←</span>
+                <span>로그인으로 돌아가기</span>
               </button>
             </div>
           )}
 
-          {/* 비밀번호 찾기 모드 */}
+          {/* 비밀번호 찾기 모드 - 모던 디자인 */}
           {mode === 'findPassword' && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 mb-4">
-                가입 시 입력한 전화번호와 이메일을 입력해주세요.
-              </p>
-              <input
-                type="tel"
-                placeholder="전화번호 (ID)"
-                value={findPhone}
-                onChange={(e) => setFindPhone(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <input
-                type="email"
-                placeholder="이메일"
-                value={findEmail}
-                onChange={(e) => setFindEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm">
+                <p className="text-sm text-amber-900 font-semibold flex items-center space-x-2">
+                  <span className="text-xl">🔑</span>
+                  <span>가입 시 입력한 전화번호와 이메일을 입력해주세요.</span>
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">📱</span>
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="전화번호 (ID)"
+                    value={findPhone}
+                    onChange={(e) => setFindPhone(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
+                
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xl">📧</span>
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="이메일"
+                    value={findEmail}
+                    onChange={(e) => setFindEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 group-hover:border-gray-300 font-medium"
+                  />
+                </div>
+              </div>
+              
               <button
                 onClick={handleFindPassword}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
               >
-                {loading ? '찾는 중...' : '비밀번호 찾기'}
+                <span className="relative z-10 flex items-center justify-center space-x-2">
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>찾는 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🔑</span>
+                      <span>비밀번호 찾기</span>
+                    </>
+                  )}
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
               </button>
+              
               <button
                 onClick={() => setMode('login')}
-                className="w-full text-gray-600 text-sm hover:underline"
+                className="w-full text-gray-600 hover:text-gray-800 text-sm font-semibold hover:underline py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center space-x-2"
               >
-                ← 로그인으로 돌아가기
+                <span>←</span>
+                <span>로그인으로 돌아가기</span>
               </button>
             </div>
           )}
 
-          {/* 승인 안내 */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-gray-700">
-            <p className="font-bold text-blue-800 mb-1">🔒 승인 안내</p>
-            <p>회원가입 후 관리자 승인이 필요합니다.</p>
-            <p>승인 완료 시 로그인이 가능합니다.</p>
+          {/* 승인 안내 - 모던 디자인 */}
+          <div className="mt-8 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl shadow-sm">
+            <p className="font-bold text-blue-900 mb-3 flex items-center space-x-2 text-lg">
+              <span className="text-2xl">🔒</span>
+              <span>승인 안내</span>
+            </p>
+            <div className="space-y-2 text-sm text-blue-900">
+              <p className="flex items-start space-x-2">
+                <span className="text-blue-600 font-bold">•</span>
+                <span>회원가입 후 <span className="font-bold text-blue-700">관리자 승인</span>이 필요합니다.</span>
+              </p>
+              <p className="flex items-start space-x-2">
+                <span className="text-blue-600 font-bold">•</span>
+                <span>승인 완료 시 <span className="font-bold text-blue-700">로그인</span>이 가능합니다.</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
