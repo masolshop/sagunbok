@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>기업회원 가입 테스트</title>
+</head>
+<body>
+    <h1>기업회원 가입 테스트</h1>
+    <div id="result"></div>
+    
+    <script>
+        const url = 'https://script.google.com/macros/s/AKfycbx7neSx45Xsu-bd0KoU6EjTdv8EJOfuoM1v9ck3tAFcR4HB-eDR_J-YO58KPZ-aOLua/exec';
+        
+        const data = {
+            action: 'registerCompany',
+            companyName: 'AI테스트병원',
+            companyType: '병의원개인사업자',
+            name: 'AI테스터',
+            phone: '01099887766',
+            email: 'ai-test@hospital.com',
+            password: 'test1234',
+            referrer: '김철수'
+        };
+        
+        console.log('요청 데이터:', data);
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+            redirect: 'follow'
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('응답:', result);
+            document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        })
+        .catch(error => {
+            console.error('오류:', error);
+            document.getElementById('result').innerHTML = '<pre>오류: ' + error.message + '</pre>';
+        });
+    </script>
+</body>
+</html>
