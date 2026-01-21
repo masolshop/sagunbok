@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사근복 AI - API 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .success {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+        
+        .error {
+            border-color: #ef4444;
+            background: #fee2e2;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #eff6ff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 사근복 AI - API 테스트</h1>
+        
+        <div class="status" id="backendStatus">
+            백엔드 상태 확인 중...
+        </div>
+        
+        <!-- 1. 헬스체크 -->
+        <div class="test-section">
+            <h2>1️⃣ 헬스체크</h2>
+            <button onclick="testHealth()">백엔드 상태 확인</button>
+            <div id="healthResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 2. 컨설턴트 가입 -->
+        <div class="test-section">
+            <h2>2️⃣ 컨설턴트 회원가입</h2>
+            <button onclick="testConsultantSignup()">홍길동 컨설턴트 가입</button>
+            <div id="consultantResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 3. 기업회원 가입 -->
+        <div class="test-section">
+            <h2>3️⃣ 기업회원 가입 (추천인: 홍길동)</h2>
+            <button onclick="testCompanySignup()">김철수 기업회원 가입</button>
+            <div id="companyResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 4. 컨설턴트 로그인 -->
+        <div class="test-section">
+            <h2>4️⃣ 컨설턴트 로그인</h2>
+            <button onclick="testConsultantLogin()">홍길동 로그인 (비밀번호: 12345)</button>
+            <div id="consultantLoginResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 5. 기업회원 로그인 -->
+        <div class="test-section">
+            <h2>5️⃣ 기업회원 로그인 (승인 후 테스트)</h2>
+            <button onclick="testCompanyLogin()">김철수 로그인</button>
+            <div id="companyLoginResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwB26bKC8LI0MVYdmGptMYEXeiD4XtbrI5jsbxWheQbpBstq4ECHGQ_YfrhvEoOFKIM4g/exec';
+        
+        async function callAPI(action, data) {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ...data }),
+                redirect: 'follow'
+            });
+            return response.json();
+        }
+        
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        async function testHealth() {
+            try {
+                const response = await fetch(BACKEND_URL);
+                const data = await response.json();
+                showResult('healthResult', data);
+                document.getElementById('backendStatus').innerHTML = '✅ 백엔드 정상 작동 중 (v' + data.version + ')';
+            } catch (error) {
+                showResult('healthResult', { error: error.message }, true);
+                document.getElementById('backendStatus').innerHTML = '❌ 백엔드 오류';
+            }
+        }
+        
+        async function testConsultantSignup() {
+            try {
+                const data = await callAPI('registerConsultant', {
+                    name: '홍길동',
+                    phone: '010-8765-4321',
+                    email: 'hong@sagunbok.com',
+                    position: '수석 컨설턴트',
+                    businessUnit: '서울사업단',
+                    branchOffice: '강남지사'
+                });
+                showResult('consultantResult', data, data.status !== 'success');
+            } catch (error) {
+                showResult('consultantResult', { error: error.message }, true);
+            }
+        }
+        
+        async function testCompanySignup() {
+            try {
+                const data = await callAPI('registerCompany', {
+                    companyName: '테스트주식회사',
+                    companyType: '법인',
+                    referrer: '홍길동',
+                    name: '김철수',
+                    phone: '010-1234-5678',
+                    email: 'test@company.com',
+                    password: 'test1234'
+                });
+                showResult('companyResult', data, data.status !== 'success');
+            } catch (error) {
+                showResult('companyResult', { error: error.message }, true);
+            }
+        }
+        
+        async function testConsultantLogin() {
+            try {
+                const data = await callAPI('loginConsultant', {
+                    phone: '010-8765-4321',
+                    password: '12345'
+                });
+                showResult('consultantLoginResult', data, data.status !== 'success');
+            } catch (error) {
+                showResult('consultantLoginResult', { error: error.message }, true);
+            }
+        }
+        
+        async function testCompanyLogin() {
+            try {
+                const data = await callAPI('loginCompany', {
+                    phone: '010-1234-5678',
+                    password: 'test1234'
+                });
+                showResult('companyLoginResult', data, data.status !== 'success');
+            } catch (error) {
+                showResult('companyLoginResult', { error: error.message }, true);
+            }
+        }
+        
+        // 페이지 로드 시 자동으로 헬스체크
+        window.onload = function() {
+            testHealth();
+        };
+    </script>
+</body>
+</html>
