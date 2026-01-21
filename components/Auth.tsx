@@ -7,9 +7,9 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-// Apps Script URL - 신규 시트 (V5.4.2 FINAL)
+// Apps Script URL - 신규 시트 (V5.4.2 FINAL) - 최종 배포
 // 신규 시트: https://docs.google.com/spreadsheets/d/1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc/edit
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwjtxzuEsmI_led6T_nFqyJuk0a91Qd7UvXp2DaIdJBEP3Dz8Gz6Qf57NgkWaZNovOwWg/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxxnsxHIL1nBUpG6wPs286FbprA2u5BNkW4ynJvaX5kfmgkFeDK0vDmojWbQLa4T-6_4Q/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
