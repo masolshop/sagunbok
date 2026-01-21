@@ -1,0 +1,86 @@
+╔════════════════════════════════════════════════════════════════╗
+║  ✅ V5.4.2 컨설턴트 승인상태 추가 완료                         ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 요청사항:
+  "컨설턴트에서 승인상태 누락되어 있어 I열에 승인상태 추가해야 해"
+
+✅ 완료된 작업:
+
+1️⃣ Google Sheets 구조 업데이트
+   [사근복컨설턴트] A~H → A~I (I열: 승인상태 추가)
+   
+2️⃣ Apps Script 코드 수정 (V5.4.2)
+   ✓ registerConsultant(): I열에 '승인전표' 저장
+   ✓ loginConsultant(): I열 읽기 (8→9열), approvalStatus 반환
+   
+3️⃣ 문서 업데이트
+   ✓ APPS_SCRIPT_V5.4_FINAL.js (V5.4.2)
+   ✓ CLEAN_RESTART_GUIDE.md (I열 승인상태 반영)
+   ✓ V5.4.2_CONSULTANT_APPROVAL_STATUS.md (변경 상세)
+   ✓ CONSULTANT_APPROVAL_STATUS_UPDATE.md (빠른 가이드)
+
+🔄 변경 요약:
+
+┌─────────────┬────────────────┬────────────────┐
+│ 함수        │ 변경 전        │ 변경 후        │
+├─────────────┼────────────────┼────────────────┤
+│ register    │ A~H 저장       │ A~I 저장       │
+│ Consultant  │ (승인상태 없음)│ I='승인전표'   │
+├─────────────┼────────────────┼────────────────┤
+│ login       │ A~H 읽기 (8열) │ A~I 읽기 (9열) │
+│ Consultant  │ userData 8필드 │ userData 9필드  │
+│             │                │ +approvalStatus│
+└─────────────┴────────────────┴────────────────┘
+
+📊 최종 시트 구조:
+
+[기업회원] A~K:
+  A: 가입일시
+  B: 회사명
+  C: 기업유형
+  D: 이름
+  E: 핸드폰번호
+  F: 이메일
+  G: 비밀번호
+  H: 추천인
+  I: 승인상태 ✅
+  J: (비어있음)
+  K: 마지막로그인
+
+[사근복컨설턴트] A~I:
+  A: 이름
+  B: 핸드폰번호
+  C: 이메일
+  D: 직함
+  E: 소속 사업단
+  F: 비밀번호
+  G: 소속 지사
+  H: 가입일시
+  I: 승인상태 ✅ (NEW!)
+
+🎯 결과:
+  ✅ 기업회원과 컨설턴트 모두 I열에 승인상태 저장
+  ✅ 로그인 시 approvalStatus 필드 반환
+  ✅ 시트 구조 통일 완료
+
+📝 다음 단계:
+  1. Google Sheets I1 셀에 "승인상태" 헤더 추가
+  2. 테스트 데이터 I열에 "승인전표" 추가
+  3. Apps Script V5.4.2 코드 배포
+  4. 프록시 서버 업데이트
+  5. 브라우저 테스트
+
+📁 주요 파일:
+  - Apps Script: docs/apps-script-v5/APPS_SCRIPT_V5.4_FINAL.js
+  - 빠른 가이드: CONSULTANT_APPROVAL_STATUS_UPDATE.md
+  - 상세 변경: docs/apps-script-v5/V5.4.2_CONSULTANT_APPROVAL_STATUS.md
+  - 재설정 가이드: docs/apps-script-v5/CLEAN_RESTART_GUIDE.md
+
+🔖 커밋:
+  - e2db22f: feat: 사근복컨설턴트 시트에 I열 승인상태 추가 (V5.4.2)
+  - 729c3e2: docs: 컨설턴트 승인상태 추가 빠른 가이드 문서
+
+⏱️ 소요 시간: 약 5분 (코드 수정) + 10분 (배포 포함) = 15분
+
+✨ 완료!

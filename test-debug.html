@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .status {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Sagunbok Debug Test</h1>
+    
+    <div class="status" id="status1">
+        ✅ HTML 로드 성공
+    </div>
+    
+    <div class="status" id="status2">
+        ⏳ JavaScript 테스트 중...
+    </div>
+    
+    <div class="status" id="status3">
+        ⏳ React 앱 마운트 테스트 중...
+    </div>
+    
+    <div class="status" id="status4">
+        ⏳ localStorage 테스트 중...
+    </div>
+    
+    <div id="root"></div>
+    
+    <script>
+        // JavaScript 테스트
+        document.getElementById('status2').innerHTML = '✅ JavaScript 실행 성공';
+        
+        // React 앱 마운트 포인트 확인
+        const root = document.getElementById('root');
+        if (root) {
+            document.getElementById('status3').innerHTML = '✅ #root 엘리먼트 존재';
+            root.innerHTML = '<div style="background: #4CAF50; color: white; padding: 20px; border-radius: 8px;">React 앱이 여기에 마운트되어야 합니다.</div>';
+        } else {
+            document.getElementById('status3').innerHTML = '❌ #root 엘리먼트 없음';
+            document.getElementById('status3').className = 'status error';
+        }
+        
+        // localStorage 테스트
+        try {
+            localStorage.setItem('test', 'ok');
+            const test = localStorage.getItem('test');
+            if (test === 'ok') {
+                document.getElementById('status4').innerHTML = '✅ localStorage 작동';
+                localStorage.removeItem('test');
+            }
+        } catch(e) {
+            document.getElementById('status4').innerHTML = '❌ localStorage 오류: ' + e.message;
+            document.getElementById('status4').className = 'status error';
+        }
+        
+        // 로그인 정보 확인
+        const userStr = localStorage.getItem('sagunbok_user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                const userInfo = document.createElement('div');
+                userInfo.className = 'status';
+                userInfo.innerHTML = `
+                    <strong>✅ 로그인 정보 발견:</strong><br>
+                    이름: ${user.name}<br>
+                    타입: ${user.userType}<br>
+                    ${user.userType === 'company' ? '회사: ' + user.companyName : '직급: ' + user.position}
+                `;
+                document.body.appendChild(userInfo);
+            } catch(e) {
+                const errorInfo = document.createElement('div');
+                errorInfo.className = 'status error';
+                errorInfo.innerHTML = '❌ 로그인 정보 파싱 오류: ' + e.message;
+                document.body.appendChild(errorInfo);
+            }
+        } else {
+            const noUserInfo = document.createElement('div');
+            noUserInfo.className = 'status error';
+            noUserInfo.innerHTML = '⚠️ 로그인 정보 없음 (localStorage에 sagunbok_user 없음)';
+            document.body.appendChild(noUserInfo);
+        }
+        
+        // 실제 React 앱 JS 파일 로드 테스트
+        const scriptTest = document.createElement('div');
+        scriptTest.className = 'status';
+        scriptTest.innerHTML = `
+            <strong>📦 React 번들 파일 경로:</strong><br>
+            /assets/index-CpN6aH-r.js<br>
+            <a href="/assets/index-CpN6aH-r.js" target="_blank">파일 확인하기</a>
+        `;
+        document.body.appendChild(scriptTest);
+    </script>
+</body>
+</html>

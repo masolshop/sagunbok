@@ -1,0 +1,17 @@
+[Unit]
+Description=Sagunbok Proxy Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/sagunbok-proxy
+ExecStart=/usr/bin/node /var/www/sagunbok-proxy/proxy-server.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=sagunbok-proxy
+
+[Install]
+WantedBy=multi-user.target

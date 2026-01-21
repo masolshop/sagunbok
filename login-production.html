@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사근복 AI 스튜디오 - 로그인</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 450px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a2332;
+            margin-bottom: 5px;
+        }
+        .logo-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .links {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 600;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .message.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">🔐</div>
+            <div class="logo-text">사근복 AI 스튜디오</div>
+            <div class="logo-subtitle">절세계산 및 기업 리스크 진단 플랫폼</div>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="userType">회원 구분</label>
+                <select id="userType" required>
+                    <option value="company">기업회원</option>
+                    <option value="consultant">사근복 컨설턴트</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">핸드폰번호 (ID)</label>
+                <input type="text" id="phone" placeholder="01012345678" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" placeholder="비밀번호 입력" required>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span id="btnText">로그인</span>
+            </button>
+        </form>
+
+        <div class="links">
+            <a href="#" onclick="alert('회원가입 기능은 관리자에게 문의하세요.'); return false;">회원가입</a>
+            <span style="color: #ddd;">|</span>
+            <a href="#" onclick="alert('ID/비밀번호 찾기는 관리자에게 문의하세요.'); return false;">ID/PW 찾기</a>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://3.34.186.174/api/auth';
+
+        // 이미 로그인된 경우 리다이렉트
+        window.addEventListener('load', function() {
+            const isLoggedIn = localStorage.getItem('sagunbok_logged_in');
+            if (isLoggedIn === 'true') {
+                window.location.href = '/calculator.html';
+            }
+        });
+
+        // 회원 구분 변경 시 기본값 설정
+        document.getElementById('userType').addEventListener('change', function(e) {
+            if (e.target.value === 'consultant') {
+                document.getElementById('phone').value = '01087654321';
+                document.getElementById('password').value = '12345';
+            } else {
+                document.getElementById('phone').value = '01012345678';
+                document.getElementById('password').value = 'test1234';
+            }
+        });
+
+        // 초기 기본값 설정
+        document.getElementById('phone').value = '01012345678';
+        document.getElementById('password').value = 'test1234';
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const userType = document.getElementById('userType').value;
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value;
+
+            // 버튼 비활성화
+            loginBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        phone: phone,
+                        password: password
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 로그인 성공
+                    localStorage.setItem('sagunbok_user', JSON.stringify(data.user));
+                    localStorage.setItem('sagunbok_logged_in', 'true');
+                    
+                    showMessage(`✅ 로그인 성공! ${data.user.name}님, 환영합니다.\n계산기 페이지로 이동합니다...`, 'success');
+                    
+                    // 1초 후 리다이렉트
+                    setTimeout(() => {
+                        window.location.href = '/calculator.html';
+                    }, 1000);
+                } else {
+                    // 로그인 실패
+                    showMessage(`❌ ${data.error}`, 'error');
+                    loginBtn.disabled = false;
+                    btnText.textContent = '로그인';
+                }
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('❌ 로그인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', 'error');
+                loginBtn.disabled = false;
+                btnText.textContent = '로그인';
+            }
+        }
+    </script>
+</body>
+</html>

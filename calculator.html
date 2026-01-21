@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사근복 AI 스튜디오 MVP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background: #1a2332;
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .logo-text {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .menu-section {
+            margin-bottom: 20px;
+        }
+        .menu-item {
+            padding: 12px 16px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .menu-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-weight: 600;
+        }
+        .menu-item::before {
+            content: '📊';
+            margin-right: 10px;
+        }
+        .menu-item.ceo::before { content: '👔'; }
+        .menu-item.expert::before { content: '📋'; }
+        .menu-item.network::before { content: '🌐'; }
+        .menu-item.dashboard::before { content: '📈'; }
+        .admin-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .admin-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .context-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .context-title {
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 5px;
+        }
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 40px;
+        }
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #1a2332;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .logout-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .logout-btn:hover {
+            background: #5568d3;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            color: #1a2332;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .form-input {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-select {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .tab:hover {
+            background: #f5f7fa;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .result-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .result-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .result-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .result-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1a2332;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">S</div>
+            <div class="logo-text">사근복 AI<br>STUDIO MVP</div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-item active">기업절세계산기</div>
+            <div class="menu-item ceo">CEO절세계산기</div>
+            <div class="menu-item expert">직원절세계산기</div>
+            <div class="menu-item network">네트워크세계산기</div>
+            <div class="menu-item dashboard">기업리스크진단</div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-title">• ADMIN DASHBOARD</div>
+            <div class="menu-item dashboard">관리자 대시보드</div>
+        </div>
+
+        <div class="context-info">
+            <div class="context-title">• ACTIVE CONTEXT</div>
+            <div style="color: white; font-weight: 600;">담당자 명함</div>
+            <div style="color: rgba(255,255,255,0.7); margin-top: 5px;">서울 • 0건</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>기업절세계산기</h1>
+            <div class="user-info">
+                <span class="user-name" id="userName">로딩 중...</span>
+                <button class="logout-btn" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+
+        <p style="color: #666; margin-bottom: 30px; font-size: 16px;">
+            사내근로복지기금 출연 시 발생하는 <strong>실질적인 세후 이익을 산출</strong>합니다.
+        </p>
+
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size: 24px;">📊</span>
+                <h2>계산 전 필수 정보 입력</h2>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">회사명</label>
+                    <input type="text" class="form-input" id="companyName" placeholder="페이먼">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">지역 (시/도)</label>
+                    <select class="form-select" id="region">
+                        <option>서울</option>
+                        <option>경기</option>
+                        <option>인천</option>
+                        <option>부산</option>
+                        <option>대구</option>
+                        <option>광주</option>
+                        <option>대전</option>
+                        <option>울산</option>
+                        <option>세종</option>
+                        <option>강원</option>
+                        <option>충북</option>
+                        <option>충남</option>
+                        <option>전북</option>
+                        <option>전남</option>
+                        <option>경북</option>
+                        <option>경남</option>
+                        <option>제주</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">전체 직원 수 (명) <span style="color: #667eea;">⚫ 필필수 대상포함</span></label>
+                    <input type="number" class="form-input" id="employeeCount" placeholder="500">
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active">복리후생비절세</button>
+            <button class="tab">법인세절세</button>
+            <button class="tab">종합소득세절세</button>
+        </div>
+
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">전년도 복리후생비 집행 총액 (원)</label>
+                    <input type="number" class="form-input" id="welfareAmount" placeholder="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">기금 전환 비율 (%)</label>
+                    <select class="form-select" id="conversionRate">
+                        <option>30%</option>
+                        <option>40%</option>
+                        <option>50%</option>
+                        <option>60%</option>
+                        <option>70%</option>
+                        <option>80%</option>
+                        <option>90%</option>
+                        <option>100%</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <div class="result-card">
+                    <div class="result-label">복리후생비 절세액</div>
+                    <div class="result-value" id="taxSaving">0원</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">예상 절감 효과</div>
+                    <div class="result-value" id="savingEffect">0%</div>
+                </div>
+            </div>
+
+            <div class="note">
+                💡 <strong>안내:</strong> 복리후생비를 사근복기금으로 전환하면 법인세 감면 혜택을 받을 수 있습니다.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 로그인 확인
+        window.addEventListener('load', function() {
+            const isLoggedIn = localStorage.getItem('sagunbok_logged_in');
+            const userDataStr = localStorage.getItem('sagunbok_user');
+
+            if (!isLoggedIn || !userDataStr) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const user = JSON.parse(userDataStr);
+                displayUserInfo(user);
+            } catch (error) {
+                console.error('사용자 정보 파싱 오류:', error);
+                alert('사용자 정보 오류. 다시 로그인해주세요.');
+                logout();
+            }
+        });
+
+        function displayUserInfo(user) {
+            document.getElementById('userName').textContent = user.name + ' 님';
+            
+            // 회사명 자동 입력 (기업회원인 경우)
+            if (user.userType === 'company' && user.companyName) {
+                document.getElementById('companyName').value = user.companyName;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('sagunbok_user');
+            localStorage.removeItem('sagunbok_logged_in');
+            alert('로그아웃되었습니다.');
+            window.location.href = '/';
+        }
+
+        // 간단한 계산 로직
+        document.getElementById('welfareAmount').addEventListener('input', calculate);
+        document.getElementById('conversionRate').addEventListener('change', calculate);
+
+        function calculate() {
+            const welfareAmount = parseInt(document.getElementById('welfareAmount').value) || 0;
+            const conversionRate = parseInt(document.getElementById('conversionRate').value) || 30;
+            
+            // 간단한 절세액 계산 (실제 로직은 더 복잡할 수 있음)
+            const taxSaving = Math.floor(welfareAmount * (conversionRate / 100) * 0.22); // 법인세율 22% 가정
+            const savingEffect = welfareAmount > 0 ? ((taxSaving / welfareAmount) * 100).toFixed(1) : 0;
+            
+            document.getElementById('taxSaving').textContent = taxSaving.toLocaleString() + '원';
+            document.getElementById('savingEffect').textContent = savingEffect + '%';
+        }
+
+        // 초기 계산
+        calculate();
+    </script>
+</body>
+</html>

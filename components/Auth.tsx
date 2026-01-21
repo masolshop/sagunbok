@@ -7,7 +7,8 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxMcJ82NqcvWOh5ODzo9ZyQ0zxotgT5oKRJL9CH66JGuNi2V7WpT7XI4CRYWYb11WOB/exec';
+// Apps Script URL - 직접 호출
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbw5c6wArjU15_l6bXfMNe2oMpQXMQtwqvO4eyNQ1BcP1LtSXmYECNj2EatGWP09pDnYQw/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -20,11 +21,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   
   // 기업회원 가입 폼
   const [companyName, setCompanyName] = useState('');
+  const [companyType, setCompanyType] = useState('개인사업자'); // 기업 유형
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [referrer, setReferrer] = useState(''); // 추천인
   
   // 컨설턴트 가입 폼
   const [consultantName, setConsultantName] = useState('');
@@ -40,14 +43,42 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    const response = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...data }),
+    // Apps Script는 GET 요청의 쿼리 파라미터로 받음
+    const params = new URLSearchParams({
+      action,
+      data: JSON.stringify(data)
     });
-    return response.json();
+    
+    const response = await fetch(`${BACKEND_URL}?${params.toString()}`, {
+      method: 'GET',
+      // CORS 없이 접근
+    });
+    
+    const text = await response.text();
+    
+    // Apps Script는 때때로 HTML을 반환할 수 있으므로 JSON 파싱 시도
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('JSON 파싱 실패:', text);
+      throw new Error('서버 응답 형식이 올바르지 않습니다.');
+    }
   };
   
+  // 전화번호 정규화 함수 (하이픈 제거)
+  const normalizePhone = (phone: string) => {
+    return phone.replace(/[^0-9]/g, '');
+  };
+
+  // 전화번호 포맷팅 함수 (010-1234-5678 형식)
+  const formatPhone = (phone: string) => {
+    const cleaned = phone.replace(/[^0-9]/g, '');
+    if (cleaned.length === 11) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
+    }
+    return cleaned;
+  };
+
   const handleLogin = async () => {
     if (!loginPhone || !loginPassword) {
       alert('ID(전화번호)와 비밀번호를 입력해주세요.');
@@ -58,13 +89,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     try {
       const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
       const result = await callAPI(action, {
-        phone: loginPhone,
+        phone: normalizePhone(loginPhone), // 하이픈 제거하여 전송
         password: loginPassword,
       });
       
       if (result.success) {
         localStorage.setItem('sagunbok_user', JSON.stringify(result.user));
-        alert('로그인 성공!');
+        // 로그인 성공 - alert 제거하고 바로 메인으로 이동
         onLoginSuccess(result.user);
       } else {
         alert(result.error || '로그인 실패');
@@ -78,8 +109,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
   
   const handleRegisterCompany = async () => {
-    if (!companyName || !name || !phone || !email || !password) {
-      alert('모든 필드를 입력해주세요.');
+    if (!companyName || !companyType || !name || !phone || !email || !password || !referrer) {
+      alert('모든 필드를 입력해주세요. (추천인은 필수입니다)');
       return;
     }
     
@@ -92,10 +123,12 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     try {
       const result = await callAPI('registerCompany', {
         companyName,
+        companyType,
         name,
-        phone,
+        phone: formatPhone(phone), // 010-1234-5678 형식으로 저장
         email,
         password,
+        referrer, // 추천인
       });
       
       if (result.success) {
@@ -104,11 +137,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         setUserType('company');
         // 폼 초기화
         setCompanyName('');
+        setCompanyType('개인사업자');
         setName('');
         setPhone('');
         setEmail('');
         setPassword('');
         setPasswordConfirm('');
+        setReferrer('');
       } else {
         alert(result.error || '회원가입 실패');
       }
@@ -130,7 +165,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     try {
       const result = await callAPI('registerConsultant', {
         name: consultantName,
-        phone: consultantPhone,
+        phone: formatPhone(consultantPhone), // 010-1234-5678 형식으로 저장
         email: consultantEmail,
         position,
         businessUnit,
@@ -195,7 +230,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     try {
       const result = await callAPI('findPassword', {
-        phone: findPhone,
+        phone: normalizePhone(findPhone), // 하이픈 제거하여 전송
         email: findEmail,
       });
       
@@ -361,6 +396,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setCompanyName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                   />
+                  <select
+                    value={companyType}
+                    onChange={(e) => setCompanyType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    <option value="개인사업자">개인사업자</option>
+                    <option value="법인">법인</option>
+                    <option value="병의원개인사업자">병의원개인사업자</option>
+                    <option value="의료재단">의료재단</option>
+                  </select>
                   <input
                     type="text"
                     placeholder="이름 *"
@@ -396,6 +441,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                   />
+                  <input
+                    type="text"
+                    placeholder="추천인 (사근복 컨설턴트 이름) *"
+                    value={referrer}
+                    onChange={(e) => setReferrer(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <p className="text-xs text-gray-500">
+                    💡 추천인은 사근복 컨설턴트 시트에 등록된 이름과 정확히 일치해야 합니다.
+                  </p>
                   <button
                     onClick={handleRegisterCompany}
                     disabled={loading}
