@@ -7,7 +7,7 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyZW1cSH2GtUvfwfk3nGHWvNMV9PCwlMrrIuc-09Ar7SHi4hpt-5cB08bqJDvWKGMWnhQ/exec';
+const BACKEND_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjWhAwSkbFI17Hu-YUj6VkUEe8cgUQLhHJUymuq_Jbh6k2b6KEbPGtuxfAfHeSeTmymbZ642W7vACjQ9A41xEr_8glBG-87w6xOxe02Z8pq44o05zkwhlMOHxcBzY6CiCX_Ayilv53tGfDbAm8I_UDWyrZg_SmKy53-rLadt1wZv8No5qdbwvnGOiFhxnfyvMJKDJapQmFIO_Hu7j6Pob7jy2NJoNEfY-GjBX8XZyUDQ6f63YHoID6PtC9Ocxs5B1SrvUllHvq_a6TNkXJ4RRAK0J8g7ygL8s7fWb65&lib=MW4evnIIi0B2B-h6TgPwTCM-ZD7H8yrjR';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
