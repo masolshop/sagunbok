@@ -51,7 +51,10 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     
     const response = await fetch(`${BACKEND_URL}?${params.toString()}`, {
       method: 'GET',
-      // CORS 없이 접근
+      redirect: 'follow', // 명시적으로 리다이렉트 따라가기
+      mode: 'cors', // CORS 모드 명시
+      credentials: 'omit', // 쿠키/인증 정보 제외
+      cache: 'no-cache', // 캐시 사용 안 함 (304 에러 방지)
     });
     
     const text = await response.text();
