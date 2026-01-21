@@ -670,25 +670,6 @@ function doPost(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
-        result = { success: false, error: '알 수 없는 action입니다: ' + action };
-    }
-    
-    Logger.log('응답: ' + JSON.stringify(result));
-    
-    return ContentService
-      .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (error) {
-    Logger.log('doPost 오류: ' + error);
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        error: '요청 처리 중 오류가 발생했습니다: ' + error
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
 
 function doGet(e) {
   // GET 요청으로 action과 data를 받아서 처리
