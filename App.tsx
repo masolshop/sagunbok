@@ -19,6 +19,64 @@ const App: React.FC = () => {
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [showAPISettings, setShowAPISettings] = useState(false);
 
+  // 🔥 State 선언을 조건부 렌더링 이전에 모두 배치
+  const [companyContext, setCompanyContext] = useState<CompanyContext>({
+    companyName: '',
+    region: '서울',
+    employeeCount: null,
+    avgSalary: null,
+    welfareTotal: null,
+    dueFromCeo: null,
+    retainedEarnings: null,
+  });
+
+  const [calculatorInputs, setCalculatorInputs] = useState<any>({
+    prevTaxPaid: '',
+    taxRate: '19',
+    contribution: '',
+    prevWelfareExp: '',
+    convPercent: '30',
+    currentMonthlyTaxable: '',
+    shiftMonthly: '',
+    taxMode: 'bracket',
+    bracketRate: '0.24',
+    retirementType: 'DB',
+    yearsToRetire: '10',
+    yearsServed: '0',
+    netTargetMonthly: '',
+    ownerMarginalRate: '35',
+    ceo_epsMode: 'eps',
+    ceo_sharesOutstanding: '',
+    ceo_sharesToTransfer: '',
+    ceo_assetsFair: '',
+    ceo_liabilitiesFair: '0',
+    ceo_eps1: '',
+    ceo_eps2: '',
+    ceo_eps3: '',
+    ceo_profit1: '',
+    ceo_profit2: '',
+    ceo_profit3: '',
+    ceo_isRealEstateHeavy: 'false',
+    ceo_giftRelation: 'child',
+    ceo_giftPrior10y: '',
+    ceo_giftDeduction: '50000000',
+    ceo_giftOtherAssets: '',
+    ceo_inheritDeduction: '500000000',
+    ceo_inheritOtherAssets: '',
+    ceo_contributionAnnual: '',
+    ceo_effectiveCorpTaxRate: '24.2',
+    ceo_simulateImpact: 'true',
+    ceo_useSpecial: 'false',
+    ceo_specialDeduction: '1000000000',
+    ceo_specialTier2Threshold: '12000000000',
+    ceo_specialRate1: '10',
+    ceo_specialRate2: '20'
+  });
+  const [calcResults, setCalcResults] = useState<CalculationResult[]>([]);
+  const [diagnosisAnswers, setDiagnosisAnswers] = useState<Record<string, number[]>>({});
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
     // localStorage에서 사용자 정보 확인
@@ -76,65 +134,6 @@ const App: React.FC = () => {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
   
-  const [companyContext, setCompanyContext] = useState<CompanyContext>({
-    companyName: '',
-    region: '서울',
-    employeeCount: null,
-    avgSalary: null,
-    welfareTotal: null,
-    dueFromCeo: null,
-    retainedEarnings: null,
-  });
-
-  const [calculatorInputs, setCalculatorInputs] = useState<any>({
-    prevTaxPaid: '',
-    taxRate: '19',
-    contribution: '',
-    prevWelfareExp: '',
-    convPercent: '30',
-    currentMonthlyTaxable: '',
-    shiftMonthly: '',
-    taxMode: 'bracket',
-    bracketRate: '0.24',
-    retirementType: 'DB',
-    yearsToRetire: '10',
-    yearsServed: '0',
-    // 네트급여 전용
-    netTargetMonthly: '',
-    ownerMarginalRate: '35',
-    // CEO 전용
-    ceo_epsMode: 'eps',
-    ceo_sharesOutstanding: '',
-    ceo_sharesToTransfer: '',
-    ceo_assetsFair: '',
-    ceo_liabilitiesFair: '0',
-    ceo_eps1: '',
-    ceo_eps2: '',
-    ceo_eps3: '',
-    ceo_profit1: '',
-    ceo_profit2: '',
-    ceo_profit3: '',
-    ceo_isRealEstateHeavy: 'false',
-    ceo_giftRelation: 'child',
-    ceo_giftPrior10y: '',
-    ceo_giftDeduction: '50000000',
-    ceo_giftOtherAssets: '',
-    ceo_inheritDeduction: '500000000',
-    ceo_inheritOtherAssets: '',
-    ceo_contributionAnnual: '',
-    ceo_effectiveCorpTaxRate: '24.2',
-    ceo_simulateImpact: 'true',
-    ceo_useSpecial: 'false',
-    ceo_specialDeduction: '1000000000',
-    ceo_specialTier2Threshold: '12000000000',
-    ceo_specialRate1: '10',
-    ceo_specialRate2: '20'
-  });
-  const [calcResults, setCalcResults] = useState<CalculationResult[]>([]);
-  const [diagnosisAnswers, setDiagnosisAnswers] = useState<Record<string, number[]>>({});
-  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
-
   const handleSaveReport = () => {
     if (!companyContext.companyName) {
       alert("회사명을 입력해주세요.");
