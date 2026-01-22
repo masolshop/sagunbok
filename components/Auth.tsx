@@ -267,14 +267,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   onClick={() => setUserType('company')}
                   className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
-                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/50 scale-105'
-                      : 'bg-white/80 hover:bg-white shadow-md border-2 border-gray-200'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
                   <span className={`${
                     userType === 'company'
-                      ? 'text-white drop-shadow-lg font-extrabold text-lg'
-                      : 'text-gray-700'
+                      ? 'text-blue-600 font-extrabold text-lg'
+                      : 'text-gray-500'
                   }`}>
                     🏢 기업회원
                   </span>
@@ -283,14 +283,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   onClick={() => setUserType('consultant')}
                   className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
-                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg shadow-purple-500/50 scale-105'
-                      : 'bg-white/80 hover:bg-white shadow-md border-2 border-gray-200'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
                   <span className={`${
                     userType === 'consultant'
-                      ? 'text-white drop-shadow-lg font-extrabold text-lg'
-                      : 'text-gray-700'
+                      ? 'text-blue-600 font-extrabold text-lg'
+                      : 'text-gray-500'
                   }`}>
                     👔 사근복 컨설턴트
                   </span>
@@ -397,14 +397,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   onClick={() => setUserType('company')}
                   className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
-                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/50 scale-105'
-                      : 'bg-white/80 hover:bg-white shadow-md border-2 border-gray-200'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
                   <span className={`${
                     userType === 'company'
-                      ? 'text-white drop-shadow-lg font-extrabold text-lg'
-                      : 'text-gray-700'
+                      ? 'text-blue-600 font-extrabold text-lg'
+                      : 'text-gray-500'
                   }`}>
                     🏢 기업회원
                   </span>
@@ -413,14 +413,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   onClick={() => setUserType('consultant')}
                   className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
-                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg shadow-purple-500/50 scale-105'
-                      : 'bg-white/80 hover:bg-white shadow-md border-2 border-gray-200'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
                   <span className={`${
                     userType === 'consultant'
-                      ? 'text-white drop-shadow-lg font-extrabold text-lg'
-                      : 'text-gray-700'
+                      ? 'text-blue-600 font-extrabold text-lg'
+                      : 'text-gray-500'
                   }`}>
                     👔 사근복 컨설턴트
                   </span>
