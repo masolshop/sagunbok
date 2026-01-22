@@ -127,10 +127,17 @@ const App: React.FC = () => {
     alert("상담 데이터가 성공적으로 저장되었습니다.");
   };
 
+  // 디버깅
+  console.log('🔍 App render - isAuthenticated:', isAuthenticated);
+  console.log('🔍 App render - currentUser:', currentUser);
+  
   // 인증되지 않은 경우 로그인 화면
   if (!isAuthenticated) {
+    console.log('✅ Rendering Auth component');
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
+  
+  console.log('⚠️ Rendering Main App (should not happen without login!)');
 
   // 인증된 경우 메인 앱
   return (
