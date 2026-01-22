@@ -1,9 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import Auth from './components/Auth';
+import { ModuleType, CompanyContext, DiagnosisResult, CalculationResult, ReportSubmission } from './types';
+import CorporateCalculator from './components/CorporateCalculator';
+import CEOCalculator from './components/CEOCalculator';
+import EmployeeCalculator from './components/EmployeeCalculator';
+import NetPayCalculator from './components/NetPayCalculator';
+import Diagnosis from './components/Diagnosis';
+import AdminView from './components/AdminView';
+import AIChat from './components/AIChat';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  
+  const [companyContext, setCompanyContext] = useState<CompanyContext>({
+    companyName: '',
+    region: '서울',
+    employeeCount: null,
+    avgSalary: null,
+    welfareTotal: null,
+    dueFromCeo: null,
+    retainedEarnings: null,
+  });
+
+  const [calculatorInputs, setCalculatorInputs] = useState<any>({
+    prevTaxPaid: '',
+    taxRate: '19',
+    contribution: '',
+    prevWelfareExp: '',
+    convPercent: '30',
+    currentMonthlyTaxable: '',
+    shiftMonthly: '',
+    taxMode: 'bracket',
+    bracketRate: '0.24',
+    retirementType: 'DB',
+    yearsToRetire: '10',
+    yearsServed: '0',
+    // 네트급여 전용
+    netTargetMonthly: '',
+    ownerMarginalRate: '35',
+    // CEO 전용
+    ceo_epsMode: 'eps',
+    ceo_sharesOutstanding: '',
+    ceo_sharesToTransfer: '',
+    ceo_assetsFair: '',
+    ceo_liabilitiesFair: '0',
+    ceo_eps1: '',
+    ceo_eps2: '',
+    ceo_eps3: '',
+    ceo_profit1: '',
+    ceo_profit2: '',
+    ceo_profit3: '',
+    ceo_isRealEstateHeavy: 'false',
+    ceo_giftRelation: 'child',
+    ceo_giftPrior10y: '',
+    ceo_giftDeduction: '50000000',
+    ceo_giftOtherAssets: '',
+    ceo_inheritDeduction: '500000000',
+    ceo_inheritOtherAssets: '',
+    ceo_contributionAnnual: '',
+    ceo_effectiveCorpTaxRate: '24.2',
+    ceo_simulateImpact: 'true',
+    ceo_useSpecial: 'false',
+    ceo_specialDeduction: '1000000000',
+    ceo_specialTier2Threshold: '12000000000',
+    ceo_specialRate1: '10',
+    ceo_specialRate2: '20'
+  });
+  
+  const [calcResults, setCalcResults] = useState<CalculationResult[]>([]);
+  const [diagnosisAnswers, setDiagnosisAnswers] = useState<Record<string, number[]>>({});
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
@@ -13,6 +83,14 @@ const App: React.FC = () => {
         const user = JSON.parse(savedUser);
         setCurrentUser(user);
         setIsAuthenticated(true);
+        
+        // 사용자 정보를 companyContext에 반영
+        if (user.companyName) {
+          setCompanyContext(prev => ({
+            ...prev,
+            companyName: user.companyName
+          }));
+        }
       } catch (error) {
         console.error('Failed to parse saved user:', error);
         localStorage.removeItem('sagunbok_user');
@@ -25,6 +103,14 @@ const App: React.FC = () => {
     setCurrentUser(user);
     setIsAuthenticated(true);
     localStorage.setItem('sagunbok_user', JSON.stringify(user));
+    
+    // 사용자 정보를 companyContext에 반영
+    if (user.companyName) {
+      setCompanyContext(prev => ({
+        ...prev,
+        companyName: user.companyName
+      }));
+    }
   };
 
   // 로그아웃 핸들러
@@ -32,6 +118,39 @@ const App: React.FC = () => {
     localStorage.removeItem('sagunbok_user');
     setCurrentUser(null);
     setIsAuthenticated(false);
+    // 계산기 데이터 초기화
+    setCompanyContext({
+      companyName: '',
+      region: '서울',
+      employeeCount: null,
+      avgSalary: null,
+      welfareTotal: null,
+      dueFromCeo: null,
+      retainedEarnings: null,
+    });
+    setCalcResults([]);
+    setDiagnosisResult(null);
+    setAiAnalysis(null);
+  };
+
+  const handleSaveReport = () => {
+    if (!companyContext.companyName) {
+      alert("회사명을 입력해주세요.");
+      return;
+    }
+    const newSubmission: ReportSubmission = {
+      id: crypto.randomUUID(),
+      companyName: companyContext.companyName,
+      companyContext,
+      diagnosisResult,
+      calcResults,
+      aiAnalysis,
+      submittedAt: new Date().toISOString()
+    };
+
+    const existing = JSON.parse(localStorage.getItem('sagunbok_submissions') || '[]');
+    localStorage.setItem('sagunbok_submissions', JSON.stringify([...existing, newSubmission]));
+    alert("상담 데이터가 성공적으로 저장되었습니다.");
   };
 
   // 인증되지 않은 경우 로그인 화면 표시
@@ -39,89 +158,191 @@ const App: React.FC = () => {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 로그인 성공 후 대시보드
+  // 로그인 성공 후 사근복 절세 계산기 표시
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
-      <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-12 border-4 border-blue-100">
-        {/* 로고 */}
-        <div className="flex items-center justify-center space-x-4 mb-12">
-          <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center font-black text-3xl text-white shadow-lg transform rotate-3">
-            S
-          </div>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
+      {/* Sidebar Nav */}
+      <nav className="w-full lg:w-72 bg-[#0f2e44] text-white flex flex-col p-8 space-y-10 sticky top-0 lg:h-screen z-20 shadow-2xl">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center font-black text-xl shadow-lg transform rotate-3">S</div>
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-gray-900">사근복 AI</h1>
-            <p className="text-sm text-blue-600 font-bold uppercase tracking-widest">Studio v2.5</p>
+            <span className="text-xl font-black tracking-tighter block leading-none">사근복 AI</span>
+            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Studio v2.5</span>
           </div>
         </div>
+        
+        {/* 사용자 정보 표시 */}
+        <div className="p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
+          <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+            Logged In
+          </div>
+          <div className="text-sm font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+          <div className="text-[11px] text-slate-400 mt-1">
+            {currentUser?.userType === 'company' ? '🏢 기업회원' : '👔 컨설턴트'}
+          </div>
+        </div>
+        
+        <div className="flex flex-col space-y-4">
+          <button 
+            onClick={() => setActiveTab('corp')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'corp' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>기업절세계산기</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'corp' ? 'opacity-100' : ''}`}>📊</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('ceo')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'ceo' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>CEO절세계산기</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'ceo' ? 'opacity-100' : ''}`}>👑</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('emp')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'emp' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>직원절세계산기</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'emp' ? 'opacity-100' : ''}`}>👤</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('net')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'net' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>네트급여계산기</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'net' ? 'opacity-100' : ''}`}>🧮</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('diag')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'diag' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>기업리스크진단</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'diag' ? 'opacity-100' : ''}`}>🩺</span>
+          </button>
+        </div>
 
-        {/* 사용자 정보 */}
-        <div className="mb-12 p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-600 font-bold uppercase tracking-widest">
-              {currentUser?.userType === 'company' ? '🏢 기업회원' : '👔 Sagunbok 컨설턴트'}
-            </span>
-          </div>
-          <div className="text-2xl font-black text-gray-900 mb-2">
-            {currentUser?.name || '사용자'}
-          </div>
-          <div className="text-base text-gray-600">
-            {currentUser?.userType === 'company' ? currentUser?.companyName : currentUser?.position}
-          </div>
-          {currentUser?.phone && (
-            <div className="text-sm text-gray-500 mt-2">
-              📱 {currentUser.phone}
+        <div className="mt-auto space-y-6">
+          <button 
+            onClick={() => setActiveTab('admin')}
+            className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed ${activeTab === 'admin' ? 'bg-white/10 border-white text-white' : 'border-slate-700 text-slate-500 hover:text-slate-300'}`}
+          >
+            ADMIN DASHBOARD
+          </button>
+          
+          <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
+            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+              Active Context
             </div>
+            <div className="text-sm font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
+            <div className="text-[11px] text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
+          </div>
+
+          {/* 로그아웃 버튼 */}
+          <button 
+            onClick={handleLogout}
+            className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+          >
+            🚪 로그아웃
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
+        <div className="max-w-5xl mx-auto pb-24 lg:pb-0">
+          {activeTab === 'corp' && (
+            <CorporateCalculator 
+              companyContext={companyContext}
+              setCompanyContext={setCompanyContext}
+              inputs={calculatorInputs}
+              setInputs={setCalculatorInputs}
+              setCalcResults={setCalcResults}
+              calcResults={calcResults}
+            />
+          )}
+
+          {activeTab === 'ceo' && (
+            <CEOCalculator 
+              companyContext={companyContext}
+              setCompanyContext={setCompanyContext}
+              inputs={calculatorInputs}
+              setInputs={setCalculatorInputs}
+              setCalcResults={setCalcResults}
+              calcResults={calcResults}
+            />
+          )}
+
+          {activeTab === 'emp' && (
+            <EmployeeCalculator 
+              companyContext={companyContext}
+              setCompanyContext={setCompanyContext}
+              inputs={calculatorInputs}
+              setInputs={setCalculatorInputs}
+              setCalcResults={setCalcResults}
+              calcResults={calcResults}
+            />
+          )}
+
+          {activeTab === 'net' && (
+            <NetPayCalculator 
+              companyContext={companyContext}
+              setCompanyContext={setCompanyContext}
+              inputs={calculatorInputs}
+              setInputs={setCalculatorInputs}
+              setCalcResults={setCalcResults}
+              calcResults={calcResults}
+            />
+          )}
+
+          {activeTab === 'diag' && (
+            <Diagnosis 
+              companyContext={companyContext}
+              setCompanyContext={setCompanyContext}
+              answers={diagnosisAnswers}
+              setAnswers={setDiagnosisAnswers}
+              setDiagnosisResult={setDiagnosisResult}
+              setAiAnalysis={setAiAnalysis}
+              aiAnalysis={aiAnalysis}
+              diagnosisResult={diagnosisResult}
+              onSave={handleSaveReport}
+            />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminView />
           )}
         </div>
+      </main>
 
-        {/* 성공 메시지 */}
-        <div className="mb-8 p-6 bg-green-50 rounded-2xl border-2 border-green-200">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">✅</span>
-            <h2 className="text-xl font-bold text-green-800">로그인 성공!</h2>
-          </div>
-          <p className="text-green-700 leading-relaxed">
-            Google Sheets와 연동된 로그인 시스템이 정상적으로 작동하고 있습니다.
-          </p>
-        </div>
+      {/* Desktop AI Assistant Sidebar */}
+      <aside className="w-full lg:w-[400px] bg-white border-l border-slate-200 hidden xl:block p-8">
+        <AIChat 
+          companyContext={companyContext}
+          calcResults={calcResults}
+          diagnosisResult={diagnosisResult}
+        />
+      </aside>
 
-        {/* 시스템 정보 */}
-        <div className="mb-8 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
-          <h3 className="text-lg font-bold text-blue-900 mb-3">🔧 활성화된 기능</h3>
-          <ul className="space-y-2 text-blue-800">
-            <li className="flex items-center gap-2">
-              <span className="text-green-500 font-bold">✓</span>
-              <span>로그인/회원가입 (추천인 + 기업유형)</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-500 font-bold">✓</span>
-              <span>Google Sheets 연동</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-500 font-bold">✓</span>
-              <span>Google Apps Script 백엔드</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-green-500 font-bold">✓</span>
-              <span>CORS Proxy 서버</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* 로그아웃 버튼 */}
-        <button
-          onClick={handleLogout}
-          className="w-full py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl font-bold text-lg hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+      {/* Mobile AI Chat Toggle & Overlay */}
+      <div className="xl:hidden">
+        <button 
+          onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-[#1a5f7a] text-white rounded-full shadow-2xl z-50 flex items-center justify-center text-2xl animate-bounce hover:animate-none"
         >
-          🚪 로그아웃
+          {isMobileChatOpen ? '✕' : '🤖'}
         </button>
-
-        {/* 푸터 */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p className="mb-2">💾 로그인 데이터는 localStorage에 안전하게 저장됩니다</p>
-          <p className="text-xs text-gray-400">🔗 Google Sheets: 승인된 사용자 관리</p>
-        </div>
+        {isMobileChatOpen && (
+          <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsMobileChatOpen(false)}>
+            <div className="absolute bottom-24 right-6 left-6 top-20 bg-white rounded-[32px] shadow-2xl overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+              <AIChat 
+                companyContext={companyContext}
+                calcResults={calcResults}
+                diagnosisResult={diagnosisResult}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
