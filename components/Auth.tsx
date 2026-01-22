@@ -318,7 +318,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   </div>
                   <input
                     type="password"
-                    placeholder={userType === 'consultant' ? '비밀번호 (12345)' : '비밀번호'}
+                    placeholder="비밀번호"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
@@ -326,13 +326,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   />
                 </div>
                 
-                {userType === 'consultant' && (
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-4 text-center shadow-sm">
-                    <p className="text-sm text-amber-900 font-semibold">
-                      💡 컨설턴트 비밀번호는 <span className="text-lg font-black text-amber-700">12345</span> 입니다.
-                    </p>
-                  </div>
-                )}
+
               </div>
 
               <button
