@@ -77,20 +77,20 @@ const App: React.FC = () => {
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
-  // 로그인 상태 복구
-  useEffect(() => {
-    const savedUser = localStorage.getItem('sagunbok_user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('sagunbok_user');
-      }
-    }
-  }, []);
+  // 로그인 상태 복구 - 주석 처리하여 항상 로그인 화면 표시
+  // useEffect(() => {
+  //   const savedUser = localStorage.getItem('sagunbok_user');
+  //   if (savedUser) {
+  //     try {
+  //       const user = JSON.parse(savedUser);
+  //       setCurrentUser(user);
+  //       setIsAuthenticated(true);
+  //     } catch (error) {
+  //       console.error('Failed to parse saved user:', error);
+  //       localStorage.removeItem('sagunbok_user');
+  //     }
+  //   }
+  // }, []);
 
   // 로그인 성공
   const handleLoginSuccess = (user: any) => {
