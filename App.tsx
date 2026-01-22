@@ -11,6 +11,13 @@ import AIChat from './components/AIChat';
 import Auth from './components/Auth';
 
 const App: React.FC = () => {
+  // 🚨 강제로 localStorage 삭제 (개발 중)
+  useEffect(() => {
+    console.log('🗑️ Clearing localStorage for development...');
+    localStorage.removeItem('sagunbok_user');
+    localStorage.removeItem('sagunbok_submissions');
+  }, []);
+  
   // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
