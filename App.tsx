@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ModuleType, CompanyContext, DiagnosisResult, CalculationResult, ReportSubmission } from './types';
 import CorporateCalculator from './components/CorporateCalculator';
@@ -7,15 +8,15 @@ import NetPayCalculator from './components/NetPayCalculator';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import AIChat from './components/AIChat';
-import APIKeySettings from './components/APIKeySettings';
 import Auth from './components/Auth';
 
 const App: React.FC = () => {
+  // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  
   const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
-  const [showAPISettings, setShowAPISettings] = useState(false);
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
     companyName: '',
@@ -40,8 +41,10 @@ const App: React.FC = () => {
     retirementType: 'DB',
     yearsToRetire: '10',
     yearsServed: '0',
+    // 네트급여 전용
     netTargetMonthly: '',
     ownerMarginalRate: '35',
+    // CEO 전용
     ceo_epsMode: 'eps',
     ceo_sharesOutstanding: '',
     ceo_sharesToTransfer: '',
@@ -74,7 +77,7 @@ const App: React.FC = () => {
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
-  // 로그인 상태 확인 (컴포넌트 마운트 시)
+  // 로그인 상태 복구
   useEffect(() => {
     const savedUser = localStorage.getItem('sagunbok_user');
     if (savedUser) {
@@ -89,18 +92,19 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 로그인 성공 핸들러
+  // 로그인 성공
   const handleLoginSuccess = (user: any) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
+    setActiveTab('corp'); // 로그인 후 기업절세계산기 표시
     localStorage.setItem('sagunbok_user', JSON.stringify(user));
   };
 
-  // 로그아웃 핸들러
+  // 로그아웃
   const handleLogout = () => {
-    localStorage.removeItem('sagunbok_user');
     setCurrentUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('sagunbok_user');
   };
 
   const handleSaveReport = () => {
@@ -123,11 +127,12 @@ const App: React.FC = () => {
     alert("상담 데이터가 성공적으로 저장되었습니다.");
   };
 
-  // 인증되지 않은 경우 로그인 화면 표시
+  // 인증되지 않은 경우 로그인 화면
   if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // 인증된 경우 메인 앱
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
       {/* Sidebar Nav */}
@@ -179,40 +184,11 @@ const App: React.FC = () => {
         </div>
 
         <div className="mt-auto space-y-6">
-          {/* 사용자 정보 */}
-          <div className="p-5 bg-black/30 rounded-2xl border border-white/10 backdrop-blur-md">
-            <div className="text-[10px] text-green-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-              {currentUser?.userType === 'company' ? '기업회원' : 'Sagunbok 컨설턴트'}
-            </div>
-            <div className="text-sm font-black truncate text-white">
-              {currentUser?.name || '사용자'}
-            </div>
-            <div className="text-[11px] text-slate-300 mt-1">
-              {currentUser?.userType === 'company' ? currentUser?.companyName : currentUser?.position}
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setShowAPISettings(true)}
-            className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed border-slate-700 text-slate-300 hover:border-blue-400 hover:text-blue-400 hover:bg-white/5"
-          >
-            🔑 API 키 설정
-          </button>
-
           <button 
             onClick={() => setActiveTab('admin')}
             className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed ${activeTab === 'admin' ? 'bg-white/10 border-white text-white' : 'border-slate-700 text-slate-500 hover:text-slate-300'}`}
           >
             ADMIN DASHBOARD
-          </button>
-
-          {/* 로그아웃 버튼 */}
-          <button 
-            onClick={handleLogout}
-            className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 hover:border-red-400"
-          >
-            🚪 로그아웃
           </button>
           
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
@@ -223,6 +199,20 @@ const App: React.FC = () => {
             <div className="text-sm font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
             <div className="text-[11px] text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
           </div>
+
+          {/* 사용자 정보 & 로그아웃 */}
+          {currentUser && (
+            <div className="p-4 bg-black/20 rounded-2xl border border-white/5">
+              <div className="text-xs text-blue-400 font-bold mb-2">로그인 정보</div>
+              <div className="text-sm font-bold truncate">{currentUser.name || currentUser.phone}</div>
+              <button 
+                onClick={handleLogout}
+                className="mt-3 w-full py-2 px-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-xs font-bold text-red-400 transition-all"
+              >
+                로그아웃
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -279,52 +269,50 @@ const App: React.FC = () => {
               setCompanyContext={setCompanyContext}
               answers={diagnosisAnswers}
               setAnswers={setDiagnosisAnswers}
-              setDiagnosisResult={setDiagnosisResult}
-              setAiAnalysis={setAiAnalysis}
-              aiAnalysis={aiAnalysis}
-              diagnosisResult={diagnosisResult}
-              onSave={handleSaveReport}
+              result={diagnosisResult}
+              setResult={setDiagnosisResult}
             />
           )}
 
           {activeTab === 'admin' && (
-            <AdminView />
+            <AdminView 
+              companyContext={companyContext}
+              calcResults={calcResults}
+              diagnosisResult={diagnosisResult}
+              aiAnalysis={aiAnalysis}
+              setAiAnalysis={setAiAnalysis}
+              onSaveReport={handleSaveReport}
+            />
           )}
         </div>
       </main>
 
-      {/* Desktop AI Assistant Sidebar */}
-      <aside className="w-full lg:w-[400px] bg-white border-l border-slate-200 hidden xl:block p-8">
-        <AIChat 
-          companyContext={companyContext}
-          calcResults={calcResults}
-          diagnosisResult={diagnosisResult}
-        />
-      </aside>
+      {/* Mobile AI Chat FAB */}
+      <button 
+        onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
+        className="lg:hidden fixed bottom-6 right-6 w-16 h-16 bg-[#1a5f7a] text-white rounded-full shadow-2xl flex items-center justify-center text-3xl z-30 active:scale-95 transition-transform"
+      >
+        💬
+      </button>
 
-      {/* Mobile AI Chat Toggle & Overlay */}
-      <div className="xl:hidden">
-        <button 
-          onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-[#1a5f7a] text-white rounded-full shadow-2xl z-50 flex items-center justify-center text-2xl animate-bounce hover:animate-none"
-        >
-          {isMobileChatOpen ? '✕' : '🤖'}
-        </button>
-        {isMobileChatOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsMobileChatOpen(false)}>
-            <div className="absolute bottom-24 right-6 left-6 top-20 bg-white rounded-[32px] shadow-2xl overflow-hidden p-6" onClick={e => e.stopPropagation()}>
-              <AIChat 
-                companyContext={companyContext}
-                calcResults={calcResults}
-                diagnosisResult={diagnosisResult}
-              />
+      {/* Mobile AI Chat Overlay */}
+      {isMobileChatOpen && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-40 flex items-end" onClick={() => setIsMobileChatOpen(false)}>
+          <div className="bg-white rounded-t-3xl p-6 w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-black">AI 컨설턴트</h3>
+              <button onClick={() => setIsMobileChatOpen(false)} className="text-3xl">✕</button>
             </div>
+            <AIChat 
+              companyContext={companyContext}
+              calcResults={calcResults}
+              diagnosisResult={diagnosisResult}
+              aiAnalysis={aiAnalysis}
+              setAiAnalysis={setAiAnalysis}
+            />
           </div>
-        )}
-      </div>
-
-      {/* API Key Settings Modal */}
-      {showAPISettings && <APIKeySettings onClose={() => setShowAPISettings(false)} />}
+        </div>
+      )}
     </div>
   );
 };
