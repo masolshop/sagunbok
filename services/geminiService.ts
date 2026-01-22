@@ -1,7 +1,14 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const getAIClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// API 키를 로컬 스토리지나 세션에서 가져옴
+const getAIClient = () => {
+  const apiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key') || '';
+  if (!apiKey) {
+    throw new Error('API 키가 설정되지 않았습니다. 설정 메뉴에서 API 키를 입력해주세요.');
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const safeParseJSON = (text: string) => {
   try {
