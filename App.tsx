@@ -12,14 +12,12 @@ import APIKeySettings from './components/APIKeySettings';
 import Auth from './components/Auth';
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // 로그인 필요
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true); // 초기 로딩 상태
-  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
-  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'ai' | 'admin'>('corp');
   const [showAPISettings, setShowAPISettings] = useState(false);
-
-  // 🔥 State 선언을 조건부 렌더링 이전에 모두 배치
+  
+  // 모든 useState를 먼저 선언 (Hook Rules)
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
     companyName: '',
     region: '서울',
@@ -43,8 +41,10 @@ const App: React.FC = () => {
     retirementType: 'DB',
     yearsToRetire: '10',
     yearsServed: '0',
+    // 네트급여 전용
     netTargetMonthly: '',
     ownerMarginalRate: '35',
+    // CEO 전용
     ceo_epsMode: 'eps',
     ceo_sharesOutstanding: '',
     ceo_sharesToTransfer: '',
@@ -79,28 +79,17 @@ const App: React.FC = () => {
 
   // 로그인 상태 확인 (컴포넌트 마운트 시)
   useEffect(() => {
-    // localStorage에서 사용자 정보 확인
     const savedUser = localStorage.getItem('sagunbok_user');
-    
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
-        // 유효한 사용자 정보가 있는 경우에만 자동 로그인
-        if (user && user.phone) {
-          setCurrentUser(user);
-          setIsAuthenticated(true);
-        } else {
-          // 유효하지 않은 데이터 제거
-          localStorage.removeItem('sagunbok_user');
-        }
+        setCurrentUser(user);
+        setIsAuthenticated(true);
       } catch (error) {
         console.error('Failed to parse saved user:', error);
         localStorage.removeItem('sagunbok_user');
       }
     }
-    
-    // 로딩 완료
-    setIsLoading(false);
   }, []);
 
   // 로그인 성공 핸들러
@@ -117,23 +106,6 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
   };
 
-  // 로딩 중일 때 로딩 화면 표시
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-semibold">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // 인증되지 않은 경우 로그인 화면 표시
-  if (!isAuthenticated) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
-  }
-  
   const handleSaveReport = () => {
     if (!companyContext.companyName) {
       alert("회사명을 입력해주세요.");
@@ -153,6 +125,11 @@ const App: React.FC = () => {
     localStorage.setItem('sagunbok_submissions', JSON.stringify([...existing, newSubmission]));
     alert("상담 데이터가 성공적으로 저장되었습니다.");
   };
+
+  // 인증되지 않은 경우 로그인 화면 표시
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
@@ -202,6 +179,13 @@ const App: React.FC = () => {
             <span>기업리스크진단</span>
             <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'diag' ? 'opacity-100' : ''}`}>🩺</span>
           </button>
+          <button 
+            onClick={() => setActiveTab('ai')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'ai' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>AI 컨설턴트</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'ai' ? 'opacity-100' : ''}`}>🤖</span>
+          </button>
         </div>
 
         <div className="mt-auto space-y-6">
@@ -209,13 +193,13 @@ const App: React.FC = () => {
           <div className="p-5 bg-black/30 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="text-[10px] text-green-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-              로그인 중
+              {currentUser?.userType === 'company' ? '기업회원' : 'Sagunbok 컨설턴트'}
             </div>
             <div className="text-sm font-black truncate text-white">
               {currentUser?.name || '사용자'}
             </div>
             <div className="text-[11px] text-slate-300 mt-1">
-              {currentUser?.phone || ''}
+              {currentUser?.userType === 'company' ? currentUser?.companyName : currentUser?.position}
             </div>
           </div>
 
@@ -252,9 +236,9 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Now Full Width */}
       <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
-        <div className="max-w-5xl mx-auto pb-24 lg:pb-0">
+        <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
           {activeTab === 'corp' && (
             <CorporateCalculator 
               companyContext={companyContext}
@@ -316,38 +300,18 @@ const App: React.FC = () => {
           {activeTab === 'admin' && (
             <AdminView />
           )}
-        </div>
-      </main>
 
-      {/* Desktop AI Assistant Sidebar */}
-      <aside className="w-full lg:w-[400px] bg-white border-l border-slate-200 hidden xl:block p-8">
-        <AIChat 
-          companyContext={companyContext}
-          calcResults={calcResults}
-          diagnosisResult={diagnosisResult}
-        />
-      </aside>
-
-      {/* Mobile AI Chat Toggle & Overlay */}
-      <div className="xl:hidden">
-        <button 
-          onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-[#1a5f7a] text-white rounded-full shadow-2xl z-50 flex items-center justify-center text-2xl animate-bounce hover:animate-none"
-        >
-          {isMobileChatOpen ? '✕' : '🤖'}
-        </button>
-        {isMobileChatOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsMobileChatOpen(false)}>
-            <div className="absolute bottom-24 right-6 left-6 top-20 bg-white rounded-[32px] shadow-2xl overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+          {activeTab === 'ai' && (
+            <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl">
               <AIChat 
                 companyContext={companyContext}
                 calcResults={calcResults}
                 diagnosisResult={diagnosisResult}
               />
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </main>
 
       {/* API Key Settings Modal */}
       {showAPISettings && <APIKeySettings onClose={() => setShowAPISettings(false)} />}
