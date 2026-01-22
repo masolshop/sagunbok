@@ -10,6 +10,12 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
         strictPort: false,
         allowedHosts: ['.sandbox.novita.ai'],
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store'
+        },
         proxy: {
           '/api': {
             target: 'http://localhost:3001',
