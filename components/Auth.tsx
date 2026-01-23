@@ -67,7 +67,6 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       
       if (result.success) {
         localStorage.setItem('sagunbok_user', JSON.stringify(result.user));
-        alert('로그인 성공!');
         onLoginSuccess(result.user);
       } else {
         alert(result.error || '로그인 실패');
