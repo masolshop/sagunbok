@@ -210,20 +210,22 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             <>
               <div className="space-y-6">
                 <label className="text-2xl lg:text-4xl font-black text-slate-700 block tracking-tight">
-                  {currentModule === ModuleType.CORP_TAX ? '전년도 법인세 납부액' : '전년도 종합소득세 납부액'} (원)
+                  {currentModule === ModuleType.CORP_TAX ? '전년도 법인세 납부액 (원)' : '전년도 종합소득세 납부액 (원)'}
                 </label>
-                <div className="space-y-4">
+                <div className="relative">
                   <input 
                     type="text" 
                     value={inputs.prevTaxPaid || ''} 
                     onChange={(e) => setInputs({...inputs, prevTaxPaid: formatNumber(e.target.value)})} 
                     className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-4xl font-black outline-none shadow-inner tracking-tighter" 
-                    placeholder="0" 
+                    placeholder="300,000,000" 
                   />
-                  <div className="bg-blue-50/50 border-2 border-blue-100 rounded-2xl p-4 flex justify-end items-center gap-3">
-                    <span className="text-blue-600 font-black text-2xl lg:text-4xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).eok}</span>
-                    <span className="text-blue-400 font-black text-2xl lg:text-4xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).man}</span>
-                  </div>
+                  {inputs.prevTaxPaid && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                      <span className="text-blue-600 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).eok}</span>
+                      <span className="text-blue-400 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).man}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-6">
@@ -240,18 +242,20 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
               </div>
               <div className="space-y-6 md:col-span-2">
                 <label className="text-2xl lg:text-4xl font-black text-slate-700 block tracking-tight">기금 출연 예정액 (원)</label>
-                <div className="space-y-4">
+                <div className="relative">
                   <input 
                     type="text" 
                     value={inputs.contribution || ''} 
                     onChange={(e) => setInputs({...inputs, contribution: formatNumber(e.target.value)})} 
                     className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-4xl font-black outline-none shadow-inner tracking-tighter" 
-                    placeholder="0" 
+                    placeholder="50,000,000" 
                   />
-                  <div className="bg-blue-50/50 border-2 border-blue-100 rounded-2xl p-4 flex justify-end items-center gap-3">
-                    <span className="text-blue-600 font-black text-2xl lg:text-4xl">{convertToKoreanUnitParts(inputs.contribution).eok}</span>
-                    <span className="text-blue-400 font-black text-2xl lg:text-4xl">{convertToKoreanUnitParts(inputs.contribution).man}</span>
-                  </div>
+                  {inputs.contribution && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                      <span className="text-blue-600 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.contribution).eok}</span>
+                      <span className="text-blue-400 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.contribution).man}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
