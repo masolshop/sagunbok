@@ -267,38 +267,54 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
           {/* 로그인 모드 */}
           {mode === 'login' && (
             <div className="space-y-6">
-              {/* 회원 구분 탭 - 모던 디자인 */}
-              <div className="flex space-x-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
+              {/* 회원 구분 탭 - 3개 (기업회원 / 매니저 / 컨설턴트) */}
+              <div className="grid grid-cols-3 gap-2 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
                 <button
                   onClick={() => setUserType('company')}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
+                  className={`py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
                       ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
                       : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
-                  <span className={`${
+                  <span className={`text-sm ${
                     userType === 'company'
-                      ? 'text-blue-600 font-extrabold text-lg'
+                      ? 'text-blue-600 font-extrabold'
                       : 'text-gray-500'
                   }`}>
                     🏢 기업회원
                   </span>
                 </button>
                 <button
+                  onClick={() => setUserType('manager')}
+                  className={`py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
+                    userType === 'manager'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
+                  }`}
+                >
+                  <span className={`text-sm ${
+                    userType === 'manager'
+                      ? 'text-blue-600 font-extrabold'
+                      : 'text-gray-500'
+                  }`}>
+                    👤 매니저
+                  </span>
+                </button>
+                <button
                   onClick={() => setUserType('consultant')}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
+                  className={`py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
                       ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
                       : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
-                  <span className={`${
+                  <span className={`text-sm ${
                     userType === 'consultant'
-                      ? 'text-blue-600 font-extrabold text-lg'
+                      ? 'text-blue-600 font-extrabold'
                       : 'text-gray-500'
                   }`}>
-                    👔 사근복 컨설턴트
+                    👔 컨설턴트
                   </span>
                 </button>
               </div>
