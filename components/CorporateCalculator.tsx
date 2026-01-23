@@ -356,12 +356,22 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14 px-2">
+              <div className="space-y-10 px-2">
+                {/* 기금출연시 절세효과 제목 */}
+                <div className="text-center">
+                  <div className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-green-500 rounded-3xl shadow-lg">
+                    <span className="text-2xl lg:text-3xl font-black text-white">
+                      {parseNumber(res.inputs.contribution).toLocaleString()}원 기금출연시 절세효과
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
                 <div className="p-12 lg:p-14 bg-blue-50 rounded-[60px] border-2 border-blue-100 space-y-10 shadow-xl">
                   <div className="space-y-6">
                     <div className="text-lg font-black text-blue-400 uppercase tracking-widest mb-2">최종 절세 예상액 (국세+지방세)</div>
                     <div className="text-3xl lg:text-5xl xl:text-6xl font-black text-blue-700 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
-                    <div className="text-3xl lg:text-4xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
+                    <div className="text-2xl lg:text-3xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
                   </div>
                   <div className="grid grid-cols-2 gap-10 pt-10 border-t-4 border-blue-100 mt-10">
                     <div className="space-y-3">
@@ -382,11 +392,12 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                   </div>
                   <div className="flex justify-between items-end border-t-2 border-white/10 pt-10 relative z-10">
                     <span className="text-2xl lg:text-3xl font-bold text-slate-400">출연 후 예상 세액</span>
-                    <div className="text-right space-y-4 max-w-full overflow-hidden">
-                      <div className="text-4xl lg:text-7xl font-black text-green-400 leading-tight tracking-tighter break-all">₩{res.result.netTaxAfterContribution.toLocaleString()}</div>
+                    <div className="text-right space-y-3">
+                      <div className="text-3xl lg:text-5xl xl:text-6xl font-black text-green-400 leading-tight tracking-tighter">₩{res.result.netTaxAfterContribution.toLocaleString()}</div>
                       <div className="text-xl lg:text-2xl text-slate-400 font-bold bg-white/5 px-5 py-2 rounded-full inline-block">약 {Math.round((res.result.taxSaving / res.result.prevTaxPaid) * 100 || 0)}% 감소 효과</div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             )}
