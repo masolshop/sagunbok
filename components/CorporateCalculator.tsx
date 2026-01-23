@@ -309,12 +309,12 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-b border-white/10 pb-14 relative z-10">
                     <div className="space-y-6">
                       <div className="text-2xl lg:text-3xl font-black text-slate-400">기업 4대보험 총 절감액 (약 11%)</div>
-                      <div className="text-4xl lg:text-5xl font-black text-blue-400 break-all leading-tight tracking-tighter">₩{res.result.employerSaving.toLocaleString()}</div>
+                      <div className="text-3xl lg:text-4xl font-black text-blue-400 break-all leading-tight tracking-tighter">₩{res.result.employerSaving.toLocaleString()}</div>
                       <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employerSaving)})</div>
                     </div>
                     <div className="space-y-6">
                       <div className="text-2xl lg:text-3xl font-black text-slate-400">근로자 전체 실질소득 증가</div>
-                      <div className="text-4xl lg:text-5xl font-black text-green-400 break-all leading-tight tracking-tighter">₩{res.result.employeeSaving.toLocaleString()}</div>
+                      <div className="text-3xl lg:text-4xl font-black text-green-400 break-all leading-tight tracking-tighter">₩{res.result.employeeSaving.toLocaleString()}</div>
                       <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employeeSaving)})</div>
                     </div>
                   </div>
@@ -322,7 +322,7 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                   <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 relative z-10">
                     <div className="text-2xl lg:text-3xl font-black text-slate-300">합계 총 절감액 (Company + Employee)</div>
                     <div className="text-left lg:text-right space-y-4 max-w-full overflow-hidden">
-                      <div className="text-5xl lg:text-6xl xl:text-7xl font-black tracking-tighter leading-tight text-white break-all">₩{res.result.totalSaving.toLocaleString()}</div>
+                      <div className="text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter leading-tight text-white break-all">₩{res.result.totalSaving.toLocaleString()}</div>
                       <div className="text-3xl lg:text-4xl font-black text-slate-500 italic">({convertToKoreanUnit(res.result.totalSaving)})</div>
                     </div>
                   </div>
@@ -331,22 +331,22 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
                   <div className="bg-slate-50 p-10 rounded-[48px] space-y-6 border-2 border-slate-100 flex flex-col justify-between shadow-sm">
                     <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">기존 1인당 복후비</div>
-                    <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-slate-900 leading-tight break-all">₩{res.result.perEmpPrevWelfareExp.toLocaleString()}</div>
+                    <div className="text-xl lg:text-2xl xl:text-3xl font-black text-slate-900 leading-tight break-all">₩{res.result.perEmpPrevWelfareExp.toLocaleString()}</div>
                     <div className="text-2xl lg:text-3xl font-bold text-slate-400 mt-1">약 {Math.round(res.result.perEmpPrevWelfareExp/10000)}만원</div>
                   </div>
                   <div className="bg-blue-50 p-10 rounded-[48px] space-y-6 border-2 border-blue-100 flex flex-col justify-between shadow-sm">
                     <div className="text-lg lg:text-xl font-black text-blue-400 uppercase tracking-widest">1인 기업보험 절감</div>
-                    <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-blue-700 leading-tight break-all">₩{res.result.perEmpEmployerSaving.toLocaleString()}</div>
+                    <div className="text-xl lg:text-2xl xl:text-3xl font-black text-blue-700 leading-tight break-all">₩{res.result.perEmpEmployerSaving.toLocaleString()}</div>
                     <div className="text-2xl lg:text-3xl font-bold text-blue-400 mt-1">약 {Math.round(res.result.perEmpEmployerSaving/10000)}만원</div>
                   </div>
                   <div className="bg-green-50 p-10 rounded-[48px] space-y-6 border-2 border-green-100 flex flex-col justify-between shadow-sm">
                     <div className="text-lg lg:text-xl font-black text-green-400 uppercase tracking-widest">1인 실질소득 증가</div>
-                    <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-green-700 leading-tight break-all">₩{res.result.perEmpEmployeeSaving.toLocaleString()}</div>
+                    <div className="text-xl lg:text-2xl xl:text-3xl font-black text-green-700 leading-tight break-all">₩{res.result.perEmpEmployeeSaving.toLocaleString()}</div>
                     <div className="text-2xl lg:text-3xl font-bold text-green-400 mt-1">약 {Math.round(res.result.perEmpEmployeeSaving/10000)}만원</div>
                   </div>
                   <div className="bg-slate-900 p-10 rounded-[48px] space-y-6 text-white flex flex-col justify-between shadow-xl">
                     <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">1인 평균 총 혜택</div>
-                    <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-white leading-tight break-all">₩{res.result.perEmpTotalSaving.toLocaleString()}</div>
+                    <div className="text-xl lg:text-2xl xl:text-3xl font-black text-white leading-tight break-all">₩{res.result.perEmpTotalSaving.toLocaleString()}</div>
                     <div className="text-2xl lg:text-3xl font-bold text-slate-500 mt-1">약 {Math.round(res.result.perEmpTotalSaving/10000)}만원</div>
                   </div>
                 </div>
@@ -356,17 +356,17 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 <div className="p-12 lg:p-14 bg-blue-50 rounded-[60px] border-2 border-blue-100 space-y-10 shadow-xl">
                   <div className="space-y-6">
                     <div className="text-lg font-black text-blue-400 uppercase tracking-widest mb-2">최종 절세 예상액 (국세+지방세)</div>
-                    <div className="text-4xl lg:text-6xl xl:text-7xl font-black text-blue-700 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
+                    <div className="text-3xl lg:text-5xl xl:text-6xl font-black text-blue-700 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
                     <div className="text-3xl lg:text-4xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
                   </div>
                   <div className="grid grid-cols-2 gap-10 pt-10 border-t-4 border-blue-100 mt-10">
                     <div className="space-y-3">
                       <div className="text-base text-blue-300 font-black uppercase">국세 절감액</div>
-                      <div className="font-black text-blue-700 text-2xl lg:text-4xl tracking-tight">₩{res.result.mainTaxSaving.toLocaleString()}</div>
+                      <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight">₩{res.result.mainTaxSaving.toLocaleString()}</div>
                     </div>
                     <div className="space-y-3">
                       <div className="text-base text-blue-300 font-black uppercase">지방세 (10%)</div>
-                      <div className="font-black text-blue-700 text-2xl lg:text-4xl tracking-tight">₩{res.result.localTaxSaving.toLocaleString()}</div>
+                      <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight">₩{res.result.localTaxSaving.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
