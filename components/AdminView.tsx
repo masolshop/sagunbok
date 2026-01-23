@@ -1,143 +1,354 @@
-
 import React, { useState, useEffect } from 'react';
-import { ReportSubmission } from '../types';
 
-const AdminView: React.FC = () => {
-  const [submissions, setSubmissions] = useState<ReportSubmission[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+interface Member {
+  type: 'company' | 'consultant';
+  name: string;
+  phone: string;
+  email: string;
+  companyName?: string;
+  referrer?: string;
+  status: string;
+  registeredAt: string;
+}
+
+interface AdminViewProps {
+  currentUser?: any;
+}
+
+const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'company' | 'consultant'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 전체 관리자 여부 확인
+  const isSuperAdmin = currentUser?.phone === '01063529091';
+  const isConsultant = currentUser?.userType === 'consultant';
+  const consultantName = currentUser?.name;
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('sagunbok_submissions') || '[]');
-    setSubmissions(saved);
+    fetchMembers();
   }, []);
 
-  const clearData = () => {
-    if (confirm("모든 데이터를 삭제하시겠습니까?")) {
-      localStorage.removeItem('sagunbok_submissions');
-      setSubmissions([]);
+  const fetchMembers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://3.34.186.174/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getAllMembers'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.members) {
+        setMembers(data.members);
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const selected = submissions.find(s => s.id === selectedId);
+  const updateMemberStatus = async (phone: string, type: 'company' | 'consultant', newStatus: string) => {
+    try {
+      const response = await fetch('http://3.34.186.174/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateMemberStatus',
+          phone,
+          type,
+          status: newStatus
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('승인 상태가 업데이트되었습니다.');
+        fetchMembers();
+      } else {
+        alert('업데이트 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 필터링 로직
+  const filteredMembers = members.filter(m => {
+    // 컨설턴트는 자신이 추천한 회원만 볼 수 있음
+    if (isConsultant && !isSuperAdmin) {
+      if (m.type === 'company' && m.referrer !== consultantName) {
+        return false;
+      }
+      // 컨설턴트는 다른 컨설턴트를 볼 수 없음
+      if (m.type === 'consultant') {
+        return false;
+      }
+    }
+
+    // 타입 필터
+    if (filter !== 'all' && m.type !== filter) return false;
+
+    // 검색어 필터
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return (
+        m.name?.toLowerCase().includes(term) ||
+        m.phone?.toLowerCase().includes(term) ||
+        m.email?.toLowerCase().includes(term) ||
+        m.companyName?.toLowerCase().includes(term) ||
+        m.referrer?.toLowerCase().includes(term)
+      );
+    }
+
+    return true;
+  });
+
+  // 통계
+  const stats = {
+    total: filteredMembers.length,
+    pending: filteredMembers.filter(m => m.status === '승인대기').length,
+    approved: filteredMembers.filter(m => m.status === '승인완료').length,
+    rejected: filteredMembers.filter(m => m.status === '승인거부').length,
+    companies: filteredMembers.filter(m => m.type === 'company').length,
+    consultants: filteredMembers.filter(m => m.type === 'consultant').length
+  };
 
   return (
-    <div className="space-y-6">
-      <header className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">관리자 대시보드</h1>
-          <p className="text-slate-500 mt-2">제출된 자가진단 및 시뮬레이션 결과를 관리합니다.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <a 
-            href="/api/bulk/template" 
-            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl text-sm font-bold hover:bg-green-100 transition-all border border-green-200 shadow-sm"
-          >
-            <span>📊 일괄등록 템플릿</span>
-          </a>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
+      <header className="space-y-4">
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight">
+              {isSuperAdmin ? '전체 관리자 대시보드' : '컨설턴트 대시보드'}
+            </h1>
+            <p className="text-2xl lg:text-3xl text-slate-500 font-bold leading-relaxed mt-2">
+              {isSuperAdmin 
+                ? '모든 회원을 관리하고 승인할 수 있습니다.' 
+                : `${consultantName}님이 추천한 기업회원 리스트입니다.`}
+            </p>
+          </div>
           <button 
-            onClick={clearData}
-            className="text-xs font-bold text-red-500 hover:underline"
+            onClick={fetchMembers}
+            disabled={loading}
+            className="px-6 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg"
           >
-            데이터 전체 초기화
+            {loading ? '⏳ 로딩중...' : '🔄 새로고침'}
           </button>
+        </div>
+
+        {/* 사용자 정보 */}
+        <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+              {isSuperAdmin ? '👑' : '👔'}
+            </div>
+            <div>
+              <div className="text-sm font-black text-blue-400 uppercase tracking-widest">
+                {isSuperAdmin ? 'Super Admin' : 'Consultant'}
+              </div>
+              <div className="text-2xl font-black text-slate-900">{currentUser?.name || '관리자'}</div>
+              <div className="text-sm text-slate-600 font-bold">{currentUser?.phone}</div>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* List */}
-        <div className="xl:col-span-4 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm h-[600px] flex flex-col">
-          <div className="p-4 bg-gray-50 border-b font-bold text-gray-700">제출 리스트 ({submissions.length})</div>
-          <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
-            {submissions.length === 0 ? (
-              <div className="p-10 text-center text-gray-400 text-sm">제출된 데이터가 없습니다.</div>
-            ) : (
-              submissions.map(s => (
-                <button 
-                  key={s.id}
-                  onClick={() => setSelectedId(s.id)}
-                  className={`w-full text-left p-4 hover:bg-blue-50 transition ${selectedId === s.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                >
-                  <div className="font-bold text-gray-900">{s.companyName || 'Unknown'}</div>
-                  <div className="text-xs text-gray-400 mt-1">{new Date(s.submittedAt).toLocaleString()}</div>
-                  <div className="mt-2 flex space-x-1">
-                    {s.diagnosisResult && <span className="text-[10px] font-bold bg-green-100 text-green-600 px-1.5 py-0.5 rounded">진단완료</span>}
-                    {s.calcResults.length > 0 && <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">계산기기록</span>}
-                  </div>
-                </button>
-              ))
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-sm">
+          <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">전체</div>
+          <div className="text-4xl font-black text-slate-900">{stats.total}</div>
+        </div>
+        <div className="bg-yellow-50 p-6 rounded-2xl border-2 border-yellow-100 shadow-sm">
+          <div className="text-xs font-black text-yellow-600 uppercase tracking-widest mb-2">승인대기</div>
+          <div className="text-4xl font-black text-yellow-700">{stats.pending}</div>
+        </div>
+        <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-100 shadow-sm">
+          <div className="text-xs font-black text-green-600 uppercase tracking-widest mb-2">승인완료</div>
+          <div className="text-4xl font-black text-green-700">{stats.approved}</div>
+        </div>
+        <div className="bg-red-50 p-6 rounded-2xl border-2 border-red-100 shadow-sm">
+          <div className="text-xs font-black text-red-600 uppercase tracking-widest mb-2">승인거부</div>
+          <div className="text-4xl font-black text-red-700">{stats.rejected}</div>
+        </div>
+        {isSuperAdmin && (
+          <>
+            <div className="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 shadow-sm">
+              <div className="text-xs font-black text-blue-600 uppercase tracking-widest mb-2">기업회원</div>
+              <div className="text-4xl font-black text-blue-700">{stats.companies}</div>
+            </div>
+            <div className="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100 shadow-sm">
+              <div className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2">컨설턴트</div>
+              <div className="text-4xl font-black text-purple-700">{stats.consultants}</div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-6 py-3 rounded-xl font-black transition-all ${
+                filter === 'all' 
+                  ? 'bg-slate-900 text-white' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              전체
+            </button>
+            <button
+              onClick={() => setFilter('company')}
+              className={`px-6 py-3 rounded-xl font-black transition-all ${
+                filter === 'company' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              🏢 기업회원
+            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setFilter('consultant')}
+                className={`px-6 py-3 rounded-xl font-black transition-all ${
+                  filter === 'consultant' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                👔 컨설턴트
+              </button>
             )}
           </div>
-        </div>
-
-        {/* Detail */}
-        <div className="xl:col-span-8 bg-white border border-gray-200 rounded-2xl p-8 shadow-sm h-[600px] overflow-y-auto">
-          {selected ? (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center pb-6 border-b">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">{selected.companyName} 리포트</h2>
-                  <p className="text-sm text-slate-500">ID: {selected.id}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-gray-400 uppercase">Status</div>
-                  <div className="text-green-600 font-bold">전송 완료</div>
-                </div>
-              </div>
-
-              {selected.companyContext && (
-                <div>
-                  <h4 className="font-bold mb-3">기초 데이터</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-[10px] text-gray-400 uppercase font-bold">Employee</div>
-                      <div className="font-bold text-gray-900">{selected.companyContext.employeeCount || '-'}명</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                       <div className="text-[10px] text-gray-400 uppercase font-bold">Salary Avg</div>
-                       <div className="font-bold text-gray-900">{selected.companyContext.avgSalary ? `₩${(selected.companyContext.avgSalary/10000).toLocaleString()}만` : '-'}</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                       <div className="text-[10px] text-gray-400 uppercase font-bold">Due from CEO</div>
-                       <div className="font-bold text-gray-900">{selected.companyContext.dueFromCeo ? `₩${(selected.companyContext.dueFromCeo/10000).toLocaleString()}만` : '-'}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selected.diagnosisResult && (
-                <div>
-                   <h4 className="font-bold mb-3">자가진단 요약</h4>
-                   <div className="bg-slate-900 text-white p-6 rounded-2xl">
-                      <div className="text-center mb-6">
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Risk Index</div>
-                        <div className="text-5xl font-black">{selected.diagnosisResult.overall}</div>
-                      </div>
-                      <div className="space-y-2">
-                        {selected.diagnosisResult.top3.map((t, i) => (
-                          <div key={i} className="flex justify-between text-sm">
-                            <span className="text-slate-400">{t.title}</span>
-                            <span className="font-bold text-blue-400">{t.score}%</span>
-                          </div>
-                        ))}
-                      </div>
-                   </div>
-                </div>
-              )}
-
-              {selected.aiAnalysis && (
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                   <h4 className="font-bold text-blue-800 mb-2">AI 컨설턴트 핵심 전략</h4>
-                   <p className="text-blue-900/80 leading-relaxed text-sm">{selected.aiAnalysis.summary}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
-              좌측 리스트에서 업체를 선택해주세요.
-            </div>
-          )}
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="이름, 전화번호, 이메일, 회사명 검색..."
+            className="flex-1 px-6 py-3 border-2 border-slate-200 rounded-xl font-bold focus:border-blue-500 outline-none"
+          />
         </div>
       </div>
+
+      {/* Members Table */}
+      <div className="bg-white rounded-2xl border-2 border-slate-100 shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-900 text-white">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">구분</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">이름</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">전화번호</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">이메일</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">회사명</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">추천인</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">가입일</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">상태</th>
+                {isSuperAdmin && (
+                  <th className="px-6 py-4 text-left text-sm font-black uppercase tracking-widest">액션</th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={isSuperAdmin ? 9 : 8} className="px-6 py-12 text-center text-slate-400 font-bold">
+                    로딩 중...
+                  </td>
+                </tr>
+              ) : filteredMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={isSuperAdmin ? 9 : 8} className="px-6 py-12 text-center text-slate-400 font-bold">
+                    회원이 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                filteredMembers.map((member, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black ${
+                        member.type === 'company' 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {member.type === 'company' ? '🏢 기업' : '👔 컨설턴트'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-black text-slate-900">{member.name}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700">{member.phone}</td>
+                    <td className="px-6 py-4 font-bold text-slate-600 text-sm">{member.email || '-'}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700">{member.companyName || '-'}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700">{member.referrer || '-'}</td>
+                    <td className="px-6 py-4 font-bold text-slate-600 text-sm">
+                      {member.registeredAt ? new Date(member.registeredAt).toLocaleDateString('ko-KR') : '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-black ${
+                        member.status === '승인완료' 
+                          ? 'bg-green-100 text-green-700' 
+                          : member.status === '승인대기'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {member.status}
+                      </span>
+                    </td>
+                    {isSuperAdmin && (
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          {member.status !== '승인완료' && (
+                            <button
+                              onClick={() => updateMemberStatus(member.phone, member.type, '승인완료')}
+                              className="px-3 py-1 bg-green-600 text-white text-xs font-black rounded-lg hover:bg-green-700 transition-all"
+                            >
+                              승인
+                            </button>
+                          )}
+                          {member.status !== '승인거부' && (
+                            <button
+                              onClick={() => updateMemberStatus(member.phone, member.type, '승인거부')}
+                              className="px-3 py-1 bg-red-600 text-white text-xs font-black rounded-lg hover:bg-red-700 transition-all"
+                            >
+                              거부
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 컨설턴트용 추가 안내 */}
+      {isConsultant && !isSuperAdmin && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-100 rounded-2xl p-8">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">💡</div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">컨설턴트 대시보드 안내</h3>
+              <ul className="space-y-2 text-slate-700 font-bold">
+                <li>• 내가 추천한 기업회원만 표시됩니다.</li>
+                <li>• 회원의 가입일, 승인 상태를 확인할 수 있습니다.</li>
+                <li>• 승인 권한은 전체 관리자만 가능합니다.</li>
+                <li>• 추천인 필드에 내 이름({consultantName})이 입력된 회원만 표시됩니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

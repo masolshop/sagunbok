@@ -313,7 +313,7 @@ const App: React.FC = () => {
 
 
           {activeTab === 'admin' && (
-            <AdminView />
+            <AdminView currentUser={currentUser} />
           )}
         </div>
       </main>
