@@ -412,7 +412,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
       <header className="space-y-4">
         <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight">네트급여계산기</h1>
         <p className="text-2xl lg:text-3xl text-slate-500 font-bold leading-relaxed">
-          페이닥터 네트 계약을 위한 실수령액 기반 총급여(Gross-up) 역계산 시스템입니다.
+          사근복을 통한 병원 네트급여 리스크 해소를 위한 계산기
         </p>
       </header>
 
