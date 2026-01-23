@@ -5,7 +5,7 @@ interface AuthProps {
 }
 
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
-type UserType = 'company' | 'consultant';
+type UserType = 'company' | 'manager' | 'consultant';
 
 // Apps Script Web App URL (v6.2 - 이메일 알림 시스템 포함)
 const API_URL = 'https://script.google.com/macros/s/AKfycbzdJOCX6FS3YwK89v7klpUbjGHOHugfXodmES3Np6lVpF_bnCrRRPJkANdFTmL4ff9D/exec';
@@ -145,19 +145,20 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     
     setLoading(true);
     try {
-      const result = await callAPI('registerConsultant', {
+      const action = userType === 'manager' ? 'registerManager' : 'registerConsultant';
+      const result = await callAPI(action, {
         name: consultantName,
         phone: consultantPhone,
         email: consultantEmail,
         position,
-        businessUnit,
-        branchOffice,
+        division: businessUnit,
+        branch: branchOffice,
       });
       
       if (result.success) {
         alert(result.message);
         setMode('login');
-        setUserType('consultant');
+        setUserType(userType); // 매니저 또는 컨설턴트 유지
         // 폼 초기화
         setConsultantName('');
         setConsultantPhone('');
@@ -390,38 +391,54 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
           {/* 회원가입 모드 */}
           {mode === 'register' && (
             <div className="space-y-6">
-              {/* 회원 구분 탭 - 모던 디자인 */}
-              <div className="flex space-x-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
+              {/* 회원 구분 탭 - 3개 (기업회원 / 매니저 / 컨설턴트) */}
+              <div className="grid grid-cols-3 gap-2 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-inner">
                 <button
                   onClick={() => setUserType('company')}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
+                  className={`py-3 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'company'
                       ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
                       : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
-                  <span className={`${
+                  <span className={`text-sm ${
                     userType === 'company'
-                      ? 'text-blue-600 font-extrabold text-lg'
+                      ? 'text-blue-600 font-extrabold'
                       : 'text-gray-500'
                   }`}>
-                    🏢 기업회원
+                    🏢 기업
+                  </span>
+                </button>
+                <button
+                  onClick={() => setUserType('manager')}
+                  className={`py-3 rounded-xl font-bold transition-all duration-300 transform ${
+                    userType === 'manager'
+                      ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
+                      : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
+                  }`}
+                >
+                  <span className={`text-sm ${
+                    userType === 'manager'
+                      ? 'text-blue-600 font-extrabold'
+                      : 'text-gray-500'
+                  }`}>
+                    👨‍💼 매니저
                   </span>
                 </button>
                 <button
                   onClick={() => setUserType('consultant')}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-300 transform ${
+                  className={`py-3 rounded-xl font-bold transition-all duration-300 transform ${
                     userType === 'consultant'
                       ? 'bg-white shadow-xl scale-105 border-2 border-blue-400'
                       : 'bg-white/50 hover:bg-white/70 shadow-sm border-2 border-gray-200'
                   }`}
                 >
-                  <span className={`${
+                  <span className={`text-sm ${
                     userType === 'consultant'
-                      ? 'text-blue-600 font-extrabold text-lg'
+                      ? 'text-blue-600 font-extrabold'
                       : 'text-gray-500'
                   }`}>
-                    👔 사근복 컨설턴트
+                    👔 컨설턴트
                   </span>
                 </button>
               </div>
@@ -533,8 +550,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                 </div>
               )}
 
-              {/* 컨설턴트 가입 폼 - 모던 디자인 */}
-              {userType === 'consultant' && (
+              {/* 매니저 / 컨설턴트 가입 폼 - 모던 디자인 */}
+              {(userType === 'manager' || userType === 'consultant') && (
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -585,7 +602,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                       <span className="text-lg">안내사항</span>
                     </p>
                     <div className="space-y-1 text-sm text-amber-900">
-                      <p>• 컨설턴트 비밀번호는 <span className="font-black text-lg text-amber-700">12345</span>로 고정됩니다.</p>
+                      <p>• {userType === 'manager' ? '매니저' : '컨설턴트'} 비밀번호는 <span className="font-black text-lg text-amber-700">12345</span>로 고정됩니다.</p>
                       <p>• 가입 승인 후 로그인 시 사용하세요.</p>
                     </div>
                   </div>

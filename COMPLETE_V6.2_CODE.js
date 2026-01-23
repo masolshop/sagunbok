@@ -23,6 +23,7 @@ const SPREADSHEET_ID = '1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc';
 
 // 시트 이름
 const SHEET_COMPANIES = '기업회원';
+const SHEET_MANAGERS = '사근복매니저';
 const SHEET_CONSULTANTS = '사근복컨설턴트';
 const SHEET_LOGS = '로그기록';
 
@@ -37,7 +38,7 @@ const STATUS_REJECTED = '승인거부';
 
 // 이메일 설정 (v6.2 추가)
 const ADMIN_EMAIL = 'tysagunbok@gmail.com';
-const SENDER_NAME = '사근복 AI';
+const SENDER_NAME = 'TY사근복헬스케어사업단';
 
 // ========================================
 // 기본 유틸리티 함수
@@ -80,6 +81,25 @@ function getKSTTimestamp() {
   const second = String(kstTime.getUTCSeconds()).padStart(2, '0');
   
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+/**
+ * 전화번호 정규화 함수
+ * "10xxxxxxxx" → "010xxxxxxxx"
+ * "01xxxxxxxxx" → "01xxxxxxxxx" (그대로)
+ */
+function normalizePhoneNumber(phone) {
+  if (!phone) return '';
+  
+  // 문자열로 변환 후 공백 제거
+  let normalized = String(phone).trim();
+  
+  // "10"으로 시작하는 경우 "010"으로 변경
+  if (normalized.startsWith('10') && normalized.length === 10) {
+    normalized = '0' + normalized;
+  }
+  
+  return normalized;
 }
 
 /**
@@ -180,7 +200,29 @@ function readAllMembersFromSheets() {
     }
   }
   
-  // 2. 사근복컨설턴트
+  // 2. 사근복매니저
+  const managerSheet = ss.getSheetByName(SHEET_MANAGERS);
+  if (managerSheet) {
+    const managerData = managerSheet.getDataRange().getValues();
+    for (let i = 1; i < managerData.length; i++) {
+      const row = managerData[i];
+      if (row[1]) { // 전화번호가 있는 경우만
+        members.push({
+          type: 'manager',
+          name: String(row[0] || ''),
+          phone: String(row[1] || ''),
+          email: String(row[2] || ''),
+          position: String(row[3] || ''),
+          division: String(row[4] || ''),
+          branch: String(row[5] || ''),
+          registeredAt: String(row[7] || ''),
+          status: String(row[8] || STATUS_PENDING)
+        });
+      }
+    }
+  }
+  
+  // 3. 사근복컨설턴트
   const consultantSheet = ss.getSheetByName(SHEET_CONSULTANTS);
   if (consultantSheet) {
     const consultantData = consultantSheet.getDataRange().getValues();
@@ -217,6 +259,7 @@ function updateAllMembersJson() {
       lastUpdated: getKSTTimestamp(),
       totalCount: members.length,
       companyCount: members.filter(m => m.type === 'company').length,
+      managerCount: members.filter(m => m.type === 'manager').length,
       consultantCount: members.filter(m => m.type === 'consultant').length,
       stats: {
         pending: members.filter(m => m.status === STATUS_PENDING).length,
@@ -435,18 +478,32 @@ function sendCompanyApprovedEmail(data) {
 function getConsultantEmailByName(name) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEET_CONSULTANTS);
-    const data = sheet.getDataRange().getValues();
     
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === name) {
-        return String(data[i][2]); // 이메일 컬럼
+    // 1. 매니저 시트에서 검색
+    const managerSheet = ss.getSheetByName(SHEET_MANAGERS);
+    if (managerSheet) {
+      const managerData = managerSheet.getDataRange().getValues();
+      for (let i = 1; i < managerData.length; i++) {
+        if (String(managerData[i][0]).trim() === name) {
+          return String(managerData[i][2]); // 이메일 컬럼
+        }
+      }
+    }
+    
+    // 2. 컨설턴트 시트에서 검색
+    const consultantSheet = ss.getSheetByName(SHEET_CONSULTANTS);
+    if (consultantSheet) {
+      const consultantData = consultantSheet.getDataRange().getValues();
+      for (let i = 1; i < consultantData.length; i++) {
+        if (String(consultantData[i][0]).trim() === name) {
+          return String(consultantData[i][2]); // 이메일 컬럼
+        }
       }
     }
     
     return null;
   } catch (error) {
-    console.error('컨설턴트 이메일 조회 실패:', error);
+    console.error('추천인 이메일 조회 실패:', error);
     return null;
   }
 }
@@ -581,15 +638,18 @@ function loginCompany(phone, password) {
     const sheet = ss.getSheetByName(SHEET_COMPANIES);
     const data = sheet.getDataRange().getValues();
     
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(phone);
+    
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const existingPhone = String(row[4]).trim();
+      const existingPhone = normalizePhoneNumber(String(row[4]));
       
-      if (existingPhone === phone) {
+      if (existingPhone === normalizedPhone) {
         const status = String(row[8]).trim();
         
         if (status !== STATUS_APPROVED) {
-          writeLog('로그인', '기업회원', phone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
+          writeLog('로그인', '기업회원', normalizedPhone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
           return {
             success: false,
             error: '관리자 승인이 필요합니다. 현재 상태: ' + status
@@ -599,7 +659,7 @@ function loginCompany(phone, password) {
         const storedPassword = String(row[6]).trim();
         
         if (storedPassword === password) {
-          writeLog('로그인', '기업회원', phone, '로그인 성공', '성공');
+          writeLog('로그인', '기업회원', normalizedPhone, '로그인 성공', '성공');
           return {
             success: true,
             user: {
@@ -608,12 +668,12 @@ function loginCompany(phone, password) {
               companyType: String(row[1]),
               referrer: String(row[2]),
               name: String(row[3]),
-              phone: String(row[4]),
+              phone: existingPhone,
               email: String(row[5])
             }
           };
         } else {
-          writeLog('로그인', '기업회원', phone, '비밀번호 불일치', '실패');
+          writeLog('로그인', '기업회원', normalizedPhone, '비밀번호 불일치', '실패');
           return {
             success: false,
             error: '비밀번호가 일치하지 않습니다.'
@@ -622,7 +682,7 @@ function loginCompany(phone, password) {
       }
     }
     
-    writeLog('로그인', '기업회원', phone, '등록되지 않은 전화번호', '실패');
+    writeLog('로그인', '기업회원', normalizedPhone, '등록되지 않은 전화번호', '실패');
     return {
       success: false,
       error: '등록되지 않은 전화번호입니다.'
@@ -638,23 +698,28 @@ function loginCompany(phone, password) {
 }
 
 /**
- * 컨설턴트 로그인
+ * 매니저 + 컨설턴트 통합 로그인
  */
 function loginConsultant(phone, password) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEET_CONSULTANTS);
-    const data = sheet.getDataRange().getValues();
     
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const existingPhone = String(row[1]).trim();
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(phone);
+    
+    // 1. 매니저 시트에서 검색
+    const managerSheet = ss.getSheetByName(SHEET_MANAGERS);
+    const managerData = managerSheet.getDataRange().getValues();
+    
+    for (let i = 1; i < managerData.length; i++) {
+      const row = managerData[i];
+      const existingPhone = normalizePhoneNumber(String(row[1]));
       
-      if (existingPhone === phone) {
+      if (existingPhone === normalizedPhone) {
         const status = String(row[8]).trim();
         
         if (status !== STATUS_APPROVED) {
-          writeLog('로그인', '사근복컨설턴트', phone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
+          writeLog('로그인', '사근복매니저', normalizedPhone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
           return {
             success: false,
             error: '관리자 승인이 필요합니다. 현재 상태: ' + status
@@ -664,13 +729,13 @@ function loginConsultant(phone, password) {
         const storedPassword = String(row[6]).trim();
         
         if (storedPassword === password) {
-          writeLog('로그인', '사근복컨설턴트', phone, '로그인 성공', '성공');
+          writeLog('로그인', '사근복매니저', normalizedPhone, '로그인 성공', '성공');
           return {
             success: true,
             user: {
-              userType: 'consultant',
+              userType: 'manager',
               name: String(row[0]),
-              phone: String(row[1]),
+              phone: existingPhone,
               email: String(row[2]),
               position: String(row[3]),
               division: String(row[4]),
@@ -678,7 +743,7 @@ function loginConsultant(phone, password) {
             }
           };
         } else {
-          writeLog('로그인', '사근복컨설턴트', phone, '비밀번호 불일치', '실패');
+          writeLog('로그인', '사근복매니저', normalizedPhone, '비밀번호 불일치', '실패');
           return {
             success: false,
             error: '비밀번호가 일치하지 않습니다.'
@@ -687,14 +752,59 @@ function loginConsultant(phone, password) {
       }
     }
     
-    writeLog('로그인', '사근복컨설턴트', phone, '등록되지 않은 전화번호', '실패');
+    // 2. 컨설턴트 시트에서 검색
+    const consultantSheet = ss.getSheetByName(SHEET_CONSULTANTS);
+    const consultantData = consultantSheet.getDataRange().getValues();
+    
+    for (let i = 1; i < consultantData.length; i++) {
+      const row = consultantData[i];
+      const existingPhone = normalizePhoneNumber(String(row[1]));
+      
+      if (existingPhone === normalizedPhone) {
+        const status = String(row[8]).trim();
+        
+        if (status !== STATUS_APPROVED) {
+          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
+          return {
+            success: false,
+            error: '관리자 승인이 필요합니다. 현재 상태: ' + status
+          };
+        }
+        
+        const storedPassword = String(row[6]).trim();
+        
+        if (storedPassword === password) {
+          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '로그인 성공', '성공');
+          return {
+            success: true,
+            user: {
+              userType: 'consultant',
+              name: String(row[0]),
+              phone: existingPhone,
+              email: String(row[2]),
+              position: String(row[3]),
+              division: String(row[4]),
+              branch: String(row[5])
+            }
+          };
+        } else {
+          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '비밀번호 불일치', '실패');
+          return {
+            success: false,
+            error: '비밀번호가 일치하지 않습니다.'
+          };
+        }
+      }
+    }
+    
+    writeLog('로그인', '사근복매니저/컨설턴트', normalizedPhone, '등록되지 않은 전화번호', '실패');
     return {
       success: false,
       error: '등록되지 않은 전화번호입니다.'
     };
     
   } catch (error) {
-    writeLog('로그인', '사근복컨설턴트', phone, 'API 오류', '실패', error.toString());
+    writeLog('로그인', '사근복매니저/컨설턴트', phone, 'API 오류', '실패', error.toString());
     return {
       success: false,
       error: '로그인 처리 중 오류가 발생했습니다.'
@@ -714,11 +824,14 @@ function registerCompany(data) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const companySheet = ss.getSheetByName(SHEET_COMPANIES);
     
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(data.phone);
+    
     const companyData = companySheet.getDataRange().getValues();
     for (let i = 1; i < companyData.length; i++) {
-      const existingPhone = String(companyData[i][4]).trim();
-      if (existingPhone === data.phone) {
-        writeLog('회원가입', '기업회원', data.phone, '중복 전화번호', '실패', '이미 등록된 전화번호입니다');
+      const existingPhone = normalizePhoneNumber(String(companyData[i][4]));
+      if (existingPhone === normalizedPhone) {
+        writeLog('회원가입', '기업회원', normalizedPhone, '중복 전화번호', '실패', '이미 등록된 전화번호입니다');
         return {
           success: false,
           error: '이미 등록된 전화번호입니다.'
@@ -733,14 +846,14 @@ function registerCompany(data) {
       data.companyType,
       data.referrer,
       data.name,
-      data.phone,
+      normalizedPhone,
       data.email,
       data.password,
       timestamp,
       STATUS_PENDING
     ]);
     
-    writeLog('회원가입', '기업회원', data.phone, `회원가입 완료: ${data.companyName}`, '성공');
+    writeLog('회원가입', '기업회원', normalizedPhone, `회원가입 완료: ${data.companyName}`, '성공');
     
     // 이메일 발송 (v6.2 추가)
     const emailData = {
@@ -748,7 +861,7 @@ function registerCompany(data) {
       companyType: data.companyType,
       referrer: data.referrer,
       name: data.name,
-      phone: data.phone,
+      phone: normalizedPhone,
       email: data.email,
       registeredAt: timestamp
     };
@@ -772,6 +885,76 @@ function registerCompany(data) {
 }
 
 /**
+ * 매니저 회원가입 + 이메일 발송
+ */
+function registerManager(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const managerSheet = ss.getSheetByName(SHEET_MANAGERS);
+    
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(data.phone);
+    
+    const managerData = managerSheet.getDataRange().getValues();
+    for (let i = 1; i < managerData.length; i++) {
+      const existingPhone = normalizePhoneNumber(String(managerData[i][1]));
+      if (existingPhone === normalizedPhone) {
+        writeLog('회원가입', '사근복매니저', normalizedPhone, '중복 전화번호', '실패', '이미 등록된 전화번호입니다');
+        return {
+          success: false,
+          error: '이미 등록된 전화번호입니다.'
+        };
+      }
+    }
+    
+    const timestamp = getKSTTimestamp();
+    const defaultPassword = '12345';
+    
+    managerSheet.appendRow([
+      data.name,
+      normalizedPhone,
+      data.email,
+      data.position,
+      data.division,
+      data.branch,
+      defaultPassword,
+      timestamp,
+      STATUS_PENDING
+    ]);
+    
+    writeLog('회원가입', '사근복매니저', normalizedPhone, `회원가입 완료: ${data.name}`, '성공');
+    
+    // 이메일 발송 (v6.2 추가)
+    const emailData = {
+      name: data.name,
+      phone: normalizedPhone,
+      email: data.email,
+      position: data.position,
+      division: data.division,
+      branch: data.branch,
+      registeredAt: timestamp,
+      userType: 'manager'
+    };
+    sendManagerSignupEmails(emailData);
+    
+    // JSON 자동 동기화
+    syncAllJsonFiles();
+    
+    return {
+      success: true,
+      message: '회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다. 비밀번호는 12345입니다.'
+    };
+    
+  } catch (error) {
+    writeLog('회원가입', '사근복매니저', data.phone, 'API 오류', '실패', error.toString());
+    return {
+      success: false,
+      error: '회원가입 처리 중 오류가 발생했습니다.'
+    };
+  }
+}
+
+/**
  * 컨설턴트 회원가입 + 이메일 발송
  */
 function registerConsultant(data) {
@@ -779,11 +962,14 @@ function registerConsultant(data) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const consultantSheet = ss.getSheetByName(SHEET_CONSULTANTS);
     
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(data.phone);
+    
     const consultantData = consultantSheet.getDataRange().getValues();
     for (let i = 1; i < consultantData.length; i++) {
-      const existingPhone = String(consultantData[i][1]).trim();
-      if (existingPhone === data.phone) {
-        writeLog('회원가입', '사근복컨설턴트', data.phone, '중복 전화번호', '실패', '이미 등록된 전화번호입니다');
+      const existingPhone = normalizePhoneNumber(String(consultantData[i][1]));
+      if (existingPhone === normalizedPhone) {
+        writeLog('회원가입', '사근복컨설턴트', normalizedPhone, '중복 전화번호', '실패', '이미 등록된 전화번호입니다');
         return {
           success: false,
           error: '이미 등록된 전화번호입니다.'
@@ -796,7 +982,7 @@ function registerConsultant(data) {
     
     consultantSheet.appendRow([
       data.name,
-      data.phone,
+      normalizedPhone,
       data.email,
       data.position,
       data.division,
@@ -806,12 +992,12 @@ function registerConsultant(data) {
       STATUS_PENDING
     ]);
     
-    writeLog('회원가입', '사근복컨설턴트', data.phone, `회원가입 완료: ${data.name}`, '성공');
+    writeLog('회원가입', '사근복컨설턴트', normalizedPhone, `회원가입 완료: ${data.name}`, '성공');
     
     // 이메일 발송 (v6.2 추가)
     const emailData = {
       name: data.name,
-      phone: data.phone,
+      phone: normalizedPhone,
       email: data.email,
       position: data.position,
       division: data.division,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 interface Member {
-  type: 'company' | 'consultant';
+  type: 'company' | 'manager' | 'consultant';
   name: string;
   phone: string;
   email: string;
@@ -18,7 +18,7 @@ interface AdminViewProps {
 const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'company' | 'consultant'>('all');
+  const [filter, setFilter] = useState<'all' | 'company' | 'manager' | 'consultant'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // 전체 관리자 여부 확인
@@ -95,7 +95,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     }
   };
 
-  const updateMemberStatus = async (phone: string, type: 'company' | 'consultant', newStatus: string) => {
+  const updateMemberStatus = async (phone: string, type: 'company' | 'manager' | 'consultant', newStatus: string) => {
     try {
       const params = new URLSearchParams({
         action: 'updateMemberStatus',
@@ -158,6 +158,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     approved: filteredMembers.filter(m => m.status === '승인완료').length,
     rejected: filteredMembers.filter(m => m.status === '승인거부').length,
     companies: filteredMembers.filter(m => m.type === 'company').length,
+    managers: filteredMembers.filter(m => m.type === 'manager').length,
     consultants: filteredMembers.filter(m => m.type === 'consultant').length
   };
 
@@ -243,6 +244,10 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             <div className="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 shadow-sm">
               <div className="text-xs font-black text-blue-600 uppercase tracking-widest mb-2">기업회원</div>
               <div className="text-4xl font-black text-blue-700">{stats.companies}</div>
+            <div className="bg-indigo-50 p-6 rounded-2xl border-2 border-indigo-100 shadow-sm">
+              <div className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-2">매니저</div>
+              <div className="text-4xl font-black text-indigo-700">{stats.managers}</div>
+            </div>
             </div>
             <div className="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100 shadow-sm">
               <div className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2">컨설턴트</div>
@@ -309,16 +314,28 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
               🏢 기업회원
             </button>
             {isSuperAdmin && (
-              <button
-                onClick={() => setFilter('consultant')}
-                className={`px-6 py-3 rounded-xl font-black transition-all ${
-                  filter === 'consultant' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                👔 컨설턴트
-              </button>
+              <>
+                <button
+                  onClick={() => setFilter('manager')}
+                  className={`px-6 py-3 rounded-xl font-black transition-all ${
+                    filter === 'manager' 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  👨‍💼 매니저
+                </button>
+                <button
+                  onClick={() => setFilter('consultant')}
+                  className={`px-6 py-3 rounded-xl font-black transition-all ${
+                    filter === 'consultant' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  👔 컨설턴트
+                </button>
+              </>
             )}
           </div>
           <input
