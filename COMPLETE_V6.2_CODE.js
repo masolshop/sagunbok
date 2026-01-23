@@ -485,6 +485,8 @@ function sendManagerApprovedEmail(data) {
 }
 
 /**
+ * 컨설턴트 승인 이메일
+ */
 function sendConsultantApprovedEmail(data) {
   sendEmail(
     data.email,
