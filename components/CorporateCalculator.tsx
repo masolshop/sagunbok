@@ -292,9 +292,18 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             {res.module === ModuleType.WELFARE_CONVERSION ? (
               <div className="space-y-12 px-2">
                 <div className="bg-[#0f2e44] text-white rounded-[60px] p-10 lg:p-14 shadow-2xl space-y-12 relative overflow-hidden">
-                  <div className="flex justify-between items-center relative z-10">
-                    <span className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest border-b-2 border-slate-700 pb-1">Total Company Impact ({companyContext.employeeCount || 0}명 규모)</span>
-                    <span className="px-5 py-2 bg-blue-500 text-xs font-black rounded-2xl uppercase shadow-lg shadow-blue-500/30">Annual Estimate</span>
+                  <div className="flex flex-col gap-6 relative z-10">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest border-b-2 border-slate-700 pb-1">Total Company Impact ({companyContext.employeeCount || 0}명 규모)</span>
+                      <span className="px-5 py-2 bg-blue-500 text-xs font-black rounded-2xl uppercase shadow-lg shadow-blue-500/30">Annual Estimate</span>
+                    </div>
+                    <div className="text-center">
+                      <div className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-green-500 rounded-3xl shadow-lg">
+                        <span className="text-2xl lg:text-3xl font-black text-white">
+                          복리후생비 {res.inputs.convPercent}% 기금 전환시 절세 효과
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-b border-white/10 pb-14 relative z-10">
