@@ -85,21 +85,52 @@ function getKSTTimestamp() {
 
 /**
  * 전화번호 정규화 함수
- * "10xxxxxxxx" → "010xxxxxxxx"
- * "01xxxxxxxxx" → "01xxxxxxxxx" (그대로)
+ * 다양한 형식을 "010-XXXX-XXXX" 형식으로 통일
+ * 입력 예: "1012345678", "01012345678", "010-1234-5678", "010 1234 5678"
+ * 출력: "010-1234-5678"
  */
 function normalizePhoneNumber(phone) {
   if (!phone) return '';
   
-  // 문자열로 변환 후 공백 제거
-  let normalized = String(phone).trim();
+  // 문자열로 변환 후 숫자만 추출
+  let digitsOnly = String(phone).replace(/[^0-9]/g, '');
   
-  // "10"으로 시작하는 경우 "010"으로 변경
-  if (normalized.startsWith('10') && normalized.length === 10) {
-    normalized = '0' + normalized;
+  // "10"으로 시작하고 10자리인 경우 "010"으로 변경
+  if (digitsOnly.startsWith('10') && digitsOnly.length === 10) {
+    digitsOnly = '0' + digitsOnly;
   }
   
-  return normalized;
+  // 11자리 숫자를 010-XXXX-XXXX 형식으로 변환
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('010')) {
+    return digitsOnly.substring(0, 3) + '-' + digitsOnly.substring(3, 7) + '-' + digitsOnly.substring(7);
+  }
+  
+  // 변환 실패 시 원본 반환
+  return digitsOnly;
+}
+
+/**
+ * 로그인용 전화번호 비교 함수
+ * 저장된 번호와 입력된 번호를 정규화하여 비교
+ */
+function comparePhoneNumbers(stored, input) {
+  // 둘 다 숫자만 추출하여 비교
+  const storedDigits = String(stored).replace(/[^0-9]/g, '');
+  const inputDigits = String(input).replace(/[^0-9]/g, '');
+  
+  // "10"으로 시작하는 10자리를 "010"으로 변환
+  let normalizedStored = storedDigits;
+  let normalizedInput = inputDigits;
+  
+  if (normalizedStored.startsWith('10') && normalizedStored.length === 10) {
+    normalizedStored = '0' + normalizedStored;
+  }
+  
+  if (normalizedInput.startsWith('10') && normalizedInput.length === 10) {
+    normalizedInput = '0' + normalizedInput;
+  }
+  
+  return normalizedStored === normalizedInput;
 }
 
 /**
@@ -686,14 +717,12 @@ function loginCompany(phone, password) {
     const sheet = ss.getSheetByName(SHEET_COMPANIES);
     const data = sheet.getDataRange().getValues();
     
-    // 전화번호 정규화
-    const normalizedPhone = normalizePhoneNumber(phone);
-    
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const existingPhone = normalizePhoneNumber(String(row[4]));
+      const storedPhone = String(row[4]);
       
-      if (existingPhone === normalizedPhone) {
+      // 전화번호 비교 (다양한 형식 허용)
+      if (comparePhoneNumbers(storedPhone, phone)) {
         const status = String(row[8]).trim();
         
         if (status !== STATUS_APPROVED) {
@@ -752,22 +781,20 @@ function loginConsultant(phone, password) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     
-    // 전화번호 정규화
-    const normalizedPhone = normalizePhoneNumber(phone);
-    
     // 1. 매니저 시트에서 검색
     const managerSheet = ss.getSheetByName(SHEET_MANAGERS);
     const managerData = managerSheet.getDataRange().getValues();
     
     for (let i = 1; i < managerData.length; i++) {
       const row = managerData[i];
-      const existingPhone = normalizePhoneNumber(String(row[1]));
+      const storedPhone = String(row[1]);
       
-      if (existingPhone === normalizedPhone) {
+      // 전화번호 비교 (다양한 형식 허용)
+      if (comparePhoneNumbers(storedPhone, phone)) {
         const status = String(row[8]).trim();
         
         if (status !== STATUS_APPROVED) {
-          writeLog('로그인', '사근복매니저', normalizedPhone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
+          writeLog('로그인', '사근복매니저', phone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
           return {
             success: false,
             error: '관리자 승인이 필요합니다. 현재 상태: ' + status
@@ -777,13 +804,13 @@ function loginConsultant(phone, password) {
         const storedPassword = String(row[6]).trim();
         
         if (storedPassword === password) {
-          writeLog('로그인', '사근복매니저', normalizedPhone, '로그인 성공', '성공');
+          writeLog('로그인', '사근복매니저', phone, '로그인 성공', '성공');
           return {
             success: true,
             user: {
               userType: 'manager',
               name: String(row[0]),
-              phone: existingPhone,
+              phone: storedPhone,
               email: String(row[2]),
               position: String(row[3]),
               division: String(row[4]),
@@ -791,7 +818,7 @@ function loginConsultant(phone, password) {
             }
           };
         } else {
-          writeLog('로그인', '사근복매니저', normalizedPhone, '비밀번호 불일치', '실패');
+          writeLog('로그인', '사근복매니저', phone, '비밀번호 불일치', '실패');
           return {
             success: false,
             error: '비밀번호가 일치하지 않습니다.'
@@ -806,13 +833,14 @@ function loginConsultant(phone, password) {
     
     for (let i = 1; i < consultantData.length; i++) {
       const row = consultantData[i];
-      const existingPhone = normalizePhoneNumber(String(row[1]));
+      const storedPhone = String(row[1]);
       
-      if (existingPhone === normalizedPhone) {
+      // 전화번호 비교 (다양한 형식 허용)
+      if (comparePhoneNumbers(storedPhone, phone)) {
         const status = String(row[8]).trim();
         
         if (status !== STATUS_APPROVED) {
-          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
+          writeLog('로그인', '사근복컨설턴트', phone, '승인되지 않은 계정', '실패', `현재 상태: ${status}`);
           return {
             success: false,
             error: '관리자 승인이 필요합니다. 현재 상태: ' + status
@@ -822,13 +850,13 @@ function loginConsultant(phone, password) {
         const storedPassword = String(row[6]).trim();
         
         if (storedPassword === password) {
-          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '로그인 성공', '성공');
+          writeLog('로그인', '사근복컨설턴트', phone, '로그인 성공', '성공');
           return {
             success: true,
             user: {
               userType: 'consultant',
               name: String(row[0]),
-              phone: existingPhone,
+              phone: storedPhone,
               email: String(row[2]),
               position: String(row[3]),
               division: String(row[4]),
@@ -836,7 +864,7 @@ function loginConsultant(phone, password) {
             }
           };
         } else {
-          writeLog('로그인', '사근복컨설턴트', normalizedPhone, '비밀번호 불일치', '실패');
+          writeLog('로그인', '사근복컨설턴트', phone, '비밀번호 불일치', '실패');
           return {
             success: false,
             error: '비밀번호가 일치하지 않습니다.'
