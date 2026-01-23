@@ -208,55 +208,47 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             </>
           ) : (
             <>
-              <div className="space-y-6">
-                <label className="text-2xl lg:text-4xl font-black text-slate-700 block tracking-tight">
-                  {currentModule === ModuleType.CORP_TAX ? '전년도 법인세 납부액 (원)' : '전년도 종합소득세 납부액 (원)'}
+              <div className="space-y-6 md:col-span-2">
+                <label className="text-2xl lg:text-3xl font-black text-slate-700 block tracking-tight">
+                  {currentModule === ModuleType.CORP_TAX ? '전년도 법인세 납부액 + 기금 출연 예정액 (원)' : '전년도 종합소득세 납부액 + 기금 출연 예정액 (원)'}
                 </label>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={inputs.prevTaxPaid || ''} 
-                    onChange={(e) => setInputs({...inputs, prevTaxPaid: formatNumber(e.target.value)})} 
-                    className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-4xl font-black outline-none shadow-inner tracking-tighter" 
-                    placeholder="300,000,000" 
-                  />
-                  {inputs.prevTaxPaid && (
-                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                      <span className="text-blue-600 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).eok}</span>
-                      <span className="text-blue-400 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).man}</span>
-                    </div>
-                  )}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={inputs.contribution || ''} 
+                      onChange={(e) => {
+                        const val = formatNumber(e.target.value);
+                        setInputs({...inputs, contribution: val, prevTaxPaid: val});
+                      }} 
+                      className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-3xl font-black outline-none shadow-inner tracking-tighter" 
+                      placeholder="50,000,000" 
+                    />
+                    {inputs.contribution && (
+                      <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                        <span className="text-blue-600 font-black text-lg lg:text-2xl">{convertToKoreanUnitParts(inputs.contribution).eok}</span>
+                        <span className="text-blue-400 font-black text-lg lg:text-2xl">{convertToKoreanUnitParts(inputs.contribution).man}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-blue-50/50 border-2 border-blue-100 rounded-2xl p-4 text-right">
+                    <span className="text-blue-700 font-black text-xl lg:text-2xl">
+                      입력 금액: {inputs.contribution ? `₩${parseNumber(inputs.contribution).toLocaleString()}` : '₩0'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="space-y-6">
-                <label className="text-2xl lg:text-4xl font-black text-slate-700 block tracking-tight">적용 세율 (%)</label>
+                <label className="text-2xl lg:text-3xl font-black text-slate-700 block tracking-tight">적용 세율 (%)</label>
                 <select 
                   value={inputs.taxRate || '19'} 
                   onChange={(e) => setInputs({...inputs, taxRate: e.target.value})} 
-                  className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-4xl font-black outline-none appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2.5rem_center]"
+                  className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-3xl font-black outline-none appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2.5rem_center]"
                 >
                   {currentModule === ModuleType.CORP_TAX 
                     ? [9, 19, 21, 24].map(v => <option key={v} value={v}>{v}%</option>)
                     : [6, 15, 24, 35, 38, 40, 42, 45].map(v => <option key={v} value={v}>{v}%</option>)}
                 </select>
-              </div>
-              <div className="space-y-6 md:col-span-2">
-                <label className="text-2xl lg:text-4xl font-black text-slate-700 block tracking-tight">기금 출연 예정액 (원)</label>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={inputs.contribution || ''} 
-                    onChange={(e) => setInputs({...inputs, contribution: formatNumber(e.target.value)})} 
-                    className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-4xl font-black outline-none shadow-inner tracking-tighter" 
-                    placeholder="50,000,000" 
-                  />
-                  {inputs.contribution && (
-                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                      <span className="text-blue-600 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.contribution).eok}</span>
-                      <span className="text-blue-400 font-black text-xl lg:text-3xl">{convertToKoreanUnitParts(inputs.contribution).man}</span>
-                    </div>
-                  )}
-                </div>
               </div>
             </>
           )}
@@ -285,10 +277,10 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
             {res.module === ModuleType.WELFARE_CONVERSION && (
               <div className="space-y-4 relative z-10 px-4">
-                <div className="text-xl font-black text-blue-500 uppercase tracking-widest border-b-2 border-blue-100 inline-block pb-1">
+                <div className="text-lg font-black text-blue-500 uppercase tracking-widest border-b-2 border-blue-100 inline-block pb-1">
                   복리후생비절세 시뮬레이션
                 </div>
-                <h3 className="text-3xl lg:text-4xl font-black text-slate-900 break-keep leading-tight">
+                <h3 className="text-2xl lg:text-3xl font-black text-slate-900 break-keep leading-tight">
                   연간 ₩{parseNumber(res.inputs.prevWelfareExp).toLocaleString()} 중
                 </h3>
                 <p className="text-slate-400 font-bold text-xl lg:text-2xl mt-1">({convertToKoreanUnit(res.inputs.prevWelfareExp)} / 1인당 연평균 ₩{Math.round(parseNumber(res.inputs.prevWelfareExp) / (companyContext.employeeCount || 1)).toLocaleString()})</p>
@@ -314,22 +306,22 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-b border-white/10 pb-14 relative z-10">
                     <div className="space-y-6">
-                      <div className="text-2xl lg:text-3xl font-black text-slate-400">기업 4대보험 총 절감액 (약 11%)</div>
-                      <div className="text-3xl lg:text-4xl font-black text-blue-400 break-all leading-tight tracking-tighter">₩{res.result.employerSaving.toLocaleString()}</div>
-                      <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employerSaving)})</div>
+                      <div className="text-xl lg:text-2xl font-black text-slate-400">기업 4대보험 총 절감액 (약 11%)</div>
+                      <div className="text-2xl lg:text-3xl font-black text-blue-400 break-all leading-tight tracking-tighter">₩{res.result.employerSaving.toLocaleString()}</div>
+                      <div className="text-2xl lg:text-3xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employerSaving)})</div>
                     </div>
                     <div className="space-y-6">
-                      <div className="text-2xl lg:text-3xl font-black text-slate-400">근로자 전체 실질소득 증가</div>
-                      <div className="text-3xl lg:text-4xl font-black text-green-400 break-all leading-tight tracking-tighter">₩{res.result.employeeSaving.toLocaleString()}</div>
-                      <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employeeSaving)})</div>
+                      <div className="text-xl lg:text-2xl font-black text-slate-400">근로자 전체 실질소득 증가</div>
+                      <div className="text-2xl lg:text-3xl font-black text-green-400 break-all leading-tight tracking-tighter">₩{res.result.employeeSaving.toLocaleString()}</div>
+                      <div className="text-2xl lg:text-3xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employeeSaving)})</div>
                     </div>
                   </div>
 
                   <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 relative z-10">
-                    <div className="text-2xl lg:text-3xl font-black text-slate-300">합계 총 절감액 (Company + Employee)</div>
+                    <div className="text-xl lg:text-2xl font-black text-slate-300">합계 총 절감액 (Company + Employee)</div>
                     <div className="text-left lg:text-right space-y-4 max-w-full overflow-hidden">
-                      <div className="text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter leading-tight text-white break-all">₩{res.result.totalSaving.toLocaleString()}</div>
-                      <div className="text-3xl lg:text-4xl font-black text-slate-500 italic">({convertToKoreanUnit(res.result.totalSaving)})</div>
+                      <div className="text-3xl lg:text-4xl font-black tracking-tighter leading-tight text-white break-all">₩{res.result.totalSaving.toLocaleString()}</div>
+                      <div className="text-2xl lg:text-3xl font-black text-slate-500 italic">({convertToKoreanUnit(res.result.totalSaving)})</div>
                     </div>
                   </div>
                 </div>
@@ -360,10 +352,15 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             ) : (
               <div className="space-y-10 px-2">
                 {/* 기금출연시 절세효과 제목 */}
-                <div className="text-center">
+                <div className="text-center space-y-4">
+                  <div className="inline-block px-8 py-4 bg-slate-100 rounded-[32px] border-2 border-slate-200">
+                    <span className="text-xl lg:text-2xl font-black text-slate-600">
+                      출연액: ₩{parseNumber(res.inputs.contribution).toLocaleString()}
+                    </span>
+                  </div>
                   <div className="inline-block px-12 py-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-[40px] shadow-2xl">
-                    <span className="text-3xl lg:text-5xl font-black text-white">
-                      {parseNumber(res.inputs.contribution).toLocaleString()}원 기금출연시 절세효과
+                    <span className="text-2xl lg:text-3xl font-black text-white">
+                      {res.module === ModuleType.CORP_TAX ? '법인세' : '종합소득세'}절세 시뮬레이션 결과
                     </span>
                   </div>
                 </div>
@@ -372,18 +369,18 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                   {/* 상단 박스: 최종 절세 예상액 */}
                   <div className="p-12 lg:p-16 bg-blue-50 rounded-[60px] border-4 border-blue-100 space-y-10 shadow-xl">
                     <div className="space-y-8">
-                      <div className="text-2xl lg:text-3xl font-black text-blue-400 uppercase tracking-widest">최종 절세 예상액 (국세+지방세)</div>
-                      <div className="text-4xl lg:text-6xl xl:text-7xl font-black text-blue-700 leading-tight tracking-tighter">₩{res.result.taxSaving.toLocaleString()}</div>
-                      <div className="text-3xl lg:text-4xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
+                      <div className="text-xl lg:text-2xl font-black text-blue-400 uppercase tracking-widest">최종 절세 예상액 (국세+지방세)</div>
+                      <div className="text-3xl lg:text-4xl font-black text-blue-700 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
+                      <div className="text-2xl lg:text-3xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
                     </div>
                     <div className="grid grid-cols-2 gap-10 pt-10 border-t-4 border-blue-200 mt-10">
                       <div className="space-y-4">
-                        <div className="text-xl lg:text-2xl text-blue-300 font-black uppercase">국세 절감액</div>
-                        <div className="font-black text-blue-700 text-2xl lg:text-4xl tracking-tight">₩{res.result.mainTaxSaving.toLocaleString()}</div>
+                        <div className="text-lg lg:text-xl text-blue-300 font-black uppercase">국세 절감액</div>
+                        <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.mainTaxSaving.toLocaleString()}</div>
                       </div>
                       <div className="space-y-4">
-                        <div className="text-xl lg:text-2xl text-blue-300 font-black uppercase">지방세 (10%)</div>
-                        <div className="font-black text-blue-700 text-2xl lg:text-4xl tracking-tight">₩{res.result.localTaxSaving.toLocaleString()}</div>
+                        <div className="text-lg lg:text-xl text-blue-300 font-black uppercase">지방세 (10%)</div>
+                        <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.localTaxSaving.toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
@@ -393,14 +390,14 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                     <div className="absolute top-0 right-0 w-80 h-80 bg-green-500/5 rounded-full blur-3xl"></div>
                     <div className="space-y-8 relative z-10">
                       <div className="flex justify-between items-center pb-8 border-b-2 border-white/10">
-                        <span className="text-2xl lg:text-3xl font-black uppercase tracking-widest text-slate-400">출연 전 납부세액</span>
-                        <span className="line-through font-bold text-3xl lg:text-5xl tracking-tighter italic text-slate-500">₩{res.result.prevTaxPaid.toLocaleString()}</span>
+                        <span className="text-xl lg:text-2xl font-black uppercase tracking-widest text-slate-400">출연 전 납부세액</span>
+                        <span className="line-through font-bold text-2xl lg:text-3xl tracking-tighter italic text-slate-500 break-all">₩{res.result.prevTaxPaid.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-2xl lg:text-3xl font-black uppercase tracking-widest text-slate-300">출연 후 예상 세액</span>
+                        <span className="text-xl lg:text-2xl font-black uppercase tracking-widest text-slate-300">출연 후 예상 세액</span>
                         <div className="text-right space-y-4">
-                          <div className="text-4xl lg:text-6xl xl:text-7xl font-black text-green-400 leading-tight tracking-tighter">₩{res.result.netTaxAfterContribution.toLocaleString()}</div>
-                          <div className="text-xl lg:text-2xl text-slate-400 font-bold bg-white/5 px-6 py-3 rounded-full inline-block">약 {Math.round((res.result.taxSaving / res.result.prevTaxPaid) * 100 || 0)}% 감소 효과</div>
+                          <div className="text-3xl lg:text-4xl font-black text-green-400 leading-tight tracking-tighter break-all">₩{res.result.netTaxAfterContribution.toLocaleString()}</div>
+                          <div className="text-lg lg:text-xl text-slate-400 font-bold bg-white/5 px-6 py-3 rounded-full inline-block">약 {Math.round((res.result.taxSaving / res.result.prevTaxPaid) * 100 || 0)}% 감소 효과</div>
                         </div>
                       </div>
                     </div>
