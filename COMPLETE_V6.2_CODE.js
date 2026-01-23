@@ -1080,6 +1080,12 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    if (data.action === 'registerManager') {
+      return ContentService
+        .createTextOutput(JSON.stringify(registerManager(data)))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     if (data.action === 'getAllMembers') {
       return ContentService
         .createTextOutput(JSON.stringify(getAllMembers()))
