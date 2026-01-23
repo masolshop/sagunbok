@@ -299,14 +299,14 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-b border-white/10 pb-14 relative z-10">
                     <div className="space-y-6">
-                      <div className="text-lg lg:text-xl font-black text-slate-400">기업 4대보험 총 절감액 (약 11%)</div>
+                      <div className="text-2xl lg:text-3xl font-black text-slate-400">기업 4대보험 총 절감액 (약 11%)</div>
                       <div className="text-4xl lg:text-5xl font-black text-blue-400 break-all leading-tight tracking-tighter">₩{res.result.employerSaving.toLocaleString()}</div>
-                      <div className="text-2xl lg:text-3xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employerSaving)})</div>
+                      <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employerSaving)})</div>
                     </div>
                     <div className="space-y-6">
-                      <div className="text-lg lg:text-xl font-black text-slate-400">근로자 전체 실질소득 증가</div>
+                      <div className="text-2xl lg:text-3xl font-black text-slate-400">근로자 전체 실질소득 증가</div>
                       <div className="text-4xl lg:text-5xl font-black text-green-400 break-all leading-tight tracking-tighter">₩{res.result.employeeSaving.toLocaleString()}</div>
-                      <div className="text-2xl lg:text-3xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employeeSaving)})</div>
+                      <div className="text-3xl lg:text-4xl font-bold text-slate-500">({convertToKoreanUnit(res.result.employeeSaving)})</div>
                     </div>
                   </div>
 
@@ -321,24 +321,24 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
                   <div className="bg-slate-50 p-10 rounded-[48px] space-y-6 border-2 border-slate-100 flex flex-col justify-between shadow-sm">
-                    <div className="text-xs font-black text-slate-400 uppercase tracking-widest">기존 1인당 복후비</div>
+                    <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">기존 1인당 복후비</div>
                     <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-slate-900 leading-tight break-all">₩{res.result.perEmpPrevWelfareExp.toLocaleString()}</div>
-                    <div className="text-lg font-bold text-slate-400 mt-1">약 {Math.round(res.result.perEmpPrevWelfareExp/10000)}만원</div>
+                    <div className="text-2xl lg:text-3xl font-bold text-slate-400 mt-1">약 {Math.round(res.result.perEmpPrevWelfareExp/10000)}만원</div>
                   </div>
                   <div className="bg-blue-50 p-10 rounded-[48px] space-y-6 border-2 border-blue-100 flex flex-col justify-between shadow-sm">
-                    <div className="text-xs font-black text-blue-400 uppercase tracking-widest">1인 기업보험 절감</div>
+                    <div className="text-lg lg:text-xl font-black text-blue-400 uppercase tracking-widest">1인 기업보험 절감</div>
                     <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-blue-700 leading-tight break-all">₩{res.result.perEmpEmployerSaving.toLocaleString()}</div>
-                    <div className="text-lg font-bold text-blue-400 mt-1">약 {Math.round(res.result.perEmpEmployerSaving/10000)}만원</div>
+                    <div className="text-2xl lg:text-3xl font-bold text-blue-400 mt-1">약 {Math.round(res.result.perEmpEmployerSaving/10000)}만원</div>
                   </div>
                   <div className="bg-green-50 p-10 rounded-[48px] space-y-6 border-2 border-green-100 flex flex-col justify-between shadow-sm">
-                    <div className="text-xs font-black text-green-400 uppercase tracking-widest">1인 실질소득 증가</div>
+                    <div className="text-lg lg:text-xl font-black text-green-400 uppercase tracking-widest">1인 실질소득 증가</div>
                     <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-green-700 leading-tight break-all">₩{res.result.perEmpEmployeeSaving.toLocaleString()}</div>
-                    <div className="text-lg font-bold text-green-400 mt-1">약 {Math.round(res.result.perEmpEmployeeSaving/10000)}만원</div>
+                    <div className="text-2xl lg:text-3xl font-bold text-green-400 mt-1">약 {Math.round(res.result.perEmpEmployeeSaving/10000)}만원</div>
                   </div>
                   <div className="bg-slate-900 p-10 rounded-[48px] space-y-6 text-white flex flex-col justify-between shadow-xl">
-                    <div className="text-xs font-black text-slate-400 uppercase tracking-widest">1인 평균 총 혜택</div>
+                    <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">1인 평균 총 혜택</div>
                     <div className="text-2xl lg:text-3xl xl:text-4xl font-black text-white leading-tight break-all">₩{res.result.perEmpTotalSaving.toLocaleString()}</div>
-                    <div className="text-lg font-bold text-slate-500 mt-1">약 {Math.round(res.result.perEmpTotalSaving/10000)}만원</div>
+                    <div className="text-2xl lg:text-3xl font-bold text-slate-500 mt-1">약 {Math.round(res.result.perEmpTotalSaving/10000)}만원</div>
                   </div>
                 </div>
               </div>
@@ -395,20 +395,7 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
               다만 실제 절세 가능 여부 및 금액은 임금대체 여부, 지급의 정기성·고정성, 대상자 선정 및 지급기준의 구체성, 사규/규정의 정비 및 증빙 관리 등 개별 사정에 따라 달라질 수 있으므로, 본 계산기는 이해를 돕기 위한 추정 시뮬레이션으로 활용해 주세요.
             </p>
           </div>
-          <div className="pt-8">
-            <a 
-              href="#" 
-              onClick={(e) => e.preventDefault()}
-              className="group inline-flex flex-col space-y-2 no-underline"
-            >
-              <span className="text-2xl lg:text-3xl text-blue-700 font-black tracking-tight group-hover:text-blue-900 transition-colors">
-                아래 사근복 절세 계산기에서 "임금(급여·상여) 제외 전환" 시나리어로 먼저 효과를 확인해 보세요.
-              </span>
-              <div className="h-2 w-full bg-blue-600/20 rounded-full overflow-hidden">
-                <div className="h-full w-0 bg-blue-600 group-hover:w-full transition-all duration-500"></div>
-              </div>
-            </a>
-          </div>
+
         </div>
       </div>
     </div>
