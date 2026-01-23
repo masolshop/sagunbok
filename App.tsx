@@ -12,7 +12,7 @@ import AIChat from './components/AIChat';
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
+  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'ai' | 'admin'>('corp');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
@@ -219,6 +219,13 @@ const App: React.FC = () => {
             <span>기업리스크진단</span>
             <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'diag' ? 'opacity-100' : ''}`}>🩺</span>
           </button>
+          <button 
+            onClick={() => setActiveTab('ai')}
+            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'ai' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
+          >
+            <span>AI 컨설턴트</span>
+            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'ai' ? 'opacity-100' : ''}`}>🤖</span>
+          </button>
         </div>
 
         <div className="mt-auto space-y-6">
@@ -307,6 +314,25 @@ const App: React.FC = () => {
               diagnosisResult={diagnosisResult}
               onSave={handleSaveReport}
             />
+          )}
+
+          {activeTab === 'ai' && (
+            <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-blue-100">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-lg transform rotate-3">
+                  🤖
+                </div>
+                <div>
+                  <h1 className="text-3xl font-black text-gray-900">AI 컨설턴트</h1>
+                  <p className="text-sm text-gray-500 font-semibold">실시간 세무 상담 및 AI 분석</p>
+                </div>
+              </div>
+              <AIChat 
+                companyContext={companyContext}
+                calcResults={calcResults}
+                diagnosisResult={diagnosisResult}
+              />
+            </div>
           )}
 
           {activeTab === 'admin' && (
