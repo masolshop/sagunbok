@@ -30,10 +30,12 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyXNblmD7q9iu1Ye91WuU2X2u3iAqi8P-YgG6WaZ-19gPfctqesCS9fQLjQFx9Pv0Go/exec';
+
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://3.34.186.174/api', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +58,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     if (!confirm('Google Drive JSON 파일을 동기화하시겠습니까?')) return;
     
     try {
-      const response = await fetch('http://3.34.186.174/api', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -78,7 +80,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
   const downloadJsonFiles = async () => {
     try {
-      const response = await fetch('http://3.34.186.174/api', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +105,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
   const updateMemberStatus = async (phone: string, type: 'company' | 'consultant', newStatus: string) => {
     try {
-      const response = await fetch('http://3.34.186.174/api', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
