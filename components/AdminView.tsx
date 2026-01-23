@@ -30,17 +30,14 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxl_ia0gCJSikCD-wVy1uzuRiHmrQS1HgcVvVobVr6zyZZ2OWPPmBhNbDDV8tStqTYn/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxDVhMVyUGU68gFtYxsyICNwXHuvETNV64mehtRZxLuGARTyg9PUJZzwMSbnmwU8g4P/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'getAllMembers'
-        })
+      const params = new URLSearchParams({ action: 'getAllMembers' });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
       });
 
       const data = await response.json();
@@ -58,12 +55,9 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     if (!confirm('Google Drive JSON 파일을 동기화하시겠습니까?')) return;
     
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'syncJson'
-        })
+      const params = new URLSearchParams({ action: 'syncJson' });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
       });
 
       const data = await response.json();
@@ -80,12 +74,9 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
   const downloadJsonFiles = async () => {
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'getJsonUrls'
-        })
+      const params = new URLSearchParams({ action: 'getJsonUrls' });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
       });
 
       const data = await response.json();
@@ -105,15 +96,14 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
   const updateMemberStatus = async (phone: string, type: 'company' | 'consultant', newStatus: string) => {
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'updateMemberStatus',
-          phone,
-          type,
-          status: newStatus
-        })
+      const params = new URLSearchParams({
+        action: 'updateMemberStatus',
+        phone,
+        type,
+        status: newStatus
+      });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
       });
 
       const data = await response.json();

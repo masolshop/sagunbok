@@ -8,7 +8,7 @@ type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'consultant';
 
 // Apps Script Web App URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbxl_ia0gCJSikCD-wVy1uzuRiHmrQS1HgcVvVobVr6zyZZ2OWPPmBhNbDDV8tStqTYn/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxDVhMVyUGU68gFtYxsyICNwXHuvETNV64mehtRZxLuGARTyg9PUJZzwMSbnmwU8g4P/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -43,10 +43,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...data }),
+    // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
+    const params = new URLSearchParams({
+      action,
+      ...Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, String(v)])
+      )
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`, {
+      method: 'GET',
     });
     return response.json();
   };
