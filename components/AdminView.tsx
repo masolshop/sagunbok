@@ -52,6 +52,55 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     }
   };
 
+  const syncJsonFiles = async () => {
+    if (!confirm('Google Drive JSON 파일을 동기화하시겠습니까?')) return;
+    
+    try {
+      const response = await fetch('http://3.34.186.174/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'syncJson'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ JSON 파일 동기화가 완료되었습니다!');
+      } else {
+        alert('❌ JSON 동기화 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to sync JSON:', error);
+      alert('❌ JSON 동기화 중 오류가 발생했습니다.');
+    }
+  };
+
+  const downloadJsonFiles = async () => {
+    try {
+      const response = await fetch('http://3.34.186.174/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getJsonUrls'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.urls) {
+        alert('JSON 파일 다운로드 링크:\n\n' +
+          `전체 회원: ${data.urls.allMembers}\n\n` +
+          `컨설턴트별: ${data.urls.byConsultant}\n\n` +
+          '링크를 복사하여 브라우저에서 다운로드하세요.');
+      } else {
+        alert('❌ JSON URL 조회 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to get JSON URLs:', error);
+      alert('❌ JSON URL 조회 중 오류가 발생했습니다.');
+    }
+  };
+
   const updateMemberStatus = async (phone: string, type: 'company' | 'consultant', newStatus: string) => {
     try {
       const response = await fetch('http://3.34.186.174/api', {
@@ -123,7 +172,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <header className="space-y-4">
-        <div className="flex justify-between items-end">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight">
               {isSuperAdmin ? '전체 관리자 대시보드' : '컨설턴트 대시보드'}
@@ -134,13 +183,31 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                 : `${consultantName}님이 추천한 기업회원 리스트입니다.`}
             </p>
           </div>
-          <button 
-            onClick={fetchMembers}
-            disabled={loading}
-            className="px-6 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg"
-          >
-            {loading ? '⏳ 로딩중...' : '🔄 새로고침'}
-          </button>
+          <div className="flex gap-3">
+            {isSuperAdmin && (
+              <>
+                <button 
+                  onClick={syncJsonFiles}
+                  className="px-6 py-3 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all shadow-lg whitespace-nowrap"
+                >
+                  💾 JSON 동기화
+                </button>
+                <button 
+                  onClick={downloadJsonFiles}
+                  className="px-6 py-3 bg-purple-600 text-white font-black rounded-2xl hover:bg-purple-700 transition-all shadow-lg whitespace-nowrap"
+                >
+                  📥 JSON 다운로드
+                </button>
+              </>
+            )}
+            <button 
+              onClick={fetchMembers}
+              disabled={loading}
+              className="px-6 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg whitespace-nowrap"
+            >
+              {loading ? '⏳ 로딩중...' : '🔄 새로고침'}
+            </button>
+          </div>
         </div>
 
         {/* 사용자 정보 */}
@@ -191,6 +258,38 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
           </>
         )}
       </div>
+
+      {/* JSON DB Info - 전체 관리자만 표시 */}
+      {isSuperAdmin && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8">
+          <div className="flex items-start gap-4">
+            <div className="text-5xl">💾</div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-black text-slate-900 mb-2">JSON DB 이중 백업 시스템</h3>
+              <ul className="space-y-2 text-slate-700 font-bold mb-4">
+                <li>• <b>메인 DB</b>: Google Sheets (수동 관리 용이)</li>
+                <li>• <b>백업 DB</b>: Google Drive JSON 파일 (자동 동기화)</li>
+                <li>• <b>자동 동기화</b>: 회원가입/승인 시 JSON 자동 업데이트</li>
+                <li>• <b>파일 종류</b>: ① 전체 회원 DB ② 컨설턴트별 추천 회원 DB</li>
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={syncJsonFiles}
+                  className="px-5 py-2 bg-green-600 text-white font-black rounded-xl hover:bg-green-700 transition-all text-sm"
+                >
+                  💾 수동 동기화
+                </button>
+                <button
+                  onClick={downloadJsonFiles}
+                  className="px-5 py-2 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-700 transition-all text-sm"
+                >
+                  📥 다운로드 링크 보기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-sm">
