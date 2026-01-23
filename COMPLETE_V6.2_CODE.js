@@ -403,6 +403,26 @@ function sendEmail(to, subject, message) {
 /**
  * 컨설턴트 회원가입 이메일
  */
+/**
+ * 매니저 가입 이메일
+ */
+function sendManagerSignupEmails(data) {
+  // 관리자에게
+  sendEmail(
+    ADMIN_EMAIL,
+    '[사근복 AI] 새로운 매니저 가입 - 승인 필요',
+    `새로운 사근복매니저가 가입했습니다.\n\n이름: ${data.name}\n전화번호: ${data.phone}\n이메일: ${data.email}\n직함: ${data.position}\n소속: ${data.division} - ${data.branch}\n가입일: ${data.registeredAt}\n\n승인이 필요합니다.\n관리자 대시보드: http://3.34.186.174/`
+  );
+  
+  // 본인에게
+  sendEmail(
+    data.email,
+    '[사근복 AI] 회원가입 신청이 완료되었습니다',
+    `${data.name}님, 안녕하세요!\n\n사근복매니저 회원가입 신청이 완료되었습니다.\n\n이름: ${data.name}\n전화번호: ${data.phone}\n이메일: ${data.email}\n직함: ${data.position}\n소속: ${data.division} - ${data.branch}\n초기 비밀번호: 12345\n상태: 승인대기\n\n관리자 승인 후 로그인이 가능합니다.\n로그인 후 반드시 비밀번호를 변경해주세요.\n\n사근복 AI`
+  );
+}
+
+/**
 function sendConsultantSignupEmails(data) {
   // 관리자에게
   sendEmail(
@@ -422,6 +442,18 @@ function sendConsultantSignupEmails(data) {
 /**
  * 컨설턴트 승인 이메일
  */
+/**
+ * 매니저 승인 이메일
+ */
+function sendManagerApprovedEmail(data) {
+  sendEmail(
+    data.email,
+    '[사근복 AI] 회원 승인이 완료되었습니다 🎉',
+    `${data.name}님, 축하합니다!\n\n사근복매니저 회원 승인이 완료되었습니다.\n이제 모든 기능을 이용하실 수 있습니다.\n\n이름: ${data.name}\n전화번호: ${data.phone}\n상태: 승인완료\n\n로그인하기: http://3.34.186.174/\n\n사근복 AI와 함께 성공적인 비즈니스를 만들어가세요!`
+  );
+}
+
+/**
 function sendConsultantApprovedEmail(data) {
   sendEmail(
     data.email,
@@ -549,7 +581,14 @@ function updateMemberStatus(phone, type, newStatus) {
       };
     }
     
-    const sheetName = (type === 'company') ? SHEET_COMPANIES : SHEET_CONSULTANTS;
+    let sheetName;
+    if (type === 'company') {
+      sheetName = SHEET_COMPANIES;
+    } else if (type === 'manager') {
+      sheetName = SHEET_MANAGERS;
+    } else {
+      sheetName = SHEET_CONSULTANTS;
+    }
     const sheet = ss.getSheetByName(sheetName);
     
     if (!sheet) {
@@ -570,10 +609,11 @@ function updateMemberStatus(phone, type, newStatus) {
         
         const userName = (type === 'company') ? data[i][3] : data[i][0];
         const userEmail = (type === 'company') ? data[i][5] : data[i][2];
+        const userTypeKorean = (type === 'company') ? '기업회원' : (type === 'manager' ? '사근복매니저' : '사근복컨설턴트');
         
         writeLog(
           '승인상태변경', 
-          type === 'company' ? '기업회원' : '사근복컨설턴트', 
+          userTypeKorean, 
           phone, 
           `${userName} 상태 변경: ${newStatus}`, 
           '성공'
@@ -590,6 +630,14 @@ function updateMemberStatus(phone, type, newStatus) {
               email: userEmail
             };
             sendCompanyApprovedEmail(emailData);
+          } else if (type === 'manager') {
+            const emailData = {
+              name: data[i][0],
+              phone: data[i][1],
+              email: userEmail,
+              position: data[i][3]
+            };
+            sendManagerApprovedEmail(emailData);
           } else {
             const emailData = {
               name: data[i][0],
