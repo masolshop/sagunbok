@@ -402,7 +402,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           {title}
         </div>
         <div className="text-3xl lg:text-4xl xl:text-5xl font-black leading-none break-all tracking-tighter">{value}</div>
-        {sub ? <div className={`text-lg lg:text-xl font-bold ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-500' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>{sub}</div> : null}
+        {sub ? <div className={`text-2xl lg:text-3xl font-bold ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-500' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>{sub}</div> : null}
       </div>
     );
   };
@@ -533,13 +533,13 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-white/10 pb-10 relative z-10">
                       <div className="space-y-3">
-                        <div className="text-lg lg:text-xl font-black text-slate-400">필요 총급여액 (Gross Monthly)</div>
+                        <div className="text-2xl lg:text-3xl font-black text-slate-400">필요 총급여액 (Gross Monthly)</div>
                         <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-blue-400 break-words leading-none tracking-tighter">
                           ₩{res.result.payroll.grossMonthly.toLocaleString()}
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <div className="text-lg lg:text-xl font-black text-slate-400">원장 보전 금액 (대납 합계)</div>
+                        <div className="text-2xl lg:text-3xl font-black text-slate-400">원장 보전 금액 (대납 합계)</div>
                         <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-red-400 break-words leading-none tracking-tighter">
                           ₩{res.result.payroll.ownerCoverMonthly.toLocaleString()}
                         </div>

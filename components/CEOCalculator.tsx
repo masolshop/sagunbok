@@ -392,29 +392,29 @@ const CEOCalculator: React.FC<CEOCalculatorProps> = ({
               {/* 기본 평가 카드 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                 <div className="bg-[#f8fafc] p-8 rounded-[48px] space-y-4 border-2 border-slate-100 shadow-sm">
-                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">1주당 평가액</div>
+                  <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">1주당 평가액</div>
                   <div className="text-2xl lg:text-3xl font-black text-slate-900 leading-none break-all tracking-tighter">₩{res.result.valuation.finalPerShare.toLocaleString()}</div>
-                  <div className="text-sm font-bold text-slate-400">보충적 평가 가액</div>
+                  <div className="text-xl lg:text-2xl font-bold text-slate-400">보충적 평가 가액</div>
                 </div>
 
                 <div className="bg-[#f0f7ff] p-8 rounded-[48px] space-y-4 border-2 border-blue-100 shadow-sm">
-                  <div className="text-xs font-black text-blue-400 uppercase tracking-widest">평가 지분 총액</div>
+                  <div className="text-lg lg:text-xl font-black text-blue-400 uppercase tracking-widest">평가 지분 총액</div>
                   <div className="text-2xl lg:text-3xl font-black text-blue-700 leading-none break-all tracking-tighter">₩{res.result.totalTransferValue.toLocaleString()}</div>
-                  <div className="text-sm font-bold text-blue-500">증여 대상 가액</div>
+                  <div className="text-xl lg:text-2xl font-bold text-blue-500">증여 대상 가액</div>
                 </div>
 
                 <div className="bg-[#0f172a] p-8 rounded-[48px] space-y-4 text-white shadow-xl">
-                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">일반 증여세</div>
+                  <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">일반 증여세</div>
                   <div className="text-2xl lg:text-3xl font-black text-white leading-none break-all tracking-tighter">₩{res.result.gift.tax.toLocaleString()}</div>
-                  <div className="text-sm font-bold text-slate-400">최고 {res.result.gift.rate * 100}% 구간</div>
+                  <div className="text-xl lg:text-2xl font-bold text-slate-400">최고 {res.result.gift.rate * 100}% 구간</div>
                 </div>
 
                 <div className="bg-[#7f1d1d] p-8 rounded-[48px] space-y-4 text-white shadow-xl">
-                  <div className="text-xs font-black text-red-300 uppercase tracking-widest">특례 적용 시</div>
+                  <div className="text-lg lg:text-xl font-black text-red-300 uppercase tracking-widest">특례 적용 시</div>
                   <div className="text-2xl lg:text-3xl font-black text-white leading-none break-all tracking-tighter">
                     {res.result.specialSuccession ? `₩${res.result.specialSuccession.tax.toLocaleString()}` : '미적용'}
                   </div>
-                  <div className="text-sm font-bold text-red-300">10억 공제 + 저율과세</div>
+                  <div className="text-xl lg:text-2xl font-bold text-red-300">10억 공제 + 저율과세</div>
                 </div>
               </div>
             </div>

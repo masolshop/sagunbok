@@ -168,12 +168,12 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-white/10 pb-10 relative z-10">
                   <div className="space-y-3">
-                    <div className="text-lg lg:text-xl font-black text-slate-400">연간 근로소득 실질 증가액</div>
+                    <div className="text-2xl lg:text-3xl font-black text-slate-400">연간 근로소득 실질 증가액</div>
                     <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-blue-400 break-words leading-none tracking-tighter">₩{res.result.empTotalSavingA.toLocaleString()}</div>
-                    <div className="text-xl lg:text-2xl font-bold text-slate-500 opacity-80">({convertToKoreanUnit(res.result.empTotalSavingA)})</div>
+                    <div className="text-2xl lg:text-3xl font-bold text-slate-500 opacity-80">({convertToKoreanUnit(res.result.empTotalSavingA)})</div>
                   </div>
                   <div className="space-y-3">
-                    <div className="text-lg lg:text-xl font-black text-slate-400">월평균 실수령액 증가</div>
+                    <div className="text-2xl lg:text-3xl font-black text-slate-400">월평균 실수령액 증가</div>
                     <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-green-400 break-words leading-none tracking-tighter">₩{Math.round(res.result.empTotalSavingA / 12).toLocaleString()}</div>
                   </div>
                 </div>
@@ -189,26 +189,26 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
                 <div className="bg-slate-50 p-10 rounded-[48px] space-y-6 border-2 border-slate-100 flex flex-col justify-between shadow-sm">
-                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">누적 절세 혜택</div>
+                  <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">누적 절세 혜택</div>
                   <div className="text-2xl lg:text-3xl font-black text-slate-900 leading-none break-words tracking-tight">₩{res.result.cumulativeSaving.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-slate-400 mt-1">{convertToKoreanUnit(res.result.cumulativeSaving)}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-400 mt-1">{convertToKoreanUnit(res.result.cumulativeSaving)}</div>
                 </div>
                 <div className="bg-red-50 p-10 rounded-[48px] space-y-6 border-2 border-red-100 flex flex-col justify-between shadow-sm">
-                  <div className="text-xs font-black text-red-400 uppercase tracking-widest">퇴직금 감소 추정액</div>
+                  <div className="text-lg lg:text-xl font-black text-red-400 uppercase tracking-widest">퇴직금 감소 추정액</div>
                   <div className="text-2xl lg:text-3xl font-black text-red-700 leading-none break-words tracking-tight">₩{res.result.severanceLoss.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-red-400 mt-1">{convertToKoreanUnit(res.result.severanceLoss)}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-red-400 mt-1">{convertToKoreanUnit(res.result.severanceLoss)}</div>
                 </div>
                 <div className="bg-blue-50 p-10 rounded-[48px] space-y-6 border-2 border-blue-100 flex flex-col justify-between shadow-sm">
-                  <div className="text-xs font-black text-blue-400 uppercase tracking-widest">손익분기 근속연수</div>
+                  <div className="text-lg lg:text-xl font-black text-blue-400 uppercase tracking-widest">손익분기 근속연수</div>
                   <div className="text-2xl lg:text-3xl font-black text-blue-700 leading-none break-words tracking-tight">{res.result.breakEvenYears.toFixed(1)}년</div>
-                  <div className="text-lg font-bold text-blue-400 mt-1">이후 이득 구간 진입</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-blue-400 mt-1">이후 이득 구간 진입</div>
                 </div>
                 <div className="bg-slate-900 p-10 rounded-[48px] space-y-6 text-white flex flex-col justify-between shadow-xl">
-                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">총 혜택 판단</div>
+                  <div className="text-lg lg:text-xl font-black text-slate-400 uppercase tracking-widest">총 혜택 판단</div>
                   <div className="text-2xl lg:text-3xl font-black text-white leading-none break-words tracking-tight">
                     {res.result.netBenefit > 0 ? "도입 유리" : "장기 검토"}
                   </div>
-                  <div className="text-lg font-bold text-slate-500 mt-1">Net Benefit 기준</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-500 mt-1">Net Benefit 기준</div>
                 </div>
               </div>
             </div>
