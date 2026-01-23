@@ -30,7 +30,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyXNblmD7q9iu1Ye91WuU2X2u3iAqi8P-YgG6WaZ-19gPfctqesCS9fQLjQFx9Pv0Go/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxl_ia0gCJSikCD-wVy1uzuRiHmrQS1HgcVvVobVr6zyZZ2OWPPmBhNbDDV8tStqTYn/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
