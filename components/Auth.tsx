@@ -45,6 +45,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   
   const callAPI = async (action: string, data: any) => {
     // GET 방식으로 변경 (CORS 우회)
+    // 헤더 없이 요청 (preflight 방지)
     const params = new URLSearchParams({
       action,
       ...data
@@ -52,9 +53,6 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     
     const response = await fetch(`${API_URL}?${params.toString()}`, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
     });
     return response.json();
   };
