@@ -25,7 +25,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'net', label: '네트급여계산기', icon: '🧮', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
-  { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company'], description: '기업회원 전용' },
+  { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
 
