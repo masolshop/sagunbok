@@ -557,8 +557,10 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
   const TabButton = ({ k, label }: { k: TabKey; label: string }) => (
     <button
       onClick={() => setTab(k)}
-      className={`px-7 py-4 rounded-2xl font-black text-lg lg:text-xl transition-all border-2
-        ${tab === k ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white text-slate-600 border-slate-100 hover:border-blue-200'}`}
+      className={`px-10 py-6 rounded-[32px] font-black text-2xl lg:text-3xl transition-all border-4 shadow-lg
+        ${tab === k 
+          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-600 shadow-blue-500/50 scale-105' 
+          : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:shadow-xl'}`}
     >
       {label}
     </button>
@@ -932,10 +934,13 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
         <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">
           <h3 className="text-slate-900 font-black text-3xl lg:text-4xl">사근복 연동 전/후 비교(근사)</h3>
 
-          <div className="text-slate-500 font-bold text-lg leading-relaxed">
-            ✅ 네트급여 지급방식은 외부 비공개 전제로, 원장/행정이 <b>셀프 시뮬</b>해서 "사근복 설립/복지포인트 전환 효과"를 확인하는 탭입니다.
-            <br />
-            ※ 전/후 비교는 "복지포인트만큼 과세급여를 줄이고 비과세 포인트로 전환"하는 <b>근사</b> 모델입니다.
+          <div className="bg-blue-50 border-4 border-blue-100 rounded-3xl p-8 lg:p-10 space-y-4">
+            <div className="text-2xl lg:text-3xl text-slate-700 font-black leading-relaxed">
+              ✅ 네트급여 지급방식은 외부 비공개 전제로, 원장/행정이 <span className="text-blue-600">셀프 시뮬</span>해서 "사근복 설립/복지포인트 전환 효과"를 확인하는 탭입니다.
+            </div>
+            <div className="text-xl lg:text-2xl text-slate-600 font-bold leading-relaxed">
+              ※ 전/후 비교는 "복지포인트만큼 과세급여를 줄이고 비과세 포인트로 전환"하는 <span className="text-blue-600 font-black">근사</span> 모델입니다.
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -1000,24 +1005,45 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           </button>
 
           {compareResult && (
-            <div className="space-y-10 pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <KpiCard title="총유출(전)" value={`₩${fmt(compareResult.base.payroll.employer.ownerCashOutMonthly)}`} sub="원장 월 현금유출" />
-                <KpiCard title="총유출(후)" value={`₩${fmt(compareResult.after.payroll.employer.ownerCashOutMonthly)}`} sub="포인트 전환 후" tone="blue" />
-                <KpiCard title="총유출 절감" value={`₩${fmt(compareResult.savingOutflow)}`} sub="전 - 후" tone="dark" />
+            <div className="space-y-12 pt-6">
+              {/* 첫 번째 줄: 총유출(전), 총유출(후), 총유출 절감 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* 총유출(전) */}
+                <div className="bg-slate-100 border-4 border-slate-200 rounded-[40px] p-12 lg:p-16 space-y-8">
+                  <div className="text-3xl lg:text-4xl font-black text-slate-500 uppercase tracking-widest">총유출(전)</div>
+                  <div className="text-6xl lg:text-8xl font-black text-slate-900 tracking-tighter">₩{fmt(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-4xl lg:text-5xl font-bold text-slate-600">{convertToKoreanUnit(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-slate-500">원장 월 현금유출</div>
+                </div>
+
+                {/* 총유출(후) */}
+                <div className="bg-blue-50 border-4 border-blue-200 rounded-[40px] p-12 lg:p-16 space-y-8">
+                  <div className="text-3xl lg:text-4xl font-black text-blue-500 uppercase tracking-widest">총유출(후)</div>
+                  <div className="text-6xl lg:text-8xl font-black text-blue-900 tracking-tighter">₩{fmt(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-4xl lg:text-5xl font-bold text-blue-700">{convertToKoreanUnit(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-600">포인트 전환 후</div>
+                </div>
+
+                {/* 총유출 절감 */}
+                <div className="bg-emerald-600 border-4 border-emerald-700 rounded-[40px] p-12 lg:p-16 space-y-8">
+                  <div className="text-3xl lg:text-4xl font-black text-emerald-100 uppercase tracking-widest">총유출 절감</div>
+                  <div className="text-6xl lg:text-8xl font-black text-white tracking-tighter">₩{fmt(compareResult.savingOutflow)}</div>
+                  <div className="text-4xl lg:text-5xl font-bold text-emerald-100">{convertToKoreanUnit(compareResult.savingOutflow)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-emerald-200">전 - 후</div>
+                </div>
               </div>
 
               {/* 퇴직금 vs 절세 누적 */}
-              <div className="bg-slate-50 border-2 border-slate-100 rounded-[40px] p-8 lg:p-10 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="bg-amber-50 border-4 border-amber-200 rounded-[40px] p-12 lg:p-16 space-y-10">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                   <div>
-                    <div className="text-2xl font-black text-slate-900">퇴직금 vs 절세 누적(근사)</div>
-                    <div className="text-slate-500 font-bold">"퇴직금 손해?"를 숫자로 종결하는 설득용 블록</div>
+                    <div className="text-4xl lg:text-5xl font-black text-amber-900">퇴직금 vs 절세 누적(근사)</div>
+                    <div className="text-2xl lg:text-3xl text-amber-700 font-bold mt-2">"퇴직금 손해?"를 숫자로 종결하는 설득용 블록</div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-slate-700">근속연수</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-3xl lg:text-4xl font-black text-amber-900">근속연수</span>
                     <input
-                      className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 font-black text-slate-900 w-[140px]"
+                      className="bg-white border-4 border-amber-300 rounded-2xl px-8 py-5 text-3xl lg:text-4xl font-black text-amber-900 w-[180px]"
                       value={inputs.tenureYears ?? '10'}
                       onChange={(e) => setInputs({ ...inputs, tenureYears: e.target.value })}
                     />
@@ -1034,19 +1060,53 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                   );
 
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <KpiCard title="퇴직금(전, 근사)" value={`₩${fmt(out.sev0)}`} sub="월급여×근속연수" />
-                      <KpiCard title="퇴직금(후, 근사)" value={`₩${fmt(out.sev1)}`} sub="과세급여 감소 반영" />
-                      <KpiCard title="퇴직금 감소(근사)" value={`₩${fmt(out.severanceLoss)}`} sub="손해로 느끼는 구간" tone="red" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                      <div className="bg-slate-100 border-4 border-slate-200 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-slate-700">퇴직금(전, 근사)</div>
+                        <div className="text-5xl lg:text-7xl font-black text-slate-900">₩{fmt(out.sev0)}</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-slate-600">{convertToKoreanUnit(out.sev0)}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-slate-500">월급여×근속연수</div>
+                      </div>
 
-                      <KpiCard title="절세/절감 누적" value={`₩${fmt(out.savingTotal)}`} sub="절감×12×근속연수" tone="blue" />
-                      <KpiCard title="순이익(절감-퇴직금)" value={`₩${fmt(out.netBenefit)}`} sub="결론 KPI" tone="dark" />
-                      <KpiCard title="근속연수" value={`${years}년`} sub="가정치" />
+                      <div className="bg-blue-100 border-4 border-blue-200 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-blue-700">퇴직금(후, 근사)</div>
+                        <div className="text-5xl lg:text-7xl font-black text-blue-900">₩{fmt(out.sev1)}</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-blue-700">{convertToKoreanUnit(out.sev1)}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-blue-600">과세급여 감소 반영</div>
+                      </div>
+
+                      <div className="bg-red-100 border-4 border-red-200 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-red-700">퇴직금 감소(근사)</div>
+                        <div className="text-5xl lg:text-7xl font-black text-red-900">₩{fmt(out.severanceLoss)}</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-red-700">{convertToKoreanUnit(out.severanceLoss)}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-red-600">손해로 느끼는 구간</div>
+                      </div>
+
+                      <div className="bg-cyan-100 border-4 border-cyan-200 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-cyan-700">절세/절감 누적</div>
+                        <div className="text-5xl lg:text-7xl font-black text-cyan-900">₩{fmt(out.savingTotal)}</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-cyan-700">{convertToKoreanUnit(out.savingTotal)}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-cyan-600">절감×12×근속연수</div>
+                      </div>
+
+                      <div className="bg-emerald-600 border-4 border-emerald-700 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-emerald-100">순이익(절감-퇴직금)</div>
+                        <div className="text-5xl lg:text-7xl font-black text-white">₩{fmt(out.netBenefit)}</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-emerald-100">{convertToKoreanUnit(out.netBenefit)}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-emerald-200">결론 KPI</div>
+                      </div>
+
+                      <div className="bg-amber-100 border-4 border-amber-300 rounded-[32px] p-10 space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-amber-700">근속연수</div>
+                        <div className="text-5xl lg:text-7xl font-black text-amber-900">{years}년</div>
+                        <div className="text-3xl lg:text-4xl font-bold text-amber-700"> </div>
+                        <div className="text-2xl lg:text-3xl font-bold text-amber-600">가정치</div>
+                      </div>
                     </div>
                   );
                 })()}
 
-                <div className="text-xs text-slate-400 font-bold leading-relaxed">
+                <div className="text-xl lg:text-2xl text-amber-700 font-bold leading-relaxed bg-amber-100 border-2 border-amber-300 rounded-2xl p-6">
                   ※ 실제 퇴직금(평균임금×30일×근속연수)과 차이가 있을 수 있습니다. 고급모드에서 "최근3개월 평균임금/상여"를 반영하면 더 정확해집니다.
                 </div>
               </div>
