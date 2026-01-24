@@ -1,11 +1,12 @@
 /**
  * 사근복 AI - Google Apps Script 백엔드
- * 버전 6.2.8 - 승인상태 컬럼 순서 수정 (I열로 변경)
+ * 버전 6.2.9 - 관리자 기능 추가
  * 
- * 주요 변경사항 (v6.2.8):
- * - 승인상태 컬럼을 H열 → I열(인덱스 8)로 수정
- * - 가입일이 H열(인덱스 7)임을 확인
- * - 모든 시트(기업회원, 컨설턴트, 매니저)에 동일 적용
+ * 주요 변경사항 (v6.2.9):
+ * - 관리자 대시보드 API 추가: getAllMembers, updateMemberStatus, syncJson, getJsonUrls
+ * - 모든 시트의 I열(인덱스 8)을 승인여부 컬럼으로 통일
+ * - 슈퍼관리자 체크 로직 수정 (isSuperAdmin 필드 추가)
+ * - formatDate 유틸리티 함수 추가
  */
 
 // ========================================
@@ -593,8 +594,8 @@ function doGet(e) {
   // 기본 응답
   return createCORSResponse({
     success: true,
-    version: '6.2.8',
-    message: '사근복 AI Apps Script v6.2.8 - 승인상태 컬럼 수정 (I열)'
+    version: '6.2.9',
+    message: '사근복 AI Apps Script v6.2.9 - 관리자 기능 추가 (getAllMembers, updateMemberStatus, syncJson, getJsonUrls)'
   });
 }
 
