@@ -87,8 +87,13 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
         perEmpPrevWelfareExp: Math.round(prevWelfareExp / empCount),
       };
     } else {
-      const contribution = parseNumber(inputs.contribution);
-      const taxRate = Number(inputs.taxRate || (currentModule === ModuleType.CORP_TAX ? 19 : 24)) / 100;
+      // 현재 탭에 맞는 필드 선택
+      const prevTaxPaidField = currentModule === ModuleType.CORP_TAX ? 'corp_prevTaxPaid' : 'personal_prevTaxPaid';
+      const contributionField = currentModule === ModuleType.CORP_TAX ? 'corp_contribution' : 'personal_contribution';
+      const taxRateField = currentModule === ModuleType.CORP_TAX ? 'corp_taxRate' : 'personal_taxRate';
+      
+      const contribution = parseNumber(inputs[contributionField]);
+      const taxRate = Number(inputs[taxRateField] || (currentModule === ModuleType.CORP_TAX ? 19 : 24)) / 100;
       const mainTaxSaving = Math.round(contribution * taxRate);
       const localTaxSaving = Math.round(mainTaxSaving * 0.1);
       result = {
@@ -96,9 +101,9 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
         taxSaving: mainTaxSaving + localTaxSaving,
         mainTaxSaving,
         localTaxSaving,
-        netTaxAfterContribution: Math.max(0, parseNumber(inputs.prevTaxPaid) - (mainTaxSaving + localTaxSaving)),
-        appliedRate: inputs.taxRate,
-        prevTaxPaid: parseNumber(inputs.prevTaxPaid)
+        netTaxAfterContribution: Math.max(0, parseNumber(inputs[prevTaxPaidField]) - (mainTaxSaving + localTaxSaving)),
+        appliedRate: inputs[taxRateField],
+        prevTaxPaid: parseNumber(inputs[prevTaxPaidField])
       };
     }
 
@@ -214,14 +219,21 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 <div className="space-y-4">
                   <input 
                     type="text" 
-                    value={inputs.prevTaxPaid || ''} 
-                    onChange={(e) => setInputs({...inputs, prevTaxPaid: formatNumber(e.target.value)})} 
+                    value={currentModule === ModuleType.CORP_TAX ? (inputs.corp_prevTaxPaid || '') : (inputs.personal_prevTaxPaid || '')} 
+                    onChange={(e) => {
+                      const field = currentModule === ModuleType.CORP_TAX ? 'corp_prevTaxPaid' : 'personal_prevTaxPaid';
+                      setInputs({...inputs, [field]: formatNumber(e.target.value)});
+                    }} 
                     className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-3xl font-black outline-none shadow-inner tracking-tighter" 
                     placeholder="30,000,000" 
                   />
                   <div className="bg-blue-50/50 border-2 border-blue-100 rounded-2xl p-4 flex justify-end items-center gap-3">
-                    <span className="text-blue-600 font-black text-xl lg:text-2xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).eok}</span>
-                    <span className="text-blue-400 font-black text-xl lg:text-2xl">{convertToKoreanUnitParts(inputs.prevTaxPaid).man}</span>
+                    <span className="text-blue-600 font-black text-xl lg:text-2xl">
+                      {convertToKoreanUnitParts(currentModule === ModuleType.CORP_TAX ? inputs.corp_prevTaxPaid : inputs.personal_prevTaxPaid).eok}
+                    </span>
+                    <span className="text-blue-400 font-black text-xl lg:text-2xl">
+                      {convertToKoreanUnitParts(currentModule === ModuleType.CORP_TAX ? inputs.corp_prevTaxPaid : inputs.personal_prevTaxPaid).man}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -230,22 +242,32 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 <div className="space-y-4">
                   <input 
                     type="text" 
-                    value={inputs.contribution || ''} 
-                    onChange={(e) => setInputs({...inputs, contribution: formatNumber(e.target.value)})} 
+                    value={currentModule === ModuleType.CORP_TAX ? (inputs.corp_contribution || '') : (inputs.personal_contribution || '')} 
+                    onChange={(e) => {
+                      const field = currentModule === ModuleType.CORP_TAX ? 'corp_contribution' : 'personal_contribution';
+                      setInputs({...inputs, [field]: formatNumber(e.target.value)});
+                    }} 
                     className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-3xl font-black outline-none shadow-inner tracking-tighter" 
                     placeholder="50,000,000" 
                   />
                   <div className="bg-green-50/50 border-2 border-green-100 rounded-2xl p-4 flex justify-end items-center gap-3">
-                    <span className="text-green-600 font-black text-xl lg:text-2xl">{convertToKoreanUnitParts(inputs.contribution).eok}</span>
-                    <span className="text-green-400 font-black text-xl lg:text-2xl">{convertToKoreanUnitParts(inputs.contribution).man}</span>
+                    <span className="text-green-600 font-black text-xl lg:text-2xl">
+                      {convertToKoreanUnitParts(currentModule === ModuleType.CORP_TAX ? inputs.corp_contribution : inputs.personal_contribution).eok}
+                    </span>
+                    <span className="text-green-400 font-black text-xl lg:text-2xl">
+                      {convertToKoreanUnitParts(currentModule === ModuleType.CORP_TAX ? inputs.corp_contribution : inputs.personal_contribution).man}
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="space-y-6">
                 <label className="text-2xl lg:text-3xl font-black text-slate-700 block tracking-tight">적용 세율 (%)</label>
                 <select 
-                  value={inputs.taxRate || '19'} 
-                  onChange={(e) => setInputs({...inputs, taxRate: e.target.value})} 
+                  value={currentModule === ModuleType.CORP_TAX ? (inputs.corp_taxRate || '19') : (inputs.personal_taxRate || '24')} 
+                  onChange={(e) => {
+                    const field = currentModule === ModuleType.CORP_TAX ? 'corp_taxRate' : 'personal_taxRate';
+                    setInputs({...inputs, [field]: e.target.value});
+                  }} 
                   className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 lg:p-10 text-2xl lg:text-3xl font-black outline-none appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2.5rem_center]"
                 >
                   {currentModule === ModuleType.CORP_TAX 

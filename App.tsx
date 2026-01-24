@@ -60,6 +60,14 @@ const App: React.FC = () => {
     prevTaxPaid: '',
     taxRate: '19',
     contribution: '',
+    // 법인세 전용
+    corp_prevTaxPaid: '',
+    corp_contribution: '',
+    corp_taxRate: '19',
+    // 종합소득세 전용
+    personal_prevTaxPaid: '',
+    personal_contribution: '',
+    personal_taxRate: '24',
     prevWelfareExp: '',
     convPercent: '30',
     currentMonthlyTaxable: '',
