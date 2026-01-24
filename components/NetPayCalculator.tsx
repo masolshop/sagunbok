@@ -1007,7 +1007,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           {compareResult && (
             <div className="space-y-12 pt-6">
               {/* 첫 번째 줄: 총유출(전), 총유출(후), 총유출 절감 */}
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* 총유출(전) */}
                 <div className="bg-slate-100 border-4 border-slate-200 rounded-[40px] p-6 lg:p-8 space-y-4">
                   <div className="text-2xl lg:text-3xl font-black text-slate-500 uppercase tracking-widest">총유출(전)</div>
