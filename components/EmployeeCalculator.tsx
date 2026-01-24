@@ -296,55 +296,55 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
             <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-[60px] p-12 lg:p-16 shadow-2xl space-y-8">
               <div className="text-2xl lg:text-3xl font-black text-emerald-100">💼 복리후생비 절세 효과</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/10 rounded-3xl p-8 space-y-3">
-                  <div className="text-xl lg:text-2xl font-bold text-emerald-100">월 복리후생비</div>
-                  <div className="text-3xl lg:text-5xl font-black">₩{welfareResult.welfareMonthly.toLocaleString()}</div>
-                  <div className="text-xl lg:text-2xl font-bold text-emerald-200">{convertToKoreanUnit(welfareResult.welfareMonthly)}</div>
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-emerald-200 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-emerald-700">월 복리후생비</div>
+                  <div className="text-4xl lg:text-6xl font-black text-emerald-900">₩{welfareResult.welfareMonthly.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-emerald-600">{convertToKoreanUnit(welfareResult.welfareMonthly)}</div>
                 </div>
-                <div className="bg-white/10 rounded-3xl p-8 space-y-3">
-                  <div className="text-xl lg:text-2xl font-bold text-emerald-100">연 복리후생비</div>
-                  <div className="text-3xl lg:text-5xl font-black">₩{welfareResult.welfareAnnual.toLocaleString()}</div>
-                  <div className="text-xl lg:text-2xl font-bold text-emerald-200">{convertToKoreanUnit(welfareResult.welfareAnnual)}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border-4 border-blue-100 rounded-[60px] p-12 space-y-8">
-              <div className="text-3xl lg:text-4xl font-black text-blue-900">👤 직원 1인당 절세액</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
-                  <div className="text-lg font-black text-emerald-600 uppercase">직원 절세 (월)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-emerald-900">₩{welfareResult.employeeSavingMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-emerald-500">{convertToKoreanUnit(welfareResult.employeeSavingMonthly)}</div>
-                </div>
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
-                  <div className="text-lg font-black text-emerald-600 uppercase">직원 절세 (연)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-emerald-900">₩{welfareResult.employeeSavingAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-emerald-500">{convertToKoreanUnit(welfareResult.employeeSavingAnnual)}</div>
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-emerald-200 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-emerald-700">연 복리후생비</div>
+                  <div className="text-4xl lg:text-6xl font-black text-emerald-900">₩{welfareResult.welfareAnnual.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-emerald-600">{convertToKoreanUnit(welfareResult.welfareAnnual)}</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-[60px] p-12 lg:p-16 shadow-2xl space-y-8">
+            <div className="bg-blue-50 border-4 border-blue-200 rounded-[60px] p-12 lg:p-16 space-y-8 shadow-xl">
+              <div className="text-4xl lg:text-5xl font-black text-blue-900">👤 직원 1인당 절세액</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-emerald-300 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-emerald-700">직원 절세 (월)</div>
+                  <div className="text-4xl lg:text-6xl font-black text-emerald-900">₩{welfareResult.employeeSavingMonthly.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-emerald-600">{convertToKoreanUnit(welfareResult.employeeSavingMonthly)}</div>
+                </div>
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-emerald-300 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-emerald-700">직원 절세 (연)</div>
+                  <div className="text-4xl lg:text-6xl font-black text-emerald-900">₩{welfareResult.employeeSavingAnnual.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-emerald-600">{convertToKoreanUnit(welfareResult.employeeSavingAnnual)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-[60px] p-12 lg:p-16 shadow-2xl space-y-8 border-4 border-purple-800">
               <div className="flex items-center gap-4">
-                <div className="text-3xl lg:text-4xl font-black">👥 전체 직원 ({welfareResult.employeeCount}명) 절세액</div>
+                <div className="text-4xl lg:text-5xl font-black text-white">👥 전체 직원 ({welfareResult.employeeCount}명) 절세액</div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
-                  <div className="text-lg font-black text-purple-100 uppercase">직원 절세 (월)</div>
-                  <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalEmployeeSavingMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalEmployeeSavingMonthly)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-purple-300 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-purple-700">직원 절세 (월)</div>
+                  <div className="text-4xl lg:text-6xl font-black text-purple-900">₩{welfareResult.totalEmployeeSavingMonthly.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-purple-600">{convertToKoreanUnit(welfareResult.totalEmployeeSavingMonthly)}</div>
                 </div>
-                <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
-                  <div className="text-lg font-black text-purple-100 uppercase">직원 절세 (연)</div>
-                  <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalEmployeeSavingAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalEmployeeSavingAnnual)}</div>
+                <div className="bg-white rounded-3xl p-10 space-y-4 border-4 border-purple-300 shadow-lg">
+                  <div className="text-2xl lg:text-3xl font-black text-purple-700">직원 절세 (연)</div>
+                  <div className="text-4xl lg:text-6xl font-black text-purple-900">₩{welfareResult.totalEmployeeSavingAnnual.toLocaleString()}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-purple-600">{convertToKoreanUnit(welfareResult.totalEmployeeSavingAnnual)}</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-amber-50 border-4 border-amber-200 rounded-3xl p-8">
-              <div className="text-xl lg:text-2xl font-bold text-amber-800 leading-relaxed">
+            <div className="bg-amber-50 border-4 border-amber-300 rounded-3xl p-10 shadow-lg">
+              <div className="text-2xl lg:text-3xl font-bold text-amber-900 leading-relaxed">
                 💡 <b>절세 원리:</b> 복리후생비는 직원에게 <u>비과세 소득</u>으로 지급되어 소득세 + 지방소득세(10%)가 절감됩니다. 기업은 복리후생비를 비용 처리할 수 있지만, 직접적인 세금 절감 효과는 없습니다.
               </div>
             </div>
