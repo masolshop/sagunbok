@@ -9,10 +9,32 @@ import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import AIChat from './components/AIChat';
 
+// 메뉴 접근 권한 정의
+type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
+
+interface MenuItem {
+  id: 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin';
+  label: string;
+  icon: string;
+  access: MenuAccess[];
+  description?: string;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { id: 'corp', label: '기업절세계산기', icon: '📊', access: ['public'], description: '누구나 이용 가능' },
+  { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
+  { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
+  { id: 'net', label: '네트급여계산기', icon: '🧮', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
+  { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company'], description: '기업회원 전용' },
+  { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
+];
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingTab, setPendingTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin' | null>(null);
 
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
@@ -98,11 +120,54 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // 접근 권한 확인 함수
+  const checkAccess = (menuItem: MenuItem): boolean => {
+    // 공개 메뉴는 누구나 접근 가능
+    if (menuItem.access.includes('public')) {
+      return true;
+    }
+    
+    // 로그인하지 않은 경우
+    if (!isAuthenticated || !currentUser) {
+      return false;
+    }
+    
+    // 슈퍼관리자는 모든 메뉴 접근 가능
+    if (currentUser.isSuperAdmin) {
+      return true;
+    }
+    
+    // 사용자 유형에 따른 접근 권한 확인
+    const userType = currentUser.userType;
+    
+    if (menuItem.access.includes('admin')) {
+      return currentUser.isSuperAdmin === true;
+    }
+    
+    if (menuItem.access.includes(userType)) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // 메뉴 클릭 핸들러
+  const handleMenuClick = (menuItem: MenuItem) => {
+    if (checkAccess(menuItem)) {
+      setActiveTab(menuItem.id);
+    } else {
+      // 접근 권한이 없으면 로그인 모달 표시
+      setPendingTab(menuItem.id);
+      setShowAuthModal(true);
+    }
+  };
+
   // 로그인 성공 핸들러
   const handleLoginSuccess = (user: any) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
     localStorage.setItem('sagunbok_user', JSON.stringify(user));
+    setShowAuthModal(false);
     
     // 사용자 정보를 companyContext에 반영
     if (user.companyName) {
@@ -110,6 +175,15 @@ const App: React.FC = () => {
         ...prev,
         companyName: user.companyName
       }));
+    }
+    
+    // 대기 중인 탭이 있으면 해당 탭으로 이동
+    if (pendingTab) {
+      const menuItem = MENU_ITEMS.find(item => item.id === pendingTab);
+      if (menuItem && checkAccess(menuItem)) {
+        setActiveTab(pendingTab);
+      }
+      setPendingTab(null);
     }
   };
 
@@ -153,14 +227,40 @@ const App: React.FC = () => {
     alert("상담 데이터가 성공적으로 저장되었습니다.");
   };
 
-  // 인증되지 않은 경우 로그인 화면 표시
-  if (!isAuthenticated) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
-  }
+  // 현재 사용자 타입 표시 텍스트
+  const getUserTypeLabel = () => {
+    if (!currentUser) return '';
+    if (currentUser.isSuperAdmin) return '👑 슈퍼관리자';
+    switch (currentUser.userType) {
+      case 'company': return '🏢 기업회원';
+      case 'manager': return '👤 매니저';
+      case 'consultant': return '👔 컨설턴트';
+      default: return '사용자';
+    }
+  };
 
-  // 로그인 성공 후 사근복 절세 계산기 표시
+  // 메인 렌더링
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
+    <>
+      {/* 로그인 모달 */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative">
+            <button
+              onClick={() => {
+                setShowAuthModal(false);
+                setPendingTab(null);
+              }}
+              className="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all z-10"
+            >
+              ✕
+            </button>
+            <Auth onLoginSuccess={handleLoginSuccess} />
+          </div>
+        </div>
+      )}
+      
+      <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
       {/* Sidebar Nav */}
       <nav className="w-full lg:w-72 bg-[#0f2e44] text-white flex flex-col p-8 space-y-10 sticky top-0 lg:h-screen z-20 shadow-2xl">
         <div className="flex items-center space-x-3 mb-4">
@@ -172,63 +272,87 @@ const App: React.FC = () => {
         </div>
         
         {/* 사용자 정보 표시 */}
-        <div className="p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
-          <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-            Logged In
+        {isAuthenticated ? (
+          <div className="p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
+            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+              Logged In
+            </div>
+            <div className="text-sm font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {getUserTypeLabel()}
+            </div>
           </div>
-          <div className="text-sm font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
-          <div className="text-[11px] text-slate-400 mt-1">
-            {currentUser?.userType === 'company' ? '🏢 기업회원' : '👔 컨설턴트'}
-          </div>
-        </div>
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="p-4 bg-blue-500/10 hover:bg-blue-500/20 rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
+          >
+            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
+              Guest Mode
+            </div>
+            <div className="text-sm font-black text-blue-400">로그인 / 회원가입</div>
+            <div className="text-[11px] text-slate-400 mt-1">클릭하여 로그인</div>
+          </button>
+        )}
         
         <div className="flex flex-col space-y-4">
-          <button 
-            onClick={() => setActiveTab('corp')}
-            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'corp' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
-          >
-            <span>기업절세계산기</span>
-            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'corp' ? 'opacity-100' : ''}`}>📊</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('ceo')}
-            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'ceo' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
-          >
-            <span>CEO절세계산기</span>
-            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'ceo' ? 'opacity-100' : ''}`}>👑</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('emp')}
-            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'emp' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
-          >
-            <span>직원절세계산기</span>
-            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'emp' ? 'opacity-100' : ''}`}>👤</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('net')}
-            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'net' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
-          >
-            <span>네트급여계산기</span>
-            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'net' ? 'opacity-100' : ''}`}>🧮</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('diag')}
-            className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex justify-between items-center group ${activeTab === 'diag' ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)]' : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300'}`}
-          >
-            <span>기업리스크진단</span>
-            <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === 'diag' ? 'opacity-100' : ''}`}>🩺</span>
-          </button>
-
+          {MENU_ITEMS.filter(item => item.id !== 'admin').map(menuItem => {
+            const hasAccess = checkAccess(menuItem);
+            const isActive = activeTab === menuItem.id;
+            const isPublic = menuItem.access.includes('public');
+            
+            return (
+              <button 
+                key={menuItem.id}
+                onClick={() => handleMenuClick(menuItem)}
+                className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex flex-col gap-1 group relative ${
+                  isActive 
+                    ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
+                    : hasAccess
+                      ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
+                      : 'bg-transparent border-slate-800 text-slate-600 hover:border-blue-500/30 hover:text-slate-400'
+                }`}
+              >
+                <div className="flex justify-between items-center">
+                  <span>{menuItem.label}</span>
+                  <span className={`text-xs transition-opacity ${
+                    isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>{menuItem.icon}</span>
+                </div>
+                {!hasAccess && (
+                  <div className="text-[10px] text-blue-400 font-semibold flex items-center gap-1">
+                    <span className="text-xs">🔒</span>
+                    <span>{isPublic ? '누구나' : '로그인 필요'}</span>
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-auto space-y-6">
-          <button 
-            onClick={() => setActiveTab('admin')}
-            className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed ${activeTab === 'admin' ? 'bg-white/10 border-white text-white' : 'border-slate-700 text-slate-500 hover:text-slate-300'}`}
-          >
-            ADMIN DASHBOARD
-          </button>
+          {(() => {
+            const adminMenuItem = MENU_ITEMS.find(item => item.id === 'admin');
+            if (!adminMenuItem) return null;
+            
+            const hasAccess = checkAccess(adminMenuItem);
+            if (!hasAccess) return null;
+            
+            return (
+              <button 
+                onClick={() => handleMenuClick(adminMenuItem)}
+                className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed ${
+                  activeTab === 'admin' 
+                    ? 'bg-white/10 border-white text-white' 
+                    : 'border-slate-700 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {adminMenuItem.label}
+              </button>
+            );
+          })()}
           
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
             <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -240,12 +364,14 @@ const App: React.FC = () => {
           </div>
 
           {/* 로그아웃 버튼 */}
-          <button 
-            onClick={handleLogout}
-            className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
-          >
-            🚪 로그아웃
-          </button>
+          {isAuthenticated && (
+            <button 
+              onClick={handleLogout}
+              className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+            >
+              🚪 로그아웃
+            </button>
+          )}
         </div>
       </nav>
 
@@ -318,7 +444,8 @@ const App: React.FC = () => {
         </div>
       </main>
 
-    </div>
+      </div>
+    </>
   );
 };
 
