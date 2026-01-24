@@ -777,7 +777,8 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                     페이닥터 네트 계약 분석
                   </div>
                   <h3 className="text-3xl lg:text-4xl font-black text-slate-900 break-keep leading-tight">
-                    월 실수령액 ₩{res.result.payroll.netMonthly.toLocaleString()} 보장 시
+                    월 실수령액 ₩{res.result.payroll.netMonthly.toLocaleString()} 보장 시 
+                    <span className="text-blue-600">({PAYMODE_LABEL[(res.result as any)._ui?.payMode || 'grossup']})</span>
                   </h3>
                 </div>
 
