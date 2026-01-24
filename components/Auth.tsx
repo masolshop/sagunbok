@@ -42,79 +42,19 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findEmail, setFindEmail] = useState('');
   const [findPhone, setFindPhone] = useState('');
   
-  // 전화번호 형식 변환 함수 (하이픈 추가/제거)
-  const formatPhone = (phone: string): string => {
-    // 모든 하이픈 제거
-    const cleaned = phone.replace(/\D/g, '');
-    
-    // 010-xxxx-xxxx 형식으로 변환
-    if (cleaned.length === 11 && cleaned.startsWith('010')) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
-    }
-    
-    // 원본 반환 (형식이 맞지 않으면)
-    return phone;
-  };
-
   const callAPI = async (action: string, data: any) => {
-    try {
-      // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
-      const params = new URLSearchParams({
-        action,
-        ...Object.fromEntries(
-          Object.entries(data).map(([k, v]) => [k, String(v)])
-        )
-      });
-      
-      const fullURL = `${API_URL}?${params.toString()}`;
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🚀 API 호출 시작');
-      console.log('📍 URL:', API_URL);
-      console.log('🔑 Action:', action);
-      console.log('📦 Parameters:', Object.fromEntries(params.entries()));
-      console.log('🌐 Full URL:', fullURL);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
-      const response = await fetch(fullURL, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-      
-      console.log('📡 Response Status:', response.status, response.statusText);
-      console.log('📋 Response Headers:', Object.fromEntries(response.headers.entries()));
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ HTTP Error Response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-      
-      const responseText = await response.text();
-      console.log('📄 Raw Response:', responseText);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ JSON Parse Error:', parseError);
-        console.error('📄 Response Text:', responseText);
-        throw new Error(`JSON 파싱 실패: ${responseText.substring(0, 100)}`);
-      }
-      
-      console.log('✅ API 응답 성공:', result);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      return result;
-    } catch (error) {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error('💥 API 호출 에러:', error);
-      console.error('Error Type:', error instanceof Error ? error.constructor.name : typeof error);
-      console.error('Error Message:', error instanceof Error ? error.message : String(error));
-      console.error('Error Stack:', error instanceof Error ? error.stack : 'No stack trace');
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      throw error;
-    }
+    // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
+    const params = new URLSearchParams({
+      action,
+      ...Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, String(v)])
+      )
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`, {
+      method: 'GET',
+    });
+    return response.json();
   };
   
   const handleLogin = async () => {
@@ -125,128 +65,21 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     
     setLoading(true);
     try {
-      // 개발자 테스트 계정 (임시)
-      if (loginPhone === 'test' && loginPassword === 'test1234') {
-        console.log('🧪 개발자 테스트 모드 활성화');
-        const testUser = {
-          name: '테스트 사용자',
-          companyName: '테스트 회사',
-          phone: 'test',
-          email: 'test@example.com',
-          userType: userType,
-          isApproved: true,
-          isSuperAdmin: false
-        };
-        localStorage.setItem('sagunbok_user', JSON.stringify(testUser));
-        onLoginSuccess(testUser);
-        return;
-      }
-      
-      // 전화번호 형식 변환 (하이픈 추가)
-      const formattedPhone = formatPhone(loginPhone);
-      
       const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔐 로그인 시도');
-      console.log('📱 입력 전화번호:', loginPhone);
-      console.log('📱 변환 전화번호:', formattedPhone);
-      console.log('👤 회원 구분:', userType);
-      console.log('🎯 Action:', action);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
-      // 두 가지 형식 모두 시도
-      let result;
-      try {
-        // 먼저 하이픈 있는 형식으로 시도
-        result = await callAPI(action, {
-          phone: formattedPhone,
-          password: loginPassword,
-        });
-      } catch (firstError) {
-        console.log('⚠️ 첫 번째 시도 실패, 하이픈 없는 형식으로 재시도...');
-        // 실패하면 하이픈 없는 형식으로 재시도
-        result = await callAPI(action, {
-          phone: loginPhone.replace(/\D/g, ''),
-          password: loginPassword,
-        });
-      }
-      
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📥 로그인 응답:', result);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      const result = await callAPI(action, {
+        phone: loginPhone,
+        password: loginPassword,
+      });
       
       if (result.success) {
-        console.log('✅ 로그인 성공!');
         localStorage.setItem('sagunbok_user', JSON.stringify(result.user));
         onLoginSuccess(result.user);
       } else {
-        const errorMsg = result.error || '로그인 실패';
-        console.error('❌ 로그인 실패:', errorMsg, result);
-        
-        // 더 자세한 에러 메시지
-        let detailedMessage = `❌ 로그인 실패\n\n${errorMsg}\n\n`;
-        
-        // 서버 응답 전체 출력 (디버깅용)
-        console.log('🔍 전체 서버 응답:', JSON.stringify(result, null, 2));
-        
-        // 가능한 원인 분석
-        if (errorMsg.includes('찾을 수 없습니다') || errorMsg.includes('존재하지 않습니다')) {
-          detailedMessage += '💡 가능한 원인:\n';
-          detailedMessage += '• 등록되지 않은 전화번호입니다.\n';
-          detailedMessage += '• 회원 구분이 잘못되었습니다.\n';
-          detailedMessage += '  (기업회원 ↔ 매니저 ↔ 컨설턴트 확인)\n\n';
-          detailedMessage += '👉 해결 방법:\n';
-          detailedMessage += '1. 회원가입하기 (아래 "회원가입" 버튼)\n';
-          detailedMessage += '2. 회원 구분 변경 후 재시도\n\n';
-        } else if (errorMsg.includes('비밀번호')) {
-          detailedMessage += '💡 가능한 원인:\n';
-          detailedMessage += '• 비밀번호가 일치하지 않습니다.\n\n';
-          detailedMessage += '👉 해결 방법:\n';
-          detailedMessage += '1. 비밀번호 찾기 이용\n';
-          detailedMessage += '2. 비밀번호 재확인\n\n';
-        } else if (errorMsg.includes('승인')) {
-          detailedMessage += '💡 상태:\n';
-          detailedMessage += '• 관리자 승인 대기 중입니다.\n';
-          detailedMessage += '• 승인 완료 후 로그인 가능합니다.\n\n';
-          detailedMessage += '👉 해결 방법:\n';
-          detailedMessage += '1. 관리자에게 승인 요청\n';
-          detailedMessage += '2. 승인 완료 대기\n\n';
-        } else {
-          // "로그인 처리 중 오류가 발생했습니다" - 가장 흔한 케이스
-          detailedMessage += '💡 가능한 원인:\n';
-          detailedMessage += '• ⚠️ 해당 전화번호가 데이터베이스에 등록되지 않았습니다.\n';
-          detailedMessage += '• ⚠️ 비밀번호가 일치하지 않습니다.\n';
-          detailedMessage += '• ⚠️ 회원 구분이 잘못되었습니다.\n';
-          detailedMessage += '• ⚠️ 계정이 승인되지 않았습니다.\n\n';
-          detailedMessage += '👉 해결 방법:\n';
-          detailedMessage += '1️⃣ 회원가입이 안되어 있다면:\n';
-          detailedMessage += '   → 아래 "회원가입" 버튼 클릭\n';
-          detailedMessage += '   → 정보 입력 후 제출\n';
-          detailedMessage += '   → 관리자 승인 대기\n\n';
-          detailedMessage += '2️⃣ 이미 가입했다면:\n';
-          detailedMessage += '   → 회원 구분 확인 (기업/매니저/컨설턴트)\n';
-          detailedMessage += '   → 비밀번호 재확인\n';
-          detailedMessage += '   → 관리자에게 승인 상태 문의\n\n';
-        }
-        
-        detailedMessage += `📋 입력 정보:\n`;
-        detailedMessage += `• 전화번호: ${loginPhone}\n`;
-        detailedMessage += `• 변환 형식: ${formattedPhone}\n`;
-        detailedMessage += `• 회원 구분: ${userType === 'company' ? '🏢 기업회원' : userType === 'manager' ? '👤 매니저' : '👔 컨설턴트'}\n\n`;
-        detailedMessage += `🧪 테스트 계정 (서버 없이 테스트용):\n`;
-        detailedMessage += `• ID: test\n`;
-        detailedMessage += `• PW: test1234\n\n`;
-        detailedMessage += `❓ 문제가 지속되면:\n`;
-        detailedMessage += `• 관리자에게 전화번호 ${loginPhone} 등록 상태 문의\n`;
-        detailedMessage += `• 승인 상태 확인 요청`;
-        
-        alert(detailedMessage);
+        alert(result.error || '로그인 실패');
       }
     } catch (error) {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.error('💥 로그인 처리 중 치명적 에러:', error);
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      alert(`💥 로그인 중 오류가 발생했습니다.\n\n에러: ${error instanceof Error ? error.message : String(error)}\n\n서버와의 통신에 문제가 있을 수 있습니다.\n잠시 후 다시 시도하거나 관리자에게 문의하세요.\n\n🧪 테스트 계정:\n• ID: test\n• PW: test1234`);
+      alert('로그인 중 오류가 발생했습니다.');
+      console.error(error);
     } finally {
       setLoading(false);
     }
