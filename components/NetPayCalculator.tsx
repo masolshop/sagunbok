@@ -1035,19 +1035,9 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
 
               {/* 퇴직금 vs 절세 누적 */}
               <div className="bg-amber-50 border-4 border-amber-200 rounded-[40px] p-12 lg:p-16 space-y-10">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                  <div>
-                    <div className="text-4xl lg:text-5xl font-black text-amber-900">퇴직금 vs 절세 누적(근사)</div>
-                    <div className="text-2xl lg:text-3xl text-amber-700 font-bold mt-2">"퇴직금 손해?"를 숫자로 종결하는 설득용 블록</div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-3xl lg:text-4xl font-black text-amber-900">근속연수</span>
-                    <input
-                      className="bg-white border-4 border-amber-300 rounded-2xl px-8 py-5 text-3xl lg:text-4xl font-black text-amber-900 w-[180px]"
-                      value={inputs.tenureYears ?? '10'}
-                      onChange={(e) => setInputs({ ...inputs, tenureYears: e.target.value })}
-                    />
-                  </div>
+                <div>
+                  <div className="text-4xl lg:text-5xl font-black text-amber-900">퇴직금 vs 절세 누적(근사)</div>
+                  <div className="text-2xl lg:text-3xl text-amber-700 font-bold mt-2">퇴직금 손해? 사근복 기금 수령시 절세금액 눈으로 확인하세요.</div>
                 </div>
 
                 {(() => {
@@ -1065,23 +1055,23 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-slate-100 border-4 border-slate-200 rounded-[32px] p-6 lg:p-8 space-y-3">
                           <div className="text-2xl lg:text-3xl font-black text-slate-700">퇴직금(전, 근사)</div>
-                          <div className="text-4xl lg:text-5xl font-black text-slate-900">₩{fmt(out.sev0)}</div>
-                          <div className="text-3xl lg:text-4xl font-bold text-slate-600">{convertToKoreanUnit(out.sev0)}</div>
-                          <div className="text-2xl lg:text-3xl font-bold text-slate-500">월급여×근속연수</div>
+                          <div className="text-3xl lg:text-4xl font-black text-slate-900">₩{fmt(out.sev0)}</div>
+                          <div className="text-2xl lg:text-3xl font-bold text-slate-600">{convertToKoreanUnit(out.sev0)}</div>
+                          <div className="text-xl lg:text-2xl font-bold text-slate-500">월급여×근속연수</div>
                         </div>
 
                         <div className="bg-blue-100 border-4 border-blue-200 rounded-[32px] p-6 lg:p-8 space-y-3">
                           <div className="text-2xl lg:text-3xl font-black text-blue-700">퇴직금(후, 근사)</div>
-                          <div className="text-4xl lg:text-5xl font-black text-blue-900">₩{fmt(out.sev1)}</div>
-                          <div className="text-3xl lg:text-4xl font-bold text-blue-700">{convertToKoreanUnit(out.sev1)}</div>
-                          <div className="text-2xl lg:text-3xl font-bold text-blue-600">과세급여 감소 반영</div>
+                          <div className="text-3xl lg:text-4xl font-black text-blue-900">₩{fmt(out.sev1)}</div>
+                          <div className="text-2xl lg:text-3xl font-bold text-blue-700">{convertToKoreanUnit(out.sev1)}</div>
+                          <div className="text-xl lg:text-2xl font-bold text-blue-600">과세급여 감소 반영</div>
                         </div>
 
                         <div className="bg-red-100 border-4 border-red-200 rounded-[32px] p-6 lg:p-8 space-y-3">
                           <div className="text-2xl lg:text-3xl font-black text-red-700">퇴직금 감소(근사)</div>
-                          <div className="text-4xl lg:text-5xl font-black text-red-900">₩{fmt(out.severanceLoss)}</div>
-                          <div className="text-3xl lg:text-4xl font-bold text-red-700">{convertToKoreanUnit(out.severanceLoss)}</div>
-                          <div className="text-2xl lg:text-3xl font-bold text-red-600">손해로 느끼는 구간</div>
+                          <div className="text-3xl lg:text-4xl font-black text-red-900">₩{fmt(out.severanceLoss)}</div>
+                          <div className="text-2xl lg:text-3xl font-bold text-red-700">{convertToKoreanUnit(out.severanceLoss)}</div>
+                          <div className="text-xl lg:text-2xl font-bold text-red-600">손해로 느끼는 구간</div>
                         </div>
                       </div>
 
@@ -1089,16 +1079,16 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-cyan-100 border-4 border-cyan-200 rounded-[32px] p-6 lg:p-8 space-y-3">
                           <div className="text-2xl lg:text-3xl font-black text-cyan-700">절세/절감 누적</div>
-                          <div className="text-4xl lg:text-5xl font-black text-cyan-900">₩{fmt(out.savingTotal)}</div>
-                          <div className="text-3xl lg:text-4xl font-bold text-cyan-700">{convertToKoreanUnit(out.savingTotal)}</div>
-                          <div className="text-2xl lg:text-3xl font-bold text-cyan-600">절감×12×근속연수</div>
+                          <div className="text-3xl lg:text-4xl font-black text-cyan-900">₩{fmt(out.savingTotal)}</div>
+                          <div className="text-2xl lg:text-3xl font-bold text-cyan-700">{convertToKoreanUnit(out.savingTotal)}</div>
+                          <div className="text-xl lg:text-2xl font-bold text-cyan-600">절감×12×근속연수</div>
                         </div>
 
                         <div className="bg-emerald-600 border-4 border-emerald-700 rounded-[32px] p-6 lg:p-8 space-y-3">
                           <div className="text-2xl lg:text-3xl font-black text-emerald-100">순이익(절감-퇴직금)</div>
-                          <div className="text-4xl lg:text-5xl font-black text-white">₩{fmt(out.netBenefit)}</div>
-                          <div className="text-3xl lg:text-4xl font-bold text-emerald-100">{convertToKoreanUnit(out.netBenefit)}</div>
-                          <div className="text-2xl lg:text-3xl font-bold text-emerald-200">결론 KPI</div>
+                          <div className="text-3xl lg:text-4xl font-black text-white">₩{fmt(out.netBenefit)}</div>
+                          <div className="text-2xl lg:text-3xl font-bold text-emerald-100">{convertToKoreanUnit(out.netBenefit)}</div>
+                          <div className="text-xl lg:text-2xl font-bold text-emerald-200">결론 KPI</div>
                         </div>
                       </div>
                     </div>
