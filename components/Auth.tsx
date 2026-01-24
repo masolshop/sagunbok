@@ -48,11 +48,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     // 헤더 없이 요청 (preflight 방지)
     const params = new URLSearchParams({
       action,
-      ...data
+      ...data,
+      _t: Date.now() // 캐시 방지 타임스탬프
     });
     
     const response = await fetch(`${API_URL}?${params.toString()}`, {
       method: 'GET',
+      cache: 'no-cache' // 캐시 사용 안 함
     });
     return response.json();
   };
