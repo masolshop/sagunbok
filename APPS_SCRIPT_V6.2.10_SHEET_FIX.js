@@ -1,12 +1,12 @@
 /**
  * 사근복 AI - Google Apps Script 백엔드
- * 버전 6.2.9 - 관리자 기능 추가
+ * 버전 6.2.10 - 시트 이름 수정 및 자동 동기화 추가
  * 
- * 주요 변경사항 (v6.2.9):
- * - 관리자 대시보드 API 추가: getAllMembers, updateMemberStatus, syncJson, getJsonUrls
- * - 모든 시트의 I열(인덱스 8)을 승인여부 컬럼으로 통일
- * - 슈퍼관리자 체크 로직 수정 (isSuperAdmin 필드 추가)
- * - formatDate 유틸리티 함수 추가
+ * 주요 변경사항 (v6.2.10):
+ * - 시트 이름 수정: '매니저' → '사근복컨설턴트(매니저)', '컨설턴트' → '사근복컨설턴트'
+ * - 회원가입 시 자동 JSON 동기화 추가 (기업회원, 컨설턴트, 매니저)
+ * - 회원 상태 변경 시 자동 JSON 동기화 추가
+ * - getAllMembers, updateMemberStatus 시트 이름 통일
  */
 
 // ========================================
@@ -439,6 +439,14 @@ function registerCompany(data) {
     
     writeLog('회원가입', '기업회원', data.phone, data.companyName, '성공');
     
+    // 자동 JSON 동기화
+    try {
+      syncJsonFiles();
+    } catch (syncError) {
+      Logger.log('JSON 자동 동기화 실패: ' + syncError);
+      // 회원가입은 성공했으므로 계속 진행
+    }
+    
     return {
       success: true,
       message: '회원가입이 완료되었습니다.'
@@ -500,6 +508,13 @@ function registerConsultant(data) {
     sheet.appendRow(newRow);
     
     writeLog('회원가입', '컨설턴트', data.phone, data.name, '성공');
+    
+    // 자동 JSON 동기화
+    try {
+      syncJsonFiles();
+    } catch (syncError) {
+      Logger.log('JSON 자동 동기화 실패: ' + syncError);
+    }
     
     return {
       success: true,
@@ -563,6 +578,13 @@ function registerManager(data) {
     
     writeLog('회원가입', '매니저', data.phone, data.name, '성공');
     
+    // 자동 JSON 동기화
+    try {
+      syncJsonFiles();
+    } catch (syncError) {
+      Logger.log('JSON 자동 동기화 실패: ' + syncError);
+    }
+    
     return {
       success: true,
       message: '매니저 등록이 완료되었습니다.'
@@ -594,8 +616,8 @@ function doGet(e) {
   // 기본 응답
   return createCORSResponse({
     success: true,
-    version: '6.2.9',
-    message: '사근복 AI Apps Script v6.2.9 - 관리자 기능 추가 (getAllMembers, updateMemberStatus, syncJson, getJsonUrls)'
+    version: '6.2.10',
+    message: '사근복 AI Apps Script v6.2.10 - 시트 이름 수정 및 자동 동기화 추가'
   });
 }
 
@@ -711,7 +733,7 @@ function getAllMembers() {
     }
     
     // 매니저 조회
-    const managerSheet = ss.getSheetByName('매니저');
+    const managerSheet = ss.getSheetByName('사근복컨설턴트(매니저)');
     if (managerSheet) {
       const managerData = managerSheet.getDataRange().getValues();
       for (let i = 1; i < managerData.length; i++) {
@@ -733,7 +755,7 @@ function getAllMembers() {
     }
     
     // 컨설턴트 조회
-    const consultantSheet = ss.getSheetByName('컨설턴트');
+    const consultantSheet = ss.getSheetByName('사근복컨설턴트');
     if (consultantSheet) {
       const consultantData = consultantSheet.getDataRange().getValues();
       for (let i = 1; i < consultantData.length; i++) {
@@ -784,10 +806,10 @@ function updateMemberStatus(phone, type, status) {
         sheetName = '기업회원';
         break;
       case 'manager':
-        sheetName = '매니저';
+        sheetName = '사근복컨설턴트(매니저)';
         break;
       case 'consultant':
-        sheetName = '컨설턴트';
+        sheetName = '사근복컨설턴트';
         break;
       default:
         return {
@@ -817,6 +839,13 @@ function updateMemberStatus(phone, type, status) {
         sheet.getRange(i + 1, 9).setValue(status);
         
         writeLog('상태변경', type, phone, status + '로 변경', '성공');
+        
+        // 자동 JSON 동기화
+        try {
+          syncJsonFiles();
+        } catch (syncError) {
+          Logger.log('JSON 자동 동기화 실패: ' + syncError);
+        }
         
         return {
           success: true,
