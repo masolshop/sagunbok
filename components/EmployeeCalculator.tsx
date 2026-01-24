@@ -75,12 +75,13 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
     const welfareMonthly = parseNumber(inputs.welfareMonthly || 0);
     const welfareAnnual = welfareMonthly * 12;
     const employeeCount = parseNumber(inputs.employeeCount || 1);
-    const corporateTaxRate = Number(inputs.corporateTaxRate || 0.24); // 법인세율
-    const employeeTaxRate = Number(inputs.bracketRate || 0.24); // 직원 소득세율
+    const employeeTaxRate = Number(inputs.welfareBracketRate || 0.24); // 직원 소득세율
+    const yearsServed = Number(inputs.welfareYearsServed || 10); // 근속연수
+    const retirementType = inputs.welfareRetirementType || 'DB'; // 퇴직금유형
     
-    // 기업 절세액 계산 (복리후생비는 손금 인정)
-    const companySavingMonthly = welfareMonthly * corporateTaxRate;
-    const companySavingAnnual = welfareAnnual * corporateTaxRate;
+    // 기업 절세액 계산 (복리후생비는 비용 처리되지만 직접적인 절세 효과 없음)
+    const companySavingMonthly = 0;
+    const companySavingAnnual = 0;
     
     // 직원 절세액 계산 (복리후생비는 비과세)
     const employeeSavingMonthly = welfareMonthly * (employeeTaxRate * 1.1); // 소득세 + 지방소득세
@@ -100,6 +101,8 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
       welfareMonthly,
       welfareAnnual,
       employeeCount,
+      yearsServed,
+      retirementType,
       // 1인당
       companySavingMonthly,
       companySavingAnnual,
@@ -248,23 +251,31 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
             />
           </div>
           <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">법인세율</label>
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">퇴직제도</label>
             <select 
-              value={inputs.corporateTaxRate || '0.24'} 
-              onChange={(e) => setInputs({...inputs, corporateTaxRate: e.target.value})} 
+              value={inputs.welfareRetirementType || 'DB'} 
+              onChange={(e) => setInputs({...inputs, welfareRetirementType: e.target.value})} 
               className="w-full bg-slate-50 border-4 border-transparent focus:border-emerald-500 rounded-[24px] p-7 text-xl lg:text-3xl font-black outline-none transition-all shadow-inner appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
             >
-              <option value="0.10">10% (과세표준 2억 이하)</option>
-              <option value="0.20">20% (2억~200억)</option>
-              <option value="0.22">22% (200억~3000억)</option>
-              <option value="0.24">24% (3000억 초과)</option>
+              <option value="DB">DB(확정급여)</option>
+              <option value="DC">DC(확정기여)</option>
             </select>
           </div>
           <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">잔여 근속 (년)</label>
+            <input 
+              type="number" 
+              value={inputs.welfareYearsServed || ''} 
+              onChange={(e) => setInputs({...inputs, welfareYearsServed: e.target.value})} 
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-emerald-500 rounded-[24px] p-7 text-xl lg:text-3xl font-black outline-none transition-all shadow-inner" 
+              placeholder="10" 
+            />
+          </div>
+          <div className="md:col-span-2 space-y-4">
             <label className="text-xl lg:text-2xl font-black text-slate-700 block">직원 평균 소득세율</label>
             <select 
-              value={inputs.bracketRate || '0.24'} 
-              onChange={(e) => setInputs({...inputs, bracketRate: e.target.value})} 
+              value={inputs.welfareBracketRate || '0.24'} 
+              onChange={(e) => setInputs({...inputs, welfareBracketRate: e.target.value})} 
               className="w-full bg-slate-50 border-4 border-transparent focus:border-emerald-500 rounded-[24px] p-7 text-xl lg:text-3xl font-black outline-none transition-all shadow-inner appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
             >
               {INCOME_TAX_BRACKETS.map(b => <option key={b.rate} value={b.rate}>{b.label}</option>)}
@@ -300,36 +311,16 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
 
             <div className="bg-blue-50 border-4 border-blue-100 rounded-[60px] p-12 space-y-8">
               <div className="text-3xl lg:text-4xl font-black text-blue-900">👤 직원 1인당 절세액</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
-                  <div className="text-lg font-black text-blue-600 uppercase">기업 절세 (월)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-blue-900">₩{welfareResult.companySavingMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-blue-500">{convertToKoreanUnit(welfareResult.companySavingMonthly)}</div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
                   <div className="text-lg font-black text-emerald-600 uppercase">직원 절세 (월)</div>
                   <div className="text-2xl lg:text-3xl font-black text-emerald-900">₩{welfareResult.employeeSavingMonthly.toLocaleString()}</div>
                   <div className="text-lg font-bold text-emerald-500">{convertToKoreanUnit(welfareResult.employeeSavingMonthly)}</div>
                 </div>
-                <div className="bg-slate-900 rounded-3xl p-8 space-y-3 shadow-lg">
-                  <div className="text-lg font-black text-slate-400 uppercase">합계 (월)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-white">₩{welfareResult.perPersonTotalMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-slate-400">{convertToKoreanUnit(welfareResult.perPersonTotalMonthly)}</div>
-                </div>
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
-                  <div className="text-lg font-black text-blue-600 uppercase">기업 절세 (연)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-blue-900">₩{welfareResult.companySavingAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-blue-500">{convertToKoreanUnit(welfareResult.companySavingAnnual)}</div>
-                </div>
                 <div className="bg-white rounded-3xl p-8 space-y-3 shadow-sm">
                   <div className="text-lg font-black text-emerald-600 uppercase">직원 절세 (연)</div>
                   <div className="text-2xl lg:text-3xl font-black text-emerald-900">₩{welfareResult.employeeSavingAnnual.toLocaleString()}</div>
                   <div className="text-lg font-bold text-emerald-500">{convertToKoreanUnit(welfareResult.employeeSavingAnnual)}</div>
-                </div>
-                <div className="bg-slate-900 rounded-3xl p-8 space-y-3 shadow-lg">
-                  <div className="text-lg font-black text-slate-400 uppercase">합계 (연)</div>
-                  <div className="text-2xl lg:text-3xl font-black text-white">₩{welfareResult.perPersonTotalAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-slate-400">{convertToKoreanUnit(welfareResult.perPersonTotalAnnual)}</div>
                 </div>
               </div>
             </div>
@@ -338,43 +329,23 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
               <div className="flex items-center gap-4">
                 <div className="text-3xl lg:text-4xl font-black">👥 전체 직원 ({welfareResult.employeeCount}명) 절세액</div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
-                  <div className="text-lg font-black text-purple-100 uppercase">기업 절세 (월)</div>
-                  <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalCompanySavingMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalCompanySavingMonthly)}</div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
                   <div className="text-lg font-black text-purple-100 uppercase">직원 절세 (월)</div>
                   <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalEmployeeSavingMonthly.toLocaleString()}</div>
                   <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalEmployeeSavingMonthly)}</div>
-                </div>
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-lg">
-                  <div className="text-lg font-black text-purple-600 uppercase">총 절세 (월)</div>
-                  <div className="text-2xl lg:text-4xl font-black text-purple-900">₩{welfareResult.totalSavingMonthly.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-600">{convertToKoreanUnit(welfareResult.totalSavingMonthly)}</div>
-                </div>
-                <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
-                  <div className="text-lg font-black text-purple-100 uppercase">기업 절세 (연)</div>
-                  <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalCompanySavingAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalCompanySavingAnnual)}</div>
                 </div>
                 <div className="bg-white/20 rounded-3xl p-8 space-y-3 backdrop-blur-sm">
                   <div className="text-lg font-black text-purple-100 uppercase">직원 절세 (연)</div>
                   <div className="text-2xl lg:text-4xl font-black">₩{welfareResult.totalEmployeeSavingAnnual.toLocaleString()}</div>
                   <div className="text-lg font-bold text-purple-200">{convertToKoreanUnit(welfareResult.totalEmployeeSavingAnnual)}</div>
                 </div>
-                <div className="bg-white rounded-3xl p-8 space-y-3 shadow-lg">
-                  <div className="text-lg font-black text-purple-600 uppercase">총 절세 (연)</div>
-                  <div className="text-2xl lg:text-4xl font-black text-purple-900">₩{welfareResult.totalSavingAnnual.toLocaleString()}</div>
-                  <div className="text-lg font-bold text-purple-600">{convertToKoreanUnit(welfareResult.totalSavingAnnual)}</div>
-                </div>
               </div>
             </div>
 
             <div className="bg-amber-50 border-4 border-amber-200 rounded-3xl p-8">
               <div className="text-xl lg:text-2xl font-bold text-amber-800 leading-relaxed">
-                💡 <b>절세 원리:</b> 복리후생비는 기업의 <u>손금(비용)</u>으로 인정되어 법인세가 절감되고, 직원은 <u>비과세 소득</u>으로 소득세가 절감됩니다.
+                💡 <b>절세 원리:</b> 복리후생비는 직원에게 <u>비과세 소득</u>으로 지급되어 소득세 + 지방소득세(10%)가 절감됩니다. 기업은 복리후생비를 비용 처리할 수 있지만, 직접적인 세금 절감 효과는 없습니다.
               </div>
             </div>
           </div>
