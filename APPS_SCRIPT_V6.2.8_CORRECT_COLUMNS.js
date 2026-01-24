@@ -260,8 +260,9 @@ function loginCompany(phone, password) {
  * [3] 직함
  * [4] 소속 사업단
  * [5] 소속 지사
- * [6] 가입일
- * [7] 승인상태 ← H열 (매니저/컨설턴트는 8개 컬럼)
+ * [6] ?
+ * [7] 가입일
+ * [8] 승인상태 ← I열 (모든 시트 동일!)
  */
 function loginConsultant(phone, password) {
   try {
@@ -278,12 +279,12 @@ function loginConsultant(phone, password) {
         const storedPhone = normalizePhoneNumber(row[1]);
         
         if (storedPhone === normalizedPhone) {
-          // H열 (인덱스 7) = 승인상태 (컨설턴트/매니저는 8개 컬럼)
-          const approvalStatus = String(row[7]).trim();
+          // I열 (인덱스 8) = 승인상태 (모든 시트 동일)
+          const approvalStatus = String(row[8]).trim();
           
           Logger.log('=== 매니저 로그인 ===');
           Logger.log('승인상태: "' + approvalStatus + '"');
-          Logger.log('가입일(G열): "' + row[6] + '"');
+          Logger.log('가입일(H열): "' + row[7] + '"');
           
           // "승인" 또는 "승인완료" 모두 허용
           if (approvalStatus !== '승인' && approvalStatus !== '승인완료') {
@@ -329,12 +330,12 @@ function loginConsultant(phone, password) {
         const storedPhone = normalizePhoneNumber(row[1]);
         
         if (storedPhone === normalizedPhone) {
-          // H열 (인덱스 7) = 승인상태
-          const approvalStatus = String(row[7]).trim();
+          // I열 (인덱스 8) = 승인상태 (모든 시트 동일)
+          const approvalStatus = String(row[8]).trim();
           
           Logger.log('=== 컨설턴트 로그인 ===');
           Logger.log('승인상태: "' + approvalStatus + '"');
-          Logger.log('가입일(G열): "' + row[6] + '"');
+          Logger.log('가입일(H열): "' + row[7] + '"');
           
           // "승인" 또는 "승인완료" 모두 허용
           if (approvalStatus !== '승인' && approvalStatus !== '승인완료') {
@@ -490,8 +491,9 @@ function registerConsultant(data) {
       data.position || '',      // D: 직함
       data.businessUnit || '',  // E: 소속 사업단
       data.branch || '',        // F: 소속 지사
-      timestamp,                // G: 가입일
-      '승인'                    // H: 승인상태
+      '',                       // G: ?
+      timestamp,                // H: 가입일
+      '승인'                    // I: 승인상태
     ];
     
     sheet.appendRow(newRow);
@@ -551,8 +553,9 @@ function registerManager(data) {
       data.position || '',      // D: 직함
       data.businessUnit || '',  // E: 소속 사업단
       data.branch || '',        // F: 소속 지사
-      timestamp,                // G: 가입일
-      '승인'                    // H: 승인상태
+      '',                       // G: ?
+      timestamp,                // H: 가입일
+      '승인'                    // I: 승인상태
     ];
     
     sheet.appendRow(newRow);
