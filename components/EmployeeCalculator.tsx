@@ -164,7 +164,7 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
             <div className="space-y-4 relative z-10 px-4">
               <div className="text-xl font-black text-blue-500 uppercase tracking-widest border-b-2 border-blue-100 inline-block pb-1">직원절세 시뮬레이션</div>
               <h3 className="text-3xl lg:text-4xl font-black text-slate-900 break-keep leading-tight">
-                연간 600만원 적용소득세율 {res.inputs.bracketRate ? `${(Number(res.inputs.bracketRate) * 100).toFixed(0)}%` : ''} / {res.inputs.retirementType || 'DB'} / 근속{res.inputs.yearsServed || '0'}년 전환시
+                연간 {convertToKoreanUnit(parseNumber(res.inputs.shiftMonthly) * 12)} 적용소득세율 {res.inputs.bracketRate ? `${(Number(res.inputs.bracketRate) * 100).toFixed(0)}%` : ''} / {res.inputs.retirementType || 'DB'} / 근속{res.inputs.yearsServed || '0'}년 전환시
               </h3>
             </div>
 
