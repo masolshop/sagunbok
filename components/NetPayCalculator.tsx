@@ -1007,29 +1007,29 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           {compareResult && (
             <div className="space-y-12 pt-6">
               {/* 첫 번째 줄: 총유출(전), 총유출(후), 총유출 절감 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-6">
                 {/* 총유출(전) */}
-                <div className="bg-slate-100 border-4 border-slate-200 rounded-[40px] p-12 lg:p-16 space-y-8">
-                  <div className="text-3xl lg:text-4xl font-black text-slate-500 uppercase tracking-widest">총유출(전)</div>
-                  <div className="text-6xl lg:text-8xl font-black text-slate-900 tracking-tighter">₩{fmt(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
-                  <div className="text-4xl lg:text-5xl font-bold text-slate-600">{convertToKoreanUnit(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
-                  <div className="text-3xl lg:text-4xl font-bold text-slate-500">원장 월 현금유출</div>
+                <div className="bg-slate-100 border-4 border-slate-200 rounded-[40px] p-6 lg:p-8 space-y-4">
+                  <div className="text-2xl lg:text-3xl font-black text-slate-500 uppercase tracking-widest">총유출(전)</div>
+                  <div className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter">₩{fmt(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-slate-600">{convertToKoreanUnit(compareResult.base.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-500">원장 월 현금유출</div>
                 </div>
 
                 {/* 총유출(후) */}
-                <div className="bg-blue-50 border-4 border-blue-200 rounded-[40px] p-12 lg:p-16 space-y-8">
-                  <div className="text-3xl lg:text-4xl font-black text-blue-500 uppercase tracking-widest">총유출(후)</div>
-                  <div className="text-6xl lg:text-8xl font-black text-blue-900 tracking-tighter">₩{fmt(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
-                  <div className="text-4xl lg:text-5xl font-bold text-blue-700">{convertToKoreanUnit(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
-                  <div className="text-3xl lg:text-4xl font-bold text-blue-600">포인트 전환 후</div>
+                <div className="bg-blue-50 border-4 border-blue-200 rounded-[40px] p-6 lg:p-8 space-y-4">
+                  <div className="text-2xl lg:text-3xl font-black text-blue-500 uppercase tracking-widest">총유출(후)</div>
+                  <div className="text-4xl lg:text-5xl font-black text-blue-900 tracking-tighter">₩{fmt(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-700">{convertToKoreanUnit(compareResult.after.payroll.employer.ownerCashOutMonthly)}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-blue-600">포인트 전환 후</div>
                 </div>
 
                 {/* 총유출 절감 */}
-                <div className="bg-emerald-600 border-4 border-emerald-700 rounded-[40px] p-12 lg:p-16 space-y-8">
-                  <div className="text-3xl lg:text-4xl font-black text-emerald-100 uppercase tracking-widest">총유출 절감</div>
-                  <div className="text-6xl lg:text-8xl font-black text-white tracking-tighter">₩{fmt(compareResult.savingOutflow)}</div>
-                  <div className="text-4xl lg:text-5xl font-bold text-emerald-100">{convertToKoreanUnit(compareResult.savingOutflow)}</div>
-                  <div className="text-3xl lg:text-4xl font-bold text-emerald-200">전 - 후</div>
+                <div className="bg-emerald-600 border-4 border-emerald-700 rounded-[40px] p-6 lg:p-8 space-y-4">
+                  <div className="text-2xl lg:text-3xl font-black text-emerald-100 uppercase tracking-widest">총유출 절감</div>
+                  <div className="text-4xl lg:text-5xl font-black text-white tracking-tighter">₩{fmt(compareResult.savingOutflow)}</div>
+                  <div className="text-3xl lg:text-4xl font-bold text-emerald-100">{convertToKoreanUnit(compareResult.savingOutflow)}</div>
+                  <div className="text-2xl lg:text-3xl font-bold text-emerald-200">전 - 후</div>
                 </div>
               </div>
 
