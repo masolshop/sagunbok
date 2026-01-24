@@ -53,6 +53,10 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
     return result.trim() + '원';
   };
 
+  const handleDeleteResult = (timestamp: string) => {
+    setCalcResults(prev => prev.filter(r => r.timestamp !== timestamp));
+  };
+
   const calculate = () => {
     if (!companyContext.companyName) {
       alert("회사명을 입력해주세요.");
@@ -272,7 +276,12 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
         {calcResults.filter(r => r.module === currentModule).map((res) => (
           <div key={res.timestamp} className="bg-white p-10 lg:p-14 rounded-[60px] border border-slate-100 shadow-2xl space-y-12 relative overflow-hidden animate-in slide-in-from-bottom-8">
-            <button className="absolute top-10 right-10 w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center text-3xl font-black hover:bg-red-500 hover:text-white transition-all z-20 shadow-sm">✕</button>
+            <button 
+              onClick={() => handleDeleteResult(res.timestamp)}
+              className="absolute top-10 right-10 w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center text-3xl font-black hover:bg-red-500 hover:text-white transition-all z-20 shadow-sm"
+            >
+              ✕
+            </button>
             <div className="absolute top-0 left-0 w-6 h-full bg-blue-500"></div>
 
             {res.module === ModuleType.WELFARE_CONVERSION && (
