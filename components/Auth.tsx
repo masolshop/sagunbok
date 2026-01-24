@@ -43,18 +43,35 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
-    const params = new URLSearchParams({
-      action,
-      ...Object.fromEntries(
-        Object.entries(data).map(([k, v]) => [k, String(v)])
-      )
-    });
-    
-    const response = await fetch(`${API_URL}?${params.toString()}`, {
-      method: 'GET',
-    });
-    return response.json();
+    try {
+      // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
+      const params = new URLSearchParams({
+        action,
+        ...Object.fromEntries(
+          Object.entries(data).map(([k, v]) => [k, String(v)])
+        )
+      });
+      
+      console.log('API 호출:', API_URL, params.toString());
+      
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('API 응답:', result);
+      return result;
+    } catch (error) {
+      console.error('API 호출 에러:', error);
+      throw error;
+    }
   };
   
   const handleLogin = async () => {
