@@ -44,6 +44,10 @@ const App: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
@@ -279,7 +283,7 @@ const App: React.FC = () => {
       
       <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
       {/* Sidebar Nav */}
-      <nav className="w-full lg:w-96 bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-auto">
+      <nav className="w-full lg:w-96 bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-hidden">
         <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transform rotate-3">S</div>
           <div>
@@ -316,7 +320,27 @@ const App: React.FC = () => {
           )}
         </div>
         
-        <div className="flex flex-col space-y-3 flex-1 overflow-y-auto pb-4">
+        <div 
+          ref={scrollContainerRef}
+          className="flex flex-col space-y-3 flex-1 overflow-y-auto pb-4 scrollbar-hide cursor-grab active:cursor-grabbing"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onMouseDown={(e) => {
+            setIsDragging(true);
+            setStartY(e.pageY - (scrollContainerRef.current?.offsetTop || 0));
+            setScrollTop(scrollContainerRef.current?.scrollTop || 0);
+          }}
+          onMouseLeave={() => setIsDragging(false)}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseMove={(e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const y = e.pageY - (scrollContainerRef.current?.offsetTop || 0);
+            const walk = (y - startY) * 2;
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollTop - walk;
+            }
+          }}
+        >
           {/* 사내근로복지기금 메뉴 그룹 */}
           <div className="space-y-2">
             <button
@@ -355,8 +379,8 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* 기존 메뉴들 - 항상 표시 */}
-          {MENU_ITEMS.filter(item => !item.isSubMenu && item.id !== 'admin').map(menuItem => {
+          {/* 기존 메뉴들 - 항상 표시 (admin 포함) */}
+          {MENU_ITEMS.filter(item => !item.isSubMenu).map(menuItem => {
             const hasAccess = checkAccess(menuItem);
             const isActive = activeTab === menuItem.id;
             const isPublic = menuItem.access.includes('public');
@@ -365,7 +389,7 @@ const App: React.FC = () => {
               <button 
                 key={menuItem.id}
                 onClick={() => handleMenuClick(menuItem)}
-                className={`w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative ${
+                className={`w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
                   isActive 
                     ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
                     : hasAccess
@@ -391,27 +415,6 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex-shrink-0 space-y-4 border-t border-slate-700 pt-4">
-          {(() => {
-            const adminMenuItem = MENU_ITEMS.find(item => item.id === 'admin');
-            if (!adminMenuItem) return null;
-            
-            const hasAccess = checkAccess(adminMenuItem);
-            if (!hasAccess) return null;
-            
-            return (
-              <button 
-                onClick={() => handleMenuClick(adminMenuItem)}
-                className={`w-full py-4 px-5 rounded-xl text-sm font-black transition-all border border-dashed ${
-                  activeTab === 'admin' 
-                    ? 'bg-white/10 border-white text-white' 
-                    : 'border-slate-700 text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {adminMenuItem.label}
-              </button>
-            );
-          })()}
-          
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
             <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
