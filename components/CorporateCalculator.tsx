@@ -362,7 +362,7 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                 {/* 기금출연시 절세효과 제목 */}
                 <div className="text-center space-y-4">
                   <div className="inline-block px-12 py-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-[40px] shadow-2xl">
-                    <span className="text-2xl lg:text-3xl font-black text-white">
+                    <span className="text-2xl lg:text-3xl font-black text-blue-900">
                       출연액 ₩{parseNumber(res.inputs.contribution).toLocaleString()}시 절세금액
                     </span>
                   </div>
