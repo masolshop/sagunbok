@@ -557,10 +557,10 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
   const TabButton = ({ k, label }: { k: TabKey; label: string }) => (
     <button
       onClick={() => setTab(k)}
-      className={`px-10 py-6 rounded-[32px] font-black text-2xl lg:text-3xl transition-all border-4 shadow-lg
+      className={`flex-1 px-8 py-8 rounded-[40px] font-black text-3xl lg:text-4xl transition-all border-4 shadow-lg
         ${tab === k 
-          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-600 shadow-blue-500/50 scale-105' 
-          : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:shadow-xl'}`}
+          ? 'bg-white text-blue-600 border-blue-600 shadow-blue-500/50 scale-[1.02]' 
+          : 'bg-white text-slate-400 border-slate-200 hover:border-blue-300 hover:text-slate-600 hover:shadow-xl'}`}
     >
       {label}
     </button>
@@ -595,7 +595,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-4">
         <TabButton k="single" label="단일 역산" />
         <TabButton k="compare" label="사근복 연동 전/후 비교" />
         <TabButton k="bulk" label="전직원 일괄 분석" />
