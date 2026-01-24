@@ -177,6 +177,13 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
     const mode: PayMode = (inputs.payMode as PayMode) || 'grossup';
     const deductibilityRate = Number(inputs.deductibilityRate ?? defaultDeductibility(mode));
 
+    // 지급방식 계수(보수적으로 시작)
+    const PAYMODE_FACTOR: Record<PayMode, number> = {
+      grossup: 1.0,
+      card: 0.85,
+      cash: 0.6
+    };
+
     // 결과에서 값 꺼내기
     const grossMonthly = result.payroll.grossMonthly || 0;
     const netMonthly = result.payroll.netMonthly || 0;
@@ -202,9 +209,9 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
       (inputs.includeEmployerInsurance ? employerInsurance : 0) +
       retirementMonthly;
 
-    // 종합소득세 절감(연) = 엔진의 절감액 × 비용인정률
+    // 종합소득세 절감(연) = 엔진의 절감액 × 비용인정률 × 지급방식 계수
     const baseSavingAnnual = result.ownerTaxEffect?.ownerTotalTaxSavingAnnual || 0;
-    const adjSavingAnnual = Math.round(baseSavingAnnual * deductibilityRate);
+    const adjSavingAnnual = Math.round(baseSavingAnnual * deductibilityRate * PAYMODE_FACTOR[mode]);
 
     // 원장 실질 세후부담(월) = 총유출(월) - (세금절감(연)/12)
     const ownerAfterTaxCostMonthly = Math.round(ownerCashOutMonthly - (adjSavingAnnual / 12));
@@ -216,6 +223,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
     (result as any)._ui = {
       payMode: mode,
       deductibilityRate,
+      payModeFactor: PAYMODE_FACTOR[mode],
       employee: {
         insuranceMonthly: empIns,
         incomeTaxMonthly: empIncomeTax,
@@ -850,36 +858,51 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                     />
                   </div>
 
+                  {/* 안내 문구 */}
+                  <div className="mt-8 bg-blue-50 border-2 border-blue-200 rounded-3xl p-6 lg:p-8">
+                    <div className="flex items-start gap-4">
+                      <div className="text-3xl lg:text-4xl">ℹ️</div>
+                      <div className="space-y-2">
+                        <div className="text-xl lg:text-2xl font-black text-blue-900">지급방식에 따른 세금 절감 조정</div>
+                        <div className="text-lg lg:text-xl text-blue-700 font-bold leading-relaxed">
+                          지급방식에 따라 비용 인정 가능성이 달라져 종합소득세 절감액이 조정됩니다.<br/>
+                          <span className="text-blue-600">(비용인정률 × 지급방식 계수: Gross-up 100%, 카드 85%, 현금 60%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* 리스크 진단 패널 */}
                   {(res.result as any)._ui?.riskProfile && (
-                    <div className="mt-10 bg-amber-50 border-4 border-amber-100 rounded-[40px] p-8 lg:p-10 space-y-6">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                          <div className="text-2xl font-black text-amber-800">노무·세무 리스크 진단</div>
-                          <div className="text-amber-600 font-bold">
+                    <div className="mt-10 bg-amber-50 border-4 border-amber-100 rounded-[40px] p-10 lg:p-14 space-y-10">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div className="space-y-3">
+                          <div className="text-4xl lg:text-5xl font-black text-amber-800">노무·세무 리스크 진단</div>
+                          <div className="text-2xl lg:text-3xl text-amber-600 font-bold">
                             지급방식: <span className="font-black">{PAYMODE_LABEL[(res.result as any)._ui.payMode]}</span> ·
                             비용인정률: <span className="font-black">{Math.round((res.result as any)._ui.deductibilityRate * 100)}%</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-black text-amber-600 uppercase tracking-widest">Risk Level</div>
-                          <div className="text-4xl font-black text-amber-900">{(res.result as any)._ui.riskProfile.level}</div>
-                          <div className="text-xs font-bold text-amber-700">score {(res.result as any)._ui.riskProfile.score}</div>
+                          <div className="text-xl lg:text-2xl font-black text-amber-600 uppercase tracking-widest">Risk Level</div>
+                          <div className="text-6xl lg:text-7xl font-black text-amber-900">{(res.result as any)._ui.riskProfile.level}</div>
+                          <div className="text-lg lg:text-xl font-bold text-amber-700">score {(res.result as any)._ui.riskProfile.score}</div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-3xl p-6 border-2 border-amber-200">
-                          <div className="text-sm font-black text-amber-600 uppercase tracking-widest mb-3">주요 리스크</div>
-                          <ul className="space-y-2 text-slate-700 font-bold">
+                      {/* 상하 2칸 레이아웃으로 변경 */}
+                      <div className="space-y-8">
+                        <div className="bg-white rounded-3xl p-10 lg:p-12 border-4 border-amber-200">
+                          <div className="text-2xl lg:text-3xl font-black text-amber-600 uppercase tracking-widest mb-6">주요 리스크</div>
+                          <ul className="space-y-4 text-slate-700 font-bold text-xl lg:text-2xl leading-relaxed">
                             {(res.result as any)._ui.riskProfile.issues.map((x: string, i: number) => (
                               <li key={i}>• {x}</li>
                             ))}
                           </ul>
                         </div>
-                        <div className="bg-slate-900 rounded-3xl p-6 border-2 border-slate-800">
-                          <div className="text-sm font-black text-slate-300 uppercase tracking-widest mb-3">추천 액션</div>
-                          <ul className="space-y-2 text-slate-100 font-bold">
+                        <div className="bg-slate-900 rounded-3xl p-10 lg:p-12 border-4 border-slate-800">
+                          <div className="text-2xl lg:text-3xl font-black text-slate-300 uppercase tracking-widest mb-6">추천 액션</div>
+                          <ul className="space-y-4 text-slate-100 font-bold text-xl lg:text-2xl leading-relaxed">
                             {(res.result as any)._ui.riskProfile.actions.map((x: string, i: number) => (
                               <li key={i}>• {x}</li>
                             ))}
@@ -887,64 +910,12 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                         </div>
                       </div>
 
-                      <div className="text-xs text-amber-700 font-bold leading-relaxed">
+                      <div className="text-base lg:text-lg text-amber-700 font-bold leading-relaxed">
                         핵심: 네트 계약은 "보험/세율 충격"을 원장이 떠안습니다. 지급방식이 카드/현금일수록 "비용부인/임금성 판단" 리스크가 커집니다.  
                         → 사근복(복지포인트)로 규정/대상/기준을 구조화하면 절세+리스크 감소를 동시에 설계할 수 있습니다.
                       </div>
                     </div>
                   )}
-
-                  {/* Risk */}
-                  <div className="mt-12 bg-red-50 rounded-[48px] p-10 lg:p-14 border-4 border-red-100 space-y-8 relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div className="space-y-2">
-                        <h4 className="text-3xl font-black text-red-700 tracking-tight">네트 계약 리스크 시뮬레이션</h4>
-                        <p className="text-lg text-red-400 font-bold">건보료 인상 및 세율 구간 변동 시 원장님의 추가 부담액을 예측합니다.</p>
-                      </div>
-                      <button
-                        onClick={runRiskSimulation}
-                        className="px-10 py-5 bg-red-600 text-white font-black text-xl rounded-2xl hover:bg-red-700 shadow-xl transition-all active:scale-95 shrink-0"
-                      >
-                        리스크 분석 ⚡
-                      </button>
-                    </div>
-
-                    {riskResult && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-4">
-                        <div className="bg-white p-8 rounded-3xl border-2 border-red-200 space-y-6 shadow-sm">
-                          <div className="text-sm font-black text-red-400 uppercase tracking-widest border-b border-red-50 pb-2">
-                            리스크 조건: 건보료 0.1%p ↑ + 세율상향
-                          </div>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-bold text-slate-600">월 총유출 증가액</span>
-                              <span className="text-2xl font-black text-red-600">+ ₩{riskResult.delta.ownerCashOutMonthly.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-bold text-slate-600">연간 총유출 증가액</span>
-                              <span className="text-3xl font-black text-red-700">+ ₩{riskResult.delta.ownerCashOutAnnual.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-900 p-8 rounded-3xl space-y-6 shadow-xl">
-                          <div className="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-700 pb-2">
-                            대응 전략 가이드
-                          </div>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-bold text-slate-300">필요 GROSS 상향분</span>
-                              <span className="text-2xl font-black text-white">₩{riskResult.delta.grossMonthly.toLocaleString()} / 월</span>
-                            </div>
-                            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                              네트 계약 시 고정비 인상 리스크는 전액 원장이 부담합니다. 사근복(복지포인트) 전환은
-                              과세급여 및 보험료 기반을 줄이는 방어 기제가 될 수 있습니다.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
                 </div>
               </div>
