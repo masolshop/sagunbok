@@ -8,19 +8,27 @@ import NetPayCalculator from './components/NetPayCalculator';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import AIChat from './components/AIChat';
+import SagunbokInfo from './components/SagunbokInfo';
+import SagunbokTaxSavings from './components/SagunbokTaxSavings';
+import Sagunbok7Plans from './components/Sagunbok7Plans';
 
 // 메뉴 접근 권한 정의
 type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
 
 interface MenuItem {
-  id: 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin';
+  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin';
   label: string;
   icon: string;
   access: MenuAccess[];
   description?: string;
+  isSubMenu?: boolean;
+  parentId?: string;
 }
 
 const MENU_ITEMS: MenuItem[] = [
+  { id: 'sagunbok-info', label: '사근복이란?', icon: '📚', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
+  { id: 'sagunbok-tax', label: '사근복 절세', icon: '💰', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
+  { id: 'sagunbok-plans', label: '사근복 7대플랜', icon: '🎯', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
   { id: 'corp', label: '기업절세계산기', icon: '📊', access: ['public'], description: '누구나 이용 가능' },
   { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
@@ -32,9 +40,10 @@ const MENU_ITEMS: MenuItem[] = [
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('corp');
+  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('sagunbok-info');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingTab, setPendingTab] = useState<'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin' | null>(null);
+  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin' | null>(null);
+  const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
 
   
   const [companyContext, setCompanyContext] = useState<CompanyContext>({
@@ -298,7 +307,46 @@ const App: React.FC = () => {
         )}
         
         <div className="flex flex-col space-y-4">
-          {MENU_ITEMS.filter(item => item.id !== 'admin').map(menuItem => {
+          {/* 사내근로복지기금 메뉴 그룹 */}
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowSagunbokSubmenu(!showSagunbokSubmenu)}
+              className="w-full py-4 px-6 rounded-2xl text-lg font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🏢</span>
+                <span>사내근로복지기금</span>
+              </div>
+              <span className={`transition-transform text-slate-400 ${
+                showSagunbokSubmenu ? 'rotate-180' : ''
+              }`}>▼</span>
+            </button>
+            
+            {showSagunbokSubmenu && (
+              <div className="ml-4 space-y-2 border-l-2 border-slate-700 pl-4">
+                {MENU_ITEMS.filter(item => item.isSubMenu).map(menuItem => {
+                  const isActive = activeTab === menuItem.id;
+                  return (
+                    <button 
+                      key={menuItem.id}
+                      onClick={() => handleMenuClick(menuItem)}
+                      className={`w-full py-3 px-4 rounded-xl text-sm font-bold transition-all border text-left flex items-center gap-2 ${
+                        isActive 
+                          ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
+                          : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-lg">{menuItem.icon}</span>
+                      <span>{menuItem.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 기존 메뉴들 */}
+          {MENU_ITEMS.filter(item => !item.isSubMenu && item.id !== 'admin').map(menuItem => {
             const hasAccess = checkAccess(menuItem);
             const isActive = activeTab === menuItem.id;
             const isPublic = menuItem.access.includes('public');
@@ -378,6 +426,10 @@ const App: React.FC = () => {
       {/* Main Content Area - 확대된 레이아웃 */}
       <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
         <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
+          {activeTab === 'sagunbok-info' && <SagunbokInfo />}
+          {activeTab === 'sagunbok-tax' && <SagunbokTaxSavings />}
+          {activeTab === 'sagunbok-plans' && <Sagunbok7Plans />}
+          
           {activeTab === 'corp' && (
             <CorporateCalculator 
               companyContext={companyContext}
