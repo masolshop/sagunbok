@@ -875,7 +875,7 @@ function loginConsultant(phone, password) {
       }
     }
     
-    writeLog('로그인', '사근복매니저/컨설턴트', normalizedPhone, '등록되지 않은 전화번호', '실패');
+    writeLog('로그인', '사근복매니저/컨설턴트', phone, '등록되지 않은 전화번호', '실패');
     return {
       success: false,
       error: '등록되지 않은 전화번호입니다.'
