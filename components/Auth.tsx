@@ -44,18 +44,17 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    // POST 방식으로 변경 (Apps Script가 POST만 지원)
-    const payload = {
+    // GET 방식으로 변경 (CORS 우회)
+    const params = new URLSearchParams({
       action,
       ...data
-    };
+    });
     
-    const response = await fetch(API_URL, {
-      method: 'POST',
+    const response = await fetch(`${API_URL}?${params.toString()}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
-      body: JSON.stringify(payload),
     });
     return response.json();
   };
