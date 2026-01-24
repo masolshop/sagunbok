@@ -66,20 +66,26 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     try {
       const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
+      console.log('로그인 시도:', { action, phone: loginPhone, userType });
+      
       const result = await callAPI(action, {
         phone: loginPhone,
         password: loginPassword,
       });
       
+      console.log('로그인 응답:', result);
+      
       if (result.success) {
         localStorage.setItem('sagunbok_user', JSON.stringify(result.user));
         onLoginSuccess(result.user);
       } else {
-        alert(result.error || '로그인 실패');
+        const errorMsg = result.error || '로그인 실패';
+        console.error('로그인 실패:', errorMsg, result);
+        alert(`로그인 실패\n\n${errorMsg}\n\n전화번호: ${loginPhone}\n회원 구분: ${userType === 'company' ? '기업회원' : userType === 'manager' ? '매니저' : '컨설턴트'}`);
       }
     } catch (error) {
-      alert('로그인 중 오류가 발생했습니다.');
-      console.error(error);
+      console.error('로그인 에러:', error);
+      alert(`로그인 중 오류가 발생했습니다.\n\n에러: ${error instanceof Error ? error.message : String(error)}\n\n서버와의 통신에 문제가 있을 수 있습니다.`);
     } finally {
       setLoading(false);
     }
