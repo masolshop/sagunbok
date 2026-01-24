@@ -35,6 +35,17 @@ const PAYMODE_LABEL: Record<PayMode, string> = {
 // "지방소득세(10%)"를 단순 근사(근로소득세의 10%)로 계산
 const calcLocalIncomeTax = (incomeTaxMonthly: number) => Math.round((incomeTaxMonthly || 0) * 0.1);
 
+// 한글 금액 변환 함수
+const convertToKoreanUnit = (value: number) => {
+  if (value === 0) return '0원';
+  const eok = Math.floor(value / 100000000);
+  const man = Math.floor((value % 100000000) / 10000);
+  let result = '';
+  if (eok > 0) result += `${eok}억 `;
+  if (man > 0) result += `${man.toLocaleString()}만`;
+  return result.trim() + '원';
+};
+
 // 지급방식별 "비용인정률" 기본값(보수적 가이드)
 const defaultDeductibility = (mode: PayMode) => {
   if (mode === 'grossup') return 1.0;
@@ -545,8 +556,8 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
     </button>
   );
 
-  const KpiCard = ({ title, value, sub, tone }: { title: string; value: string; sub?: string; tone?: 'dark'|'blue'|'red'|'gray' }) => {
-    const base = 'p-8 lg:p-10 rounded-[40px] space-y-4 border-2 shadow-sm';
+  const KpiCard = ({ title, value, sub, koreanUnit, tone }: { title: string; value: string; sub?: string; koreanUnit?: string; tone?: 'dark'|'blue'|'red'|'gray' }) => {
+    const base = 'p-10 lg:p-12 rounded-[40px] space-y-5 border-2 shadow-sm';
     const toneClass =
       tone === 'dark' ? 'bg-slate-900 text-white border-slate-800 shadow-xl' :
       tone === 'blue' ? 'bg-[#f0f7ff] text-blue-800 border-blue-100' :
@@ -554,11 +565,12 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
       'bg-[#f8fafc] text-slate-900 border-slate-100';
     return (
       <div className={`${base} ${toneClass}`}>
-        <div className={`text-sm lg:text-base font-black uppercase tracking-widest ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-400' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>
+        <div className={`text-lg lg:text-xl font-black uppercase tracking-widest ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-400' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>
           {title}
         </div>
-        <div className="text-3xl lg:text-4xl xl:text-5xl font-black leading-none break-all tracking-tighter">{value}</div>
-        {sub ? <div className={`text-2xl lg:text-3xl font-bold ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-500' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>{sub}</div> : null}
+        <div className="text-4xl lg:text-5xl xl:text-6xl font-black leading-none break-all tracking-tighter">{value}</div>
+        {koreanUnit && <div className={`text-2xl lg:text-3xl font-bold ${tone === 'dark' ? 'text-slate-500' : tone === 'blue' ? 'text-blue-600' : tone === 'red' ? 'text-red-400' : 'text-slate-500'}`}>{koreanUnit}</div>}
+        {sub ? <div className={`text-xl lg:text-2xl font-bold ${tone === 'dark' ? 'text-slate-400' : tone === 'blue' ? 'text-blue-500' : tone === 'red' ? 'text-red-300' : 'text-slate-400'}`}>{sub}</div> : null}
       </div>
     );
   };
@@ -679,41 +691,46 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
               </div>
             </div>
 
-            <div className="mt-8 bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 space-y-4">
-              <div className="text-lg font-black text-slate-800">원장 대납(보전) 항목 선택(표시용)</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <label className="flex items-center gap-3 font-black text-slate-700">
+            <div className="mt-8 bg-slate-50 border-2 border-slate-100 rounded-3xl p-8 space-y-6">
+              <div className="text-2xl lg:text-3xl font-black text-slate-800">원장 대납(보전) 항목 선택(표시용)</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <label className="flex items-center gap-4 font-black text-slate-700 text-xl lg:text-2xl">
                   <input type="checkbox" checked={!!inputs.coverEmpInsurance}
-                    onChange={(e) => setInputs({ ...inputs, coverEmpInsurance: e.target.checked })} />
+                    onChange={(e) => setInputs({ ...inputs, coverEmpInsurance: e.target.checked })}
+                    className="w-6 h-6" />
                   직원 4대보험
                 </label>
-                <label className="flex items-center gap-3 font-black text-slate-700">
+                <label className="flex items-center gap-4 font-black text-slate-700 text-xl lg:text-2xl">
                   <input type="checkbox" checked={!!inputs.coverIncomeTax}
-                    onChange={(e) => setInputs({ ...inputs, coverIncomeTax: e.target.checked })} />
+                    onChange={(e) => setInputs({ ...inputs, coverIncomeTax: e.target.checked })}
+                    className="w-6 h-6" />
                   근로소득세
                 </label>
-                <label className="flex items-center gap-3 font-black text-slate-700">
+                <label className="flex items-center gap-4 font-black text-slate-700 text-xl lg:text-2xl">
                   <input type="checkbox" checked={!!inputs.coverLocalTax}
-                    onChange={(e) => setInputs({ ...inputs, coverLocalTax: e.target.checked })} />
+                    onChange={(e) => setInputs({ ...inputs, coverLocalTax: e.target.checked })}
+                    className="w-6 h-6" />
                   지방소득세(10% 근사)
                 </label>
               </div>
 
-              <div className="text-lg font-black text-slate-800 mt-4">원장 추가부담 선택</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex items-center gap-3 font-black text-slate-700">
+              <div className="text-2xl lg:text-3xl font-black text-slate-800 mt-6">원장 추가부담 선택</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <label className="flex items-center gap-4 font-black text-slate-700 text-xl lg:text-2xl">
                   <input type="checkbox" checked={!!inputs.includeEmployerInsurance}
-                    onChange={(e) => setInputs({ ...inputs, includeEmployerInsurance: e.target.checked })} />
+                    onChange={(e) => setInputs({ ...inputs, includeEmployerInsurance: e.target.checked })}
+                    className="w-6 h-6" />
                   사업주 4대보험 포함
                 </label>
-                <label className="flex items-center gap-3 font-black text-slate-700">
+                <label className="flex items-center gap-4 font-black text-slate-700 text-xl lg:text-2xl">
                   <input type="checkbox" checked={!!inputs.includeRetirement}
-                    onChange={(e) => setInputs({ ...inputs, includeRetirement: e.target.checked })} />
+                    onChange={(e) => setInputs({ ...inputs, includeRetirement: e.target.checked })}
+                    className="w-6 h-6" />
                   퇴직연금 포함(DC/기업IRP 근사)
                 </label>
               </div>
 
-              <div className="text-xs text-slate-400 font-bold leading-relaxed">
+              <div className="text-sm lg:text-base text-slate-400 font-bold leading-relaxed">
                 ※ 대납 항목을 해제하면 "NET 보장 전제"가 달라질 수 있어요.  
                 지금은 '구성 표시/설명' 목적이며, 다음 단계에서 "대납 제외 시 NET 감소"까지 엔진으로 확장 가능합니다.
               </div>
@@ -768,27 +785,36 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-white/10 pb-10 relative z-10">
-                      <div className="space-y-3">
-                        <div className="text-2xl lg:text-3xl font-black text-slate-400">필요 총급여액 (월, 원)</div>
-                        <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-blue-400 break-words leading-none tracking-tighter">
+                      <div className="space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-slate-400">필요 총급여액 (월, 원)</div>
+                        <div className="text-4xl lg:text-5xl xl:text-6xl font-black text-blue-400 break-words leading-none tracking-tighter">
                           ₩{res.result.payroll.grossMonthly.toLocaleString()}
                         </div>
+                        <div className="text-2xl lg:text-3xl font-bold text-slate-500">
+                          {convertToKoreanUnit(res.result.payroll.grossMonthly)}
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        <div className="text-2xl lg:text-3xl font-black text-slate-400">원장 보전 금액(대납 합계) (월, 원)</div>
-                        <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-red-400 break-words leading-none tracking-tighter">
+                      <div className="space-y-4">
+                        <div className="text-3xl lg:text-4xl font-black text-slate-400">원장 보전 금액(대납 합계) (월, 원)</div>
+                        <div className="text-4xl lg:text-5xl xl:text-6xl font-black text-red-400 break-words leading-none tracking-tighter">
                           ₩{((res.result as any)._ui?.employee?.coverSelectedMonthly || res.result.payroll.ownerCoverMonthly).toLocaleString()}
+                        </div>
+                        <div className="text-2xl lg:text-3xl font-bold text-slate-500">
+                          {convertToKoreanUnit((res.result as any)._ui?.employee?.coverSelectedMonthly || res.result.payroll.ownerCoverMonthly)}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 relative z-10">
-                      <div className="text-2xl lg:text-3xl font-black text-slate-300">원장 총 현금 유출액 (월, 원)</div>
-                      <div className="text-left lg:text-right space-y-2 max-w-full overflow-hidden">
-                        <div className="text-4xl lg:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-white break-words">
+                      <div className="text-3xl lg:text-4xl font-black text-slate-300">원장 총 현금 유출액 (월, 원)</div>
+                      <div className="text-left lg:text-right space-y-3 max-w-full overflow-hidden">
+                        <div className="text-5xl lg:text-7xl xl:text-8xl font-black tracking-tighter leading-none text-white break-words">
                           ₩{((res.result as any)._ui?.employer?.ownerCashOutMonthly || res.result.payroll.employer.ownerCashOutMonthly).toLocaleString()}
                         </div>
-                        <div className="text-lg font-bold text-slate-500 opacity-60">Gross + 사업주 4대보험 + 퇴직연금</div>
+                        <div className="text-2xl lg:text-3xl font-black text-slate-500">
+                          {convertToKoreanUnit((res.result as any)._ui?.employer?.ownerCashOutMonthly || res.result.payroll.employer.ownerCashOutMonthly)}
+                        </div>
+                        <div className="text-xl lg:text-2xl font-bold text-slate-500 opacity-80">Gross + 사업주 4대보험 + 퇴직연금</div>
                       </div>
                     </div>
                   </div>
@@ -797,24 +823,28 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                     <KpiCard
                       title="원장 종합소득세 절감(비용인정률 반영) (연, 원)"
                       value={`₩${fmt((res.result as any)._ui?.owner?.ownerTaxSavingAnnual_adj || res.result.ownerTaxEffect.ownerTotalTaxSavingAnnual)}`}
+                      koreanUnit={convertToKoreanUnit((res.result as any)._ui?.owner?.ownerTaxSavingAnnual_adj || res.result.ownerTaxEffect.ownerTotalTaxSavingAnnual)}
                       sub="연간 세금 절감액"
                       tone="gray"
                     />
                     <KpiCard
                       title="원장 실질 세후 부담 (월, 원)"
                       value={`₩${fmt((res.result as any)._ui?.owner?.ownerAfterTaxCostMonthly_adj || res.result.ownerTaxEffect.ownerAfterTaxCostMonthly_est)}`}
+                      koreanUnit={convertToKoreanUnit((res.result as any)._ui?.owner?.ownerAfterTaxCostMonthly_adj || res.result.ownerTaxEffect.ownerAfterTaxCostMonthly_est)}
                       sub="현금유출 - 세금절감"
                       tone="blue"
                     />
                     <KpiCard
                       title="직원 4대보험 부담분 (월, 원)"
                       value={`₩${fmt((res.result as any)._ui?.employee?.insuranceMonthly || res.result.payroll.employee.insuranceMonthly)}`}
+                      koreanUnit={convertToKoreanUnit((res.result as any)._ui?.employee?.insuranceMonthly || res.result.payroll.employee.insuranceMonthly)}
                       sub="원장 대납 항목"
                       tone="dark"
                     />
                     <KpiCard
                       title="직원 소득세 부담분 (월, 원)"
                       value={`₩${fmt((res.result as any)._ui?.employee?.incomeTaxMonthly || res.result.payroll.employee.incomeTaxMonthly)}`}
+                      koreanUnit={convertToKoreanUnit((res.result as any)._ui?.employee?.incomeTaxMonthly || res.result.payroll.employee.incomeTaxMonthly)}
                       sub="원장 대납 항목"
                       tone="red"
                     />
