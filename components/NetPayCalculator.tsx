@@ -439,7 +439,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
 
   function bulkTemplateCSV(): string {
     return [
-      'role,name,netMonthly,bracketRate,welfarePointMonthly',
+      '구분,이름,목표실수령액(월),적용세율,복지포인트(월)',
       'DOCTOR,홍길동,10000000,0.35,300000',
       'STAFF,김간호,4000000,0.15,200000',
       'STAFF,박원무,3500000,0.15,200000'
@@ -1140,49 +1140,21 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           TAB: BULK
           ======================= */}
       {tab === 'bulk' && (
-        <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">
-          <h3 className="text-slate-900 font-black text-3xl lg:text-4xl">전직원 일괄 분석 (엑셀→CSV 업로드)</h3>
+        <div className="bg-white rounded-[60px] border-4 border-slate-50 p-16 lg:p-24 shadow-2xl space-y-12">
+          <h3 className="text-slate-900 font-black text-5xl lg:text-7xl">전직원 일괄 분석 (엑셀→CSV 업로드)</h3>
 
-          <div className="text-slate-500 font-bold text-lg leading-relaxed">
+          <div className="text-slate-500 font-bold text-2xl lg:text-3xl leading-relaxed">
             ✅ 병원 "페이닥터(의사) + 직원" 전체를 업로드해서 <b>회사 총유출 / 사근복 전환 절감</b>을 한 번에 뽑습니다.<br/>
             ✅ 네트급여 지급방식은 외부 비공개 전제로, 병원 내부에서만 "셀프 시뮬"하도록 설계된 탭입니다.
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-6">
             <button
               onClick={() => downloadTextFile('netpay_bulk_template.csv', bulkTemplateCSV())}
-              className="px-8 py-4 rounded-2xl font-black text-lg bg-slate-900 text-white hover:bg-slate-800 transition-all"
+              className="px-12 py-6 rounded-3xl font-black text-3xl lg:text-4xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-lg"
             >
               CSV 템플릿 다운로드
             </button>
-
-            <div className="flex items-center gap-3">
-              <span className="font-black text-slate-700">기본 복지포인트(월)</span>
-              <input
-                className="bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 font-black text-slate-900 w-[180px]"
-                value={inputs.bulkDefaultWelfarePointMonthly ?? '0'}
-                onChange={(e) => setInputs({ ...inputs, bulkDefaultWelfarePointMonthly: formatNumber(e.target.value) })}
-                placeholder="예: 200,000"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="font-black text-slate-700">기본 세율</span>
-              <select
-                className="bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3 font-black text-slate-900"
-                value={inputs.bulkDefaultBracketRate ?? (inputs.bracketRate || '0.35')}
-                onChange={(e) => setInputs({ ...inputs, bulkDefaultBracketRate: e.target.value })}
-              >
-                <option value={0.06}>6%</option>
-                <option value={0.15}>15%</option>
-                <option value={0.24}>24%</option>
-                <option value={0.35}>35%</option>
-                <option value={0.38}>38%</option>
-                <option value={0.40}>40%</option>
-                <option value={0.42}>42%</option>
-                <option value={0.45}>45%</option>
-              </select>
-            </div>
           </div>
 
           <div>
@@ -1193,64 +1165,64 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                 const f = e.target.files?.[0];
                 if (f) onBulkUpload(f);
               }}
-              className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-3 file:px-6
-              file:rounded-2xl file:border-0
-              file:text-lg file:font-black
+              className="block w-full text-xl lg:text-2xl text-slate-500
+              file:mr-6 file:py-6 file:px-10
+              file:rounded-3xl file:border-0
+              file:text-3xl lg:text-4xl file:font-black
               file:bg-blue-600 file:text-white
-              hover:file:bg-blue-700"
+              hover:file:bg-blue-700 shadow-lg"
             />
-            <div className="mt-2 text-xs text-slate-400 font-bold">
+            <div className="mt-4 text-xl lg:text-2xl text-slate-400 font-bold">
               엑셀에서 "다른 이름으로 저장 → CSV UTF-8" 권장
             </div>
           </div>
 
           {bulkSummary && (
-            <div className="space-y-10 pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="space-y-12 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                 <KpiCard title="전체 총유출(전)" value={`₩${fmt(bulkSummary.total.totalBaseOut)}`} />
                 <KpiCard title="전체 총유출(후)" value={`₩${fmt(bulkSummary.total.totalAfterOut)}`} tone="blue" />
                 <KpiCard title="전체 절감" value={`₩${fmt(bulkSummary.total.totalSaving)}`} tone="dark" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                 <KpiCard title="의사 합계(전)" value={`₩${fmt(bulkSummary.doctor.doctorBase)}`} />
                 <KpiCard title="의사 합계(후)" value={`₩${fmt(bulkSummary.doctor.doctorAfter)}`} tone="blue" />
                 <KpiCard title="의사 절감" value={`₩${fmt(bulkSummary.doctor.doctorSaving)}`} tone="dark" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                 <KpiCard title="직원 합계(전)" value={`₩${fmt(bulkSummary.staff.staffBase)}`} />
                 <KpiCard title="직원 합계(후)" value={`₩${fmt(bulkSummary.staff.staffAfter)}`} tone="blue" />
                 <KpiCard title="직원 절감" value={`₩${fmt(bulkSummary.staff.staffSaving)}`} tone="dark" />
               </div>
 
               {/* Row table */}
-              <div className="overflow-x-auto border-2 border-slate-100 rounded-[28px]">
+              <div className="overflow-x-auto border-4 border-slate-200 rounded-[32px]">
                 <table className="min-w-full text-left">
-                  <thead className="bg-slate-50">
-                    <tr className="text-slate-600 text-sm font-black uppercase tracking-widest">
-                      <th className="px-5 py-4">#</th>
-                      <th className="px-5 py-4">구분</th>
-                      <th className="px-5 py-4">이름</th>
-                      <th className="px-5 py-4">세율</th>
-                      <th className="px-5 py-4">포인트(월)</th>
-                      <th className="px-5 py-4">총유출(전)</th>
-                      <th className="px-5 py-4">총유출(후)</th>
-                      <th className="px-5 py-4">절감</th>
+                  <thead className="bg-slate-100">
+                    <tr className="text-slate-700 text-xl lg:text-2xl font-black uppercase tracking-widest">
+                      <th className="px-8 py-6">#</th>
+                      <th className="px-8 py-6">구분</th>
+                      <th className="px-8 py-6">이름</th>
+                      <th className="px-8 py-6">세율</th>
+                      <th className="px-8 py-6">포인트(월)</th>
+                      <th className="px-8 py-6">총유출(전)</th>
+                      <th className="px-8 py-6">총유출(후)</th>
+                      <th className="px-8 py-6">절감</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bulkRowOutputs.slice(0, 300).map((r) => (
-                      <tr key={r.idx} className="border-t border-slate-100">
-                        <td className="px-5 py-4 font-black text-slate-500">{r.idx}</td>
-                        <td className="px-5 py-4 font-black">{r.role}</td>
-                        <td className="px-5 py-4 font-bold text-slate-700">{r.name}</td>
-                        <td className="px-5 py-4 font-black">{Math.round(r.bracketRate * 100)}%</td>
-                        <td className="px-5 py-4 font-black">{fmt(r.welfarePointMonthly)}</td>
-                        <td className="px-5 py-4 font-black">{fmt(r.baseOut)}</td>
-                        <td className="px-5 py-4 font-black">{fmt(r.afterOut)}</td>
-                        <td className={`px-5 py-4 font-black ${r.saving >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      <tr key={r.idx} className="border-t-2 border-slate-200">
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl text-slate-500">{r.idx}</td>
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl">{r.role}</td>
+                        <td className="px-8 py-5 font-bold text-xl lg:text-2xl text-slate-700">{r.name}</td>
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl">{Math.round(r.bracketRate * 100)}%</td>
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl">{fmt(r.welfarePointMonthly)}</td>
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl">{fmt(r.baseOut)}</td>
+                        <td className="px-8 py-5 font-black text-xl lg:text-2xl">{fmt(r.afterOut)}</td>
+                        <td className={`px-8 py-5 font-black text-xl lg:text-2xl ${r.saving >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                           {fmt(r.saving)}
                         </td>
                       </tr>
@@ -1259,7 +1231,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                 </table>
               </div>
 
-              <div className="text-xs text-slate-400 font-bold leading-relaxed">
+              <div className="text-xl lg:text-2xl text-slate-500 font-bold leading-relaxed bg-slate-50 rounded-2xl p-6">
                 ※ 전직원 탭도 "복지포인트 전환=과세급여 감소" 근사 모델입니다.  
                 ※ 엔진 정교화(근로소득공제/세액공제/4대보험 한도/퇴직연금) 반영은 utils 엔진 확장으로 다음 단계에서 진행하면 됩니다.
               </div>
