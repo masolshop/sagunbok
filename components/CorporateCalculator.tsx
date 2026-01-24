@@ -146,12 +146,7 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             </select>
           </div>
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <label className="text-xl lg:text-2xl font-black text-blue-600 block">전체 직원 수 (명)</label>
-              <a href="/api/bulk/template" className="text-xs font-black text-blue-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-                <span>📥 템플릿 다운로드</span>
-              </a>
-            </div>
+            <label className="text-xl lg:text-2xl font-black text-blue-600 block">전체 직원 수 (명)</label>
             <input 
               type="number" 
               value={companyContext.employeeCount || ''} 
@@ -366,14 +361,9 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
               <div className="space-y-10 px-2">
                 {/* 기금출연시 절세효과 제목 */}
                 <div className="text-center space-y-4">
-                  <div className="inline-block px-8 py-4 bg-slate-100 rounded-[32px] border-2 border-slate-200">
-                    <span className="text-xl lg:text-2xl font-black text-slate-600">
-                      출연액: ₩{parseNumber(res.inputs.contribution).toLocaleString()}
-                    </span>
-                  </div>
                   <div className="inline-block px-12 py-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-[40px] shadow-2xl">
                     <span className="text-2xl lg:text-3xl font-black text-white">
-                      {res.module === ModuleType.CORP_TAX ? '법인세' : '종합소득세'}절세 시뮬레이션 결과
+                      출연액 ₩{parseNumber(res.inputs.contribution).toLocaleString()}시 절세금액
                     </span>
                   </div>
                 </div>
