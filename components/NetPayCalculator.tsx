@@ -1141,7 +1141,9 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
           ======================= */}
       {tab === 'bulk' && (
         <div className="bg-white rounded-[60px] border-4 border-slate-50 p-16 lg:p-24 shadow-2xl space-y-12">
-          <h3 className="text-slate-900 font-black text-5xl lg:text-7xl">전직원 일괄 분석 (엑셀→CSV 업로드)</h3>
+          <h3 className="text-slate-900 font-black text-5xl lg:text-7xl">
+            전직원 일괄 분석 <span className="text-2xl lg:text-3xl text-slate-600">(엑셀→CSV 업로드)</span>
+          </h3>
 
           <div className="text-slate-500 font-bold text-2xl lg:text-3xl leading-relaxed">
             ✅ 병원 "페이닥터(의사) + 직원" 전체를 업로드해서 <b>회사 총유출 / 사근복 전환 절감</b>을 한 번에 뽑습니다.<br/>
