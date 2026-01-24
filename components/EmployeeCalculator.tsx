@@ -19,6 +19,10 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
   calcResults, setCalcResults 
 }) => {
   
+  const handleDeleteResult = (timestamp: string) => {
+    setCalcResults(prev => prev.filter(r => r.timestamp !== timestamp));
+  };
+  
   const parseNumber = (val: string | number) => {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -149,13 +153,18 @@ const EmployeeCalculator: React.FC<EmployeeCalculatorProps> = ({
 
         {calcResults.filter(r => r.module === ModuleType.RAISE_TO_FUND).map((res) => (
           <div key={res.timestamp} className="bg-white p-10 lg:p-14 rounded-[60px] border border-slate-100 shadow-2xl space-y-12 relative overflow-hidden animate-in slide-in-from-bottom-8">
-            <button className="absolute top-10 right-10 w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center text-3xl font-black hover:bg-red-500 hover:text-white transition-all z-20 shadow-sm">✕</button>
+            <button 
+              onClick={() => handleDeleteResult(res.timestamp)}
+              className="absolute top-10 right-10 w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center text-3xl font-black hover:bg-red-500 hover:text-white transition-all z-20 shadow-sm"
+            >
+              ✕
+            </button>
             <div className="absolute top-0 left-0 w-6 h-full bg-blue-500"></div>
 
             <div className="space-y-4 relative z-10 px-4">
-              <div className="text-xl font-black text-blue-500 uppercase tracking-widest border-b-2 border-blue-100 inline-block pb-1">임금 인상분 기금전환 시뮬레이션</div>
+              <div className="text-xl font-black text-blue-500 uppercase tracking-widest border-b-2 border-blue-100 inline-block pb-1">직원절세 시뮬레이션</div>
               <h3 className="text-3xl lg:text-4xl font-black text-slate-900 break-keep leading-tight">
-                연간 {convertToKoreanUnit(parseNumber(res.inputs.shiftMonthly) * 12)} 전환 시
+                연간 600만원 적용소득세율 {res.inputs.bracketRate ? `${(Number(res.inputs.bracketRate) * 100).toFixed(0)}%` : ''} / {res.inputs.retirementType || 'DB'} / 근속{res.inputs.yearsServed || '0'}년 전환시
               </h3>
             </div>
 
