@@ -52,24 +52,53 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         )
       });
       
-      console.log('API 호출:', API_URL, params.toString());
+      const fullURL = `${API_URL}?${params.toString()}`;
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🚀 API 호출 시작');
+      console.log('📍 URL:', API_URL);
+      console.log('🔑 Action:', action);
+      console.log('📦 Parameters:', Object.fromEntries(params.entries()));
+      console.log('🌐 Full URL:', fullURL);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      const response = await fetch(`${API_URL}?${params.toString()}`, {
+      const response = await fetch(fullURL, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
       });
       
+      console.log('📡 Response Status:', response.status, response.statusText);
+      console.log('📋 Response Headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ HTTP Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
-      const result = await response.json();
-      console.log('API 응답:', result);
+      const responseText = await response.text();
+      console.log('📄 Raw Response:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError);
+        console.error('📄 Response Text:', responseText);
+        throw new Error(`JSON 파싱 실패: ${responseText.substring(0, 100)}`);
+      }
+      
+      console.log('✅ API 응답 성공:', result);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return result;
     } catch (error) {
-      console.error('API 호출 에러:', error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('💥 API 호출 에러:', error);
+      console.error('Error Type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Error Message:', error instanceof Error ? error.message : String(error));
+      console.error('Error Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       throw error;
     }
   };
