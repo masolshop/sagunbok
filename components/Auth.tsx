@@ -43,16 +43,18 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    // GET 방식으로 변경 (Google Apps Script POST 리다이렉트 문제 해결)
-    const params = new URLSearchParams({
+    // POST 방식으로 변경 (Apps Script가 POST만 지원)
+    const payload = {
       action,
-      ...Object.fromEntries(
-        Object.entries(data).map(([k, v]) => [k, String(v)])
-      )
-    });
+      ...data
+    };
     
-    const response = await fetch(`${API_URL}?${params.toString()}`, {
-      method: 'GET',
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
     return response.json();
   };
@@ -72,8 +74,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       });
       
       if (result.success) {
-        localStorage.setItem('sagunbok_user', JSON.stringify(result.user));
-        onLoginSuccess(result.user);
+        // Apps Script는 userData 필드로 반환
+        const user = result.userData || result.user;
+        
+        // userType 추가 (프론트엔드에서 사용)
+        user.userType = userType;
+        
+        localStorage.setItem('sagunbok_user', JSON.stringify(user));
+        onLoginSuccess(user);
       } else {
         alert(result.error || '로그인 실패');
       }
