@@ -30,8 +30,8 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  // Apps Script Web App URL (v6.2 - 이메일 알림 시스템 포함)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzdJOCX6FS3YwK89v7klpUbjGHOHugfXodmES3Np6lVpF_bnCrRRPJkANdFTmL4ff9D/exec';
+  // Apps Script Web App URL (v6.2.8 - I열 승인여부 통일)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyULZORS2SzTBYYTK_r_5Kd5Q-I3nELI4RbDim1THqGIX8IT0PiAL-BL2oqomf16ate/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
