@@ -29,7 +29,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'sagunbok-info', label: '사근복이란?', icon: '📚', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
   { id: 'sagunbok-tax', label: '사근복 절세', icon: '💰', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
   { id: 'sagunbok-plans', label: '사근복 7대플랜', icon: '🎯', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
-  { id: 'corp', label: '기업절세계산기', icon: '📊', access: ['public'], description: '누구나 이용 가능' },
+  { id: 'corp', label: '기업절세계산기', icon: '📊', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'net', label: '네트급여계산기', icon: '🧮', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
