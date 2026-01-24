@@ -372,18 +372,18 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                   {/* 상단 박스: 최종 절세 예상액 */}
                   <div className="p-12 lg:p-16 bg-blue-50 rounded-[60px] border-4 border-blue-100 space-y-10 shadow-xl">
                     <div className="space-y-8">
-                      <div className="text-xl lg:text-2xl font-black text-blue-400 uppercase tracking-widest">최종 절세 예상액 (국세+지방세)</div>
-                      <div className="text-3xl lg:text-4xl font-black text-blue-700 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
-                      <div className="text-2xl lg:text-3xl text-blue-400 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
+                      <div className="text-xl lg:text-2xl font-black text-blue-600 uppercase tracking-widest">최종 절세 예상액 (국세+지방세)</div>
+                      <div className="text-3xl lg:text-4xl font-black text-blue-800 leading-tight tracking-tighter break-all">₩{res.result.taxSaving.toLocaleString()}</div>
+                      <div className="text-2xl lg:text-3xl text-blue-600 font-black">({convertToKoreanUnit(res.result.taxSaving)})</div>
                     </div>
                     <div className="grid grid-cols-2 gap-10 pt-10 border-t-4 border-blue-200 mt-10">
                       <div className="space-y-4">
-                        <div className="text-lg lg:text-xl text-blue-300 font-black uppercase">국세 절감액</div>
-                        <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.mainTaxSaving.toLocaleString()}</div>
+                        <div className="text-lg lg:text-xl text-blue-500 font-black uppercase">국세 절감액</div>
+                        <div className="font-black text-blue-800 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.mainTaxSaving.toLocaleString()}</div>
                       </div>
                       <div className="space-y-4">
-                        <div className="text-lg lg:text-xl text-blue-300 font-black uppercase">지방세 (10%)</div>
-                        <div className="font-black text-blue-700 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.localTaxSaving.toLocaleString()}</div>
+                        <div className="text-lg lg:text-xl text-blue-500 font-black uppercase">지방세 (10%)</div>
+                        <div className="font-black text-blue-800 text-xl lg:text-3xl tracking-tight break-all">₩{res.result.localTaxSaving.toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
