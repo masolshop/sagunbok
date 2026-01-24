@@ -945,7 +945,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <label className="text-xl lg:text-2xl font-black text-slate-700 block">목표 실수령액 (NET, 월, 원)</label>
+              <label className="text-3xl lg:text-4xl font-black text-slate-700 block">목표 실수령액 (NET, 월, 원)</label>
               <input
                 type="text"
                 value={inputs.netTargetMonthly || ''}
@@ -953,10 +953,15 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                 className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-2xl p-7 text-2xl lg:text-4xl font-black outline-none transition-all shadow-inner tracking-tighter"
                 placeholder="10,000,000"
               />
+              {inputs.netTargetMonthly && (
+                <div className="text-2xl lg:text-3xl font-bold text-blue-600 pl-2">
+                  {convertToKoreanUnit(parseNumber(inputs.netTargetMonthly))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
-              <label className="text-xl lg:text-2xl font-black text-slate-700 block">복지포인트 전환액 (월, 원)</label>
+              <label className="text-3xl lg:text-4xl font-black text-slate-700 block">복지포인트 전환액 (월, 원)</label>
               <input
                 type="text"
                 value={inputs.welfarePointMonthly || ''}
@@ -964,6 +969,11 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                 className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-2xl p-7 text-xl lg:text-3xl font-black outline-none shadow-sm transition-all shadow-inner"
                 placeholder="300,000"
               />
+              {inputs.welfarePointMonthly && (
+                <div className="text-2xl lg:text-3xl font-bold text-blue-600 pl-2">
+                  {convertToKoreanUnit(parseNumber(inputs.welfarePointMonthly))}
+                </div>
+              )}
               <button
                 onClick={autoRecommendPoint}
                 className="w-full bg-slate-900 text-white text-xl font-black py-4 rounded-2xl hover:bg-slate-800 transition-all active:scale-[0.99]"
@@ -973,7 +983,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
             </div>
 
             <div className="space-y-4">
-              <label className="text-xl lg:text-2xl font-black text-slate-700 block">원장 종합소득 과세표준 (연, 원)</label>
+              <label className="text-3xl lg:text-4xl font-black text-slate-700 block">원장 종합소득 과세표준 (연, 원)</label>
               <input
                 type="text"
                 value={inputs.ownerTaxBaseAnnual || ''}
@@ -981,10 +991,15 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
                 className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-2xl p-7 text-xl lg:text-3xl font-black outline-none shadow-sm transition-all shadow-inner"
                 placeholder="300,000,000"
               />
+              {inputs.ownerTaxBaseAnnual && (
+                <div className="text-2xl lg:text-3xl font-bold text-blue-600 pl-2">
+                  {convertToKoreanUnit(parseNumber(inputs.ownerTaxBaseAnnual))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
-              <label className="text-xl lg:text-2xl font-black text-slate-700 block">근속기간 (년)</label>
+              <label className="text-3xl lg:text-4xl font-black text-slate-700 block">근속기간 (년)</label>
               <input
                 type="text"
                 value={inputs.tenureYears ?? '10'}
@@ -995,7 +1010,7 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
             </div>
 
             <div className="space-y-4">
-              <label className="text-xl lg:text-2xl font-black text-slate-700 block">적용 소득세율 구간 (근사용)</label>
+              <label className="text-3xl lg:text-4xl font-black text-slate-700 block">적용 소득세율 구간 (근사용)</label>
               <select
                 value={inputs.bracketRate || '0.35'}
                 onChange={(e) => setInputs({ ...inputs, bracketRate: e.target.value })}
