@@ -984,6 +984,17 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
             </div>
 
             <div className="space-y-4">
+              <label className="text-xl lg:text-2xl font-black text-slate-700 block">근속기간 (년)</label>
+              <input
+                type="text"
+                value={inputs.tenureYears ?? '10'}
+                onChange={(e) => setInputs({ ...inputs, tenureYears: e.target.value })}
+                className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-2xl p-7 text-xl lg:text-3xl font-black outline-none shadow-sm transition-all shadow-inner"
+                placeholder="10"
+              />
+            </div>
+
+            <div className="space-y-4">
               <label className="text-xl lg:text-2xl font-black text-slate-700 block">적용 소득세율 구간 (근사용)</label>
               <select
                 value={inputs.bracketRate || '0.35'}
