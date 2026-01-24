@@ -271,53 +271,55 @@ const App: React.FC = () => {
       
       <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
       {/* Sidebar Nav */}
-      <nav className="w-full lg:w-72 bg-[#0f2e44] text-white flex flex-col p-8 space-y-10 sticky top-0 lg:h-screen z-20 shadow-2xl">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center font-black text-xl shadow-lg transform rotate-3">S</div>
+      <nav className="w-full lg:w-96 bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-auto">
+        <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
+          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transform rotate-3">S</div>
           <div>
-            <span className="text-xl font-black tracking-tighter block leading-none">사근복 AI</span>
-            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Studio v2.5</span>
+            <span className="text-2xl font-black tracking-tighter block leading-none">사근복 AI</span>
+            <span className="text-xs text-blue-400 font-bold uppercase tracking-widest">Studio v2.5</span>
           </div>
         </div>
         
         {/* 사용자 정보 표시 */}
-        {isAuthenticated ? (
-          <div className="p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
-            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-              Logged In
+        <div className="flex-shrink-0">
+          {isAuthenticated ? (
+            <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
+              <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                Logged In
+              </div>
+              <div className="text-base font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+              <div className="text-sm text-slate-400 mt-1">
+                {getUserTypeLabel()}
+              </div>
             </div>
-            <div className="text-sm font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              {getUserTypeLabel()}
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="p-4 bg-blue-500/10 hover:bg-blue-500/20 rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
-          >
-            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
-              Guest Mode
-            </div>
-            <div className="text-sm font-black text-blue-400">로그인 / 회원가입</div>
-            <div className="text-[11px] text-slate-400 mt-1">클릭하여 로그인</div>
-          </button>
-        )}
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="w-full p-5 bg-blue-500/10 hover:bg-blue-500/20 rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
+            >
+              <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
+                Guest Mode
+              </div>
+              <div className="text-base font-black text-blue-400">로그인 / 회원가입</div>
+              <div className="text-sm text-slate-400 mt-1">클릭하여 로그인</div>
+            </button>
+          )}
+        </div>
         
-        <div className="flex flex-col space-y-4">
+        <div className="flex flex-col space-y-3 flex-1 overflow-y-auto pb-4">
           {/* 사내근로복지기금 메뉴 그룹 */}
           <div className="space-y-2">
             <button
               onClick={() => setShowSagunbokSubmenu(!showSagunbokSubmenu)}
-              className="w-full py-4 px-6 rounded-2xl text-lg font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
+              className="w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🏢</span>
+                <span className="text-3xl">🏢</span>
                 <span>사내근로복지기금</span>
               </div>
-              <span className={`transition-transform text-slate-400 ${
+              <span className={`transition-transform text-slate-400 text-xl ${
                 showSagunbokSubmenu ? 'rotate-180' : ''
               }`}>▼</span>
             </button>
@@ -330,13 +332,13 @@ const App: React.FC = () => {
                     <button 
                       key={menuItem.id}
                       onClick={() => handleMenuClick(menuItem)}
-                      className={`w-full py-3 px-4 rounded-xl text-sm font-bold transition-all border text-left flex items-center gap-2 ${
+                      className={`w-full py-4 px-5 rounded-xl text-base font-bold transition-all border text-left flex items-center gap-3 ${
                         isActive 
                           ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
                           : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
                       }`}
                     >
-                      <span className="text-lg">{menuItem.icon}</span>
+                      <span className="text-2xl">{menuItem.icon}</span>
                       <span>{menuItem.label}</span>
                     </button>
                   );
@@ -345,7 +347,7 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* 기존 메뉴들 */}
+          {/* 기존 메뉴들 - 항상 표시 */}
           {MENU_ITEMS.filter(item => !item.isSubMenu && item.id !== 'admin').map(menuItem => {
             const hasAccess = checkAccess(menuItem);
             const isActive = activeTab === menuItem.id;
@@ -355,7 +357,7 @@ const App: React.FC = () => {
               <button 
                 key={menuItem.id}
                 onClick={() => handleMenuClick(menuItem)}
-                className={`w-full py-5 px-6 rounded-2xl text-lg font-bold transition-all border-2 text-left flex flex-col gap-1 group relative ${
+                className={`w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative ${
                   isActive 
                     ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
                     : hasAccess
@@ -365,13 +367,13 @@ const App: React.FC = () => {
               >
                 <div className="flex justify-between items-center">
                   <span>{menuItem.label}</span>
-                  <span className={`text-xs transition-opacity ${
+                  <span className={`text-base transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   }`}>{menuItem.icon}</span>
                 </div>
                 {!hasAccess && (
-                  <div className="text-[10px] text-blue-400 font-semibold flex items-center gap-1">
-                    <span className="text-xs">🔒</span>
+                  <div className="text-xs text-blue-400 font-semibold flex items-center gap-1">
+                    <span className="text-sm">🔒</span>
                     <span>{isPublic ? '누구나' : '로그인 필요'}</span>
                   </div>
                 )}
@@ -380,7 +382,7 @@ const App: React.FC = () => {
           })}
         </div>
 
-        <div className="mt-auto space-y-6">
+        <div className="flex-shrink-0 space-y-4 border-t border-slate-700 pt-4">
           {(() => {
             const adminMenuItem = MENU_ITEMS.find(item => item.id === 'admin');
             if (!adminMenuItem) return null;
@@ -391,7 +393,7 @@ const App: React.FC = () => {
             return (
               <button 
                 onClick={() => handleMenuClick(adminMenuItem)}
-                className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all border border-dashed ${
+                className={`w-full py-4 px-5 rounded-xl text-sm font-black transition-all border border-dashed ${
                   activeTab === 'admin' 
                     ? 'bg-white/10 border-white text-white' 
                     : 'border-slate-700 text-slate-500 hover:text-slate-300'
@@ -403,19 +405,19 @@ const App: React.FC = () => {
           })()}
           
           <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
-            <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+            <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
               Active Context
             </div>
-            <div className="text-sm font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
-            <div className="text-[11px] text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
+            <div className="text-base font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
+            <div className="text-sm text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
           </div>
 
           {/* 로그아웃 버튼 */}
           {isAuthenticated && (
             <button 
               onClick={handleLogout}
-              className="w-full py-3 px-4 rounded-xl text-xs font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+              className="w-full py-4 px-5 rounded-xl text-sm font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
             >
               🚪 로그아웃
             </button>
