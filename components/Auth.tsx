@@ -186,35 +186,59 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         // 더 자세한 에러 메시지
         let detailedMessage = `❌ 로그인 실패\n\n${errorMsg}\n\n`;
         
+        // 서버 응답 전체 출력 (디버깅용)
+        console.log('🔍 전체 서버 응답:', JSON.stringify(result, null, 2));
+        
         // 가능한 원인 분석
         if (errorMsg.includes('찾을 수 없습니다') || errorMsg.includes('존재하지 않습니다')) {
           detailedMessage += '💡 가능한 원인:\n';
           detailedMessage += '• 등록되지 않은 전화번호입니다.\n';
           detailedMessage += '• 회원 구분이 잘못되었습니다.\n';
           detailedMessage += '  (기업회원 ↔ 매니저 ↔ 컨설턴트 확인)\n\n';
+          detailedMessage += '👉 해결 방법:\n';
+          detailedMessage += '1. 회원가입하기 (아래 "회원가입" 버튼)\n';
+          detailedMessage += '2. 회원 구분 변경 후 재시도\n\n';
         } else if (errorMsg.includes('비밀번호')) {
           detailedMessage += '💡 가능한 원인:\n';
-          detailedMessage += '• 비밀번호가 일치하지 않습니다.\n';
-          detailedMessage += '• 비밀번호 찾기를 이용하세요.\n\n';
+          detailedMessage += '• 비밀번호가 일치하지 않습니다.\n\n';
+          detailedMessage += '👉 해결 방법:\n';
+          detailedMessage += '1. 비밀번호 찾기 이용\n';
+          detailedMessage += '2. 비밀번호 재확인\n\n';
         } else if (errorMsg.includes('승인')) {
           detailedMessage += '💡 상태:\n';
           detailedMessage += '• 관리자 승인 대기 중입니다.\n';
           detailedMessage += '• 승인 완료 후 로그인 가능합니다.\n\n';
+          detailedMessage += '👉 해결 방법:\n';
+          detailedMessage += '1. 관리자에게 승인 요청\n';
+          detailedMessage += '2. 승인 완료 대기\n\n';
         } else {
-          detailedMessage += '💡 확인 사항:\n';
-          detailedMessage += '• 전화번호 형식 확인 (010-xxxx-xxxx)\n';
-          detailedMessage += '• 회원 구분 확인\n';
-          detailedMessage += '• 승인 상태 확인\n\n';
+          // "로그인 처리 중 오류가 발생했습니다" - 가장 흔한 케이스
+          detailedMessage += '💡 가능한 원인:\n';
+          detailedMessage += '• ⚠️ 해당 전화번호가 데이터베이스에 등록되지 않았습니다.\n';
+          detailedMessage += '• ⚠️ 비밀번호가 일치하지 않습니다.\n';
+          detailedMessage += '• ⚠️ 회원 구분이 잘못되었습니다.\n';
+          detailedMessage += '• ⚠️ 계정이 승인되지 않았습니다.\n\n';
+          detailedMessage += '👉 해결 방법:\n';
+          detailedMessage += '1️⃣ 회원가입이 안되어 있다면:\n';
+          detailedMessage += '   → 아래 "회원가입" 버튼 클릭\n';
+          detailedMessage += '   → 정보 입력 후 제출\n';
+          detailedMessage += '   → 관리자 승인 대기\n\n';
+          detailedMessage += '2️⃣ 이미 가입했다면:\n';
+          detailedMessage += '   → 회원 구분 확인 (기업/매니저/컨설턴트)\n';
+          detailedMessage += '   → 비밀번호 재확인\n';
+          detailedMessage += '   → 관리자에게 승인 상태 문의\n\n';
         }
         
-        detailedMessage += `입력 정보:\n`;
+        detailedMessage += `📋 입력 정보:\n`;
         detailedMessage += `• 전화번호: ${loginPhone}\n`;
         detailedMessage += `• 변환 형식: ${formattedPhone}\n`;
         detailedMessage += `• 회원 구분: ${userType === 'company' ? '🏢 기업회원' : userType === 'manager' ? '👤 매니저' : '👔 컨설턴트'}\n\n`;
-        detailedMessage += `🧪 테스트 계정:\n`;
+        detailedMessage += `🧪 테스트 계정 (서버 없이 테스트용):\n`;
         detailedMessage += `• ID: test\n`;
         detailedMessage += `• PW: test1234\n\n`;
-        detailedMessage += `문제가 지속되면 관리자에게 문의하세요.`;
+        detailedMessage += `❓ 문제가 지속되면:\n`;
+        detailedMessage += `• 관리자에게 전화번호 ${loginPhone} 등록 상태 문의\n`;
+        detailedMessage += `• 승인 상태 확인 요청`;
         
         alert(detailedMessage);
       }
