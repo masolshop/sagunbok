@@ -22,6 +22,74 @@ type BulkRow = {
   welfarePointMonthly: number;
 };
 
+// 추가: 지급방식 타입
+type PayMode = 'grossup' | 'card' | 'cash';
+type RiskLevel = '낮음' | '보통' | '높음';
+
+const PAYMODE_LABEL: Record<PayMode, string> = {
+  grossup: 'Gross-up(급여대장)',
+  card: '카드지급(복리후생/업무경비)',
+  cash: '현금지급(보전/기타)'
+};
+
+// "지방소득세(10%)"를 단순 근사(근로소득세의 10%)로 계산
+const calcLocalIncomeTax = (incomeTaxMonthly: number) => Math.round((incomeTaxMonthly || 0) * 0.1);
+
+// 지급방식별 "비용인정률" 기본값(보수적 가이드)
+const defaultDeductibility = (mode: PayMode) => {
+  if (mode === 'grossup') return 1.0;
+  if (mode === 'card') return 0.8;
+  return 0.6; // cash
+};
+
+// 리스크 스코어링(간단하지만 설득력 있게)
+const buildRiskProfile = (mode: PayMode, deductibilityRate: number) => {
+  let score = 0;
+  const issues: string[] = [];
+  const actions: string[] = [];
+
+  // mode base
+  if (mode === 'grossup') score += 10;
+  if (mode === 'card') score += 35;
+  if (mode === 'cash') score += 55;
+
+  // deductibility impact
+  if (deductibilityRate >= 0.95) score += 0;
+  else if (deductibilityRate >= 0.8) score += 10;
+  else if (deductibilityRate >= 0.6) score += 20;
+  else score += 30;
+
+  // issues/actions
+  if (mode === 'grossup') {
+    issues.push('급여/원천/4대보험 체계는 명확하지만 "네트 계약" 고정비 충격(보험요율/세율)에 취약');
+    actions.push('사근복(복지포인트) 전환으로 과세급여/보험료 기반을 줄여 충격 방어');
+    actions.push('계약서/지급기준(네트보장 범위, 대납항목)을 문서로 확정');
+  }
+
+  if (mode === 'card') {
+    issues.push('카드지급은 계정과목/증빙에 따라 비용부인 가능(개인적 사용 오인 리스크)');
+    issues.push('복리후생/업무경비 경계가 흐리면 세무조정(상여처분 등) 리스크 상승');
+    actions.push('지급규정(복지/업무 범위) + 증빙 룰(영수증/내역/승인)을 시스템화');
+    actions.push('가능하면 "사근복 복지포인트"로 구조화(비과세/지급기준 명확화)');
+  }
+
+  if (mode === 'cash') {
+    issues.push('현금지급은 지급근거/증빙 미흡 시 비용부인·상여처분·원천 누락 리스크가 큼');
+    issues.push('임금성 판단 시 추가 원천/가산세/노무분쟁 가능성');
+    actions.push('현금→규정형 복지(사근복)로 전환해 지급근거/증빙/대상/기준을 고정');
+    actions.push('불가피하면 계약서·지급기준·결재흐름·증빙을 최소 세트로 갖추기');
+  }
+
+  let level: RiskLevel = '낮음';
+  if (score >= 70) level = '높음';
+  else if (score >= 40) level = '보통';
+
+  return { score, level, issues: issues.slice(0, 3), actions: actions.slice(0, 3) };
+};
+
+// "월/연 단위 표기"용 라벨 도우미
+const withUnit = (label: string, unit: '월' | '연') => `${label} (${unit}, 원)`;
+
 const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
   companyContext, setCompanyContext,
   inputs, setInputs,
@@ -37,6 +105,33 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
   const [bulkSummary, setBulkSummary] = useState<any>(null);
   const [bulkRowOutputs, setBulkRowOutputs] = useState<any[]>([]);
+
+  // 입력 기본값(없으면 자동 세팅)
+  const ensureDefaults = () => {
+    const mode: PayMode = (inputs.payMode as PayMode) || 'grossup';
+    const ded = (typeof inputs.deductibilityRate === 'number')
+      ? inputs.deductibilityRate
+      : (inputs.deductibilityRate ? Number(inputs.deductibilityRate) : defaultDeductibility(mode));
+
+    // 보전(대납) 항목 선택 기본값
+    const next = {
+      payMode: mode,
+      deductibilityRate: ded,
+      coverEmpInsurance: inputs.coverEmpInsurance ?? true,
+      coverIncomeTax: inputs.coverIncomeTax ?? true,
+      coverLocalTax: inputs.coverLocalTax ?? true,
+      includeEmployerInsurance: inputs.includeEmployerInsurance ?? true,
+      includeRetirement: inputs.includeRetirement ?? true,
+      retirementRate: inputs.retirementRate ?? (1 / 12), // 퇴직연금(DC/기업IRP 근사): 임금의 1/12
+    };
+
+    // 한 번만 채워 넣기
+    const needPatch = Object.keys(next).some(k => inputs[k] === undefined);
+    if (needPatch) setInputs({ ...inputs, ...next });
+  };
+
+  // 최초 렌더에서 기본값 보장
+  React.useEffect(() => { ensureDefaults(); /* eslint-disable-next-line */ }, []);
 
   const presetYear = 2026;
   const preset = (TAX_PRESETS as any)[presetYear] || (TAX_PRESETS as any)[2025];
@@ -66,6 +161,67 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
       ownerTaxBaseAnnual: parseNumber(inputs.ownerTaxBaseAnnual),
       addedExpenseAnnualOverride: inputs.addedExpenseAnnualOverride ? parseNumber(inputs.addedExpenseAnnualOverride) : null
     });
+
+    // 확장 로직: 지급방식, 비용인정률, 대납항목 반영
+    const mode: PayMode = (inputs.payMode as PayMode) || 'grossup';
+    const deductibilityRate = Number(inputs.deductibilityRate ?? defaultDeductibility(mode));
+
+    // 결과에서 값 꺼내기
+    const grossMonthly = result.payroll.grossMonthly || 0;
+    const netMonthly = result.payroll.netMonthly || 0;
+    const empIns = result.payroll.employee.insuranceMonthly || 0;
+    const empIncomeTax = result.payroll.employee.incomeTaxMonthly || 0;
+    const empLocalTax = calcLocalIncomeTax(empIncomeTax);
+
+    // "대납 합계(표시용)" — 선택 토글 반영
+    const coverSelected =
+      (inputs.coverEmpInsurance ? empIns : 0) +
+      (inputs.coverIncomeTax ? empIncomeTax : 0) +
+      (inputs.coverLocalTax ? empLocalTax : 0);
+
+    // 사업주 4대보험(엔진 값)
+    const employerInsurance = result.payroll.employer?.insuranceMonthly || 0;
+
+    // 퇴직연금(근사): grossMonthly * (1/12)
+    const retirementMonthly = (inputs.includeRetirement ? Math.round(grossMonthly * Number(inputs.retirementRate || (1 / 12))) : 0);
+
+    // "총현금유출(월)" = gross + (사업주4대보험 선택) + 퇴직연금(선택)
+    const ownerCashOutMonthly =
+      grossMonthly +
+      (inputs.includeEmployerInsurance ? employerInsurance : 0) +
+      retirementMonthly;
+
+    // 종합소득세 절감(연) = 엔진의 절감액 × 비용인정률
+    const baseSavingAnnual = result.ownerTaxEffect?.ownerTotalTaxSavingAnnual || 0;
+    const adjSavingAnnual = Math.round(baseSavingAnnual * deductibilityRate);
+
+    // 원장 실질 세후부담(월) = 총유출(월) - (세금절감(연)/12)
+    const ownerAfterTaxCostMonthly = Math.round(ownerCashOutMonthly - (adjSavingAnnual / 12));
+
+    // 리스크 프로파일
+    const riskProfile = buildRiskProfile(mode, deductibilityRate);
+
+    // 결과에 "표시용 확장필드" 주입
+    (result as any)._ui = {
+      payMode: mode,
+      deductibilityRate,
+      employee: {
+        insuranceMonthly: empIns,
+        incomeTaxMonthly: empIncomeTax,
+        localTaxMonthly: empLocalTax,
+        coverSelectedMonthly: coverSelected,
+      },
+      employer: {
+        insuranceMonthly: employerInsurance,
+        retirementMonthly,
+        ownerCashOutMonthly,
+      },
+      owner: {
+        ownerTaxSavingAnnual_adj: adjSavingAnnual,
+        ownerAfterTaxCostMonthly_adj: ownerAfterTaxCostMonthly,
+      },
+      riskProfile
+    };
 
     const newResult: CalculationResult = {
       module: ModuleType.PAYDOCTOR_NET,
@@ -483,6 +639,86 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6">
+              <div className="space-y-4">
+                <label className="text-xl lg:text-2xl font-black text-slate-700 block">네트급여 지급방식</label>
+                <select
+                  value={inputs.payMode || 'grossup'}
+                  onChange={(e) => {
+                    const m = e.target.value as PayMode;
+                    setInputs({
+                      ...inputs,
+                      payMode: m,
+                      deductibilityRate: defaultDeductibility(m) // 모드 바꾸면 기본값 세팅
+                    });
+                  }}
+                  className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-2xl p-7 text-xl lg:text-3xl font-black outline-none transition-all shadow-inner"
+                >
+                  <option value="grossup">{PAYMODE_LABEL.grossup}</option>
+                  <option value="card">{PAYMODE_LABEL.card}</option>
+                  <option value="cash">{PAYMODE_LABEL.cash}</option>
+                </select>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xl lg:text-2xl font-black text-slate-700 block">
+                  비용인정률(세무조정 반영, {Math.round((Number(inputs.deductibilityRate ?? 1) * 100))}%)
+                </label>
+                <input
+                  type="range"
+                  min={50}
+                  max={100}
+                  step={5}
+                  value={Math.round(Number(inputs.deductibilityRate ?? 1) * 100)}
+                  onChange={(e) => setInputs({ ...inputs, deductibilityRate: Number(e.target.value) / 100 })}
+                  className="w-full"
+                />
+                <div className="text-sm font-bold text-slate-500">
+                  * 카드/현금 지급은 비용부인 가능성을 반영하기 위해 "보수적"으로 낮게 잡고 시작하는 것을 권장
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 space-y-4">
+              <div className="text-lg font-black text-slate-800">원장 대납(보전) 항목 선택(표시용)</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center gap-3 font-black text-slate-700">
+                  <input type="checkbox" checked={!!inputs.coverEmpInsurance}
+                    onChange={(e) => setInputs({ ...inputs, coverEmpInsurance: e.target.checked })} />
+                  직원 4대보험
+                </label>
+                <label className="flex items-center gap-3 font-black text-slate-700">
+                  <input type="checkbox" checked={!!inputs.coverIncomeTax}
+                    onChange={(e) => setInputs({ ...inputs, coverIncomeTax: e.target.checked })} />
+                  근로소득세
+                </label>
+                <label className="flex items-center gap-3 font-black text-slate-700">
+                  <input type="checkbox" checked={!!inputs.coverLocalTax}
+                    onChange={(e) => setInputs({ ...inputs, coverLocalTax: e.target.checked })} />
+                  지방소득세(10% 근사)
+                </label>
+              </div>
+
+              <div className="text-lg font-black text-slate-800 mt-4">원장 추가부담 선택</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex items-center gap-3 font-black text-slate-700">
+                  <input type="checkbox" checked={!!inputs.includeEmployerInsurance}
+                    onChange={(e) => setInputs({ ...inputs, includeEmployerInsurance: e.target.checked })} />
+                  사업주 4대보험 포함
+                </label>
+                <label className="flex items-center gap-3 font-black text-slate-700">
+                  <input type="checkbox" checked={!!inputs.includeRetirement}
+                    onChange={(e) => setInputs({ ...inputs, includeRetirement: e.target.checked })} />
+                  퇴직연금 포함(DC/기업IRP 근사)
+                </label>
+              </div>
+
+              <div className="text-xs text-slate-400 font-bold leading-relaxed">
+                ※ 대납 항목을 해제하면 "NET 보장 전제"가 달라질 수 있어요.  
+                지금은 '구성 표시/설명' 목적이며, 다음 단계에서 "대납 제외 시 NET 감소"까지 엔진으로 확장 가능합니다.
+              </div>
+            </div>
+
             <button
               onClick={calculateSingle}
               className="w-full bg-[#1a5f7a] text-white text-3xl lg:text-5xl font-black py-10 rounded-[48px] hover:bg-[#0f2e44] shadow-2xl transition-all transform active:scale-[0.98] group"
@@ -533,56 +769,100 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-white/10 pb-10 relative z-10">
                       <div className="space-y-3">
-                        <div className="text-2xl lg:text-3xl font-black text-slate-400">필요 총급여액 (Gross Monthly)</div>
+                        <div className="text-2xl lg:text-3xl font-black text-slate-400">필요 총급여액 (월, 원)</div>
                         <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-blue-400 break-words leading-none tracking-tighter">
                           ₩{res.result.payroll.grossMonthly.toLocaleString()}
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <div className="text-2xl lg:text-3xl font-black text-slate-400">원장 보전 금액 (대납 합계)</div>
+                        <div className="text-2xl lg:text-3xl font-black text-slate-400">원장 보전 금액(대납 합계) (월, 원)</div>
                         <div className="text-3xl lg:text-4xl xl:text-5xl font-black text-red-400 break-words leading-none tracking-tighter">
-                          ₩{res.result.payroll.ownerCoverMonthly.toLocaleString()}
+                          ₩{((res.result as any)._ui?.employee?.coverSelectedMonthly || res.result.payroll.ownerCoverMonthly).toLocaleString()}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 relative z-10">
-                      <div className="text-2xl lg:text-3xl font-black text-slate-300">원장 총 현금 유출액</div>
+                      <div className="text-2xl lg:text-3xl font-black text-slate-300">원장 총 현금 유출액 (월, 원)</div>
                       <div className="text-left lg:text-right space-y-2 max-w-full overflow-hidden">
                         <div className="text-4xl lg:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-white break-words">
-                          ₩{res.result.payroll.employer.ownerCashOutMonthly.toLocaleString()}
+                          ₩{((res.result as any)._ui?.employer?.ownerCashOutMonthly || res.result.payroll.employer.ownerCashOutMonthly).toLocaleString()}
                         </div>
-                        <div className="text-lg font-bold text-slate-500 opacity-60">Gross + 사업주 4대보험 포함</div>
+                        <div className="text-lg font-bold text-slate-500 opacity-60">Gross + 사업주 4대보험 + 퇴직연금</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
                     <KpiCard
-                      title="원장 세금 절감 (누진 연환산)"
-                      value={`₩${fmt(Math.round(res.result.ownerTaxEffect.ownerTotalTaxSavingAnnual / 12))}`}
-                      sub="월 평균 세금 절감액"
+                      title="원장 종합소득세 절감(비용인정률 반영) (연, 원)"
+                      value={`₩${fmt((res.result as any)._ui?.owner?.ownerTaxSavingAnnual_adj || res.result.ownerTaxEffect.ownerTotalTaxSavingAnnual)}`}
+                      sub="연간 세금 절감액"
                       tone="gray"
                     />
                     <KpiCard
-                      title="원장 실질 세후 부담 (월)"
-                      value={`₩${fmt(res.result.ownerTaxEffect.ownerAfterTaxCostMonthly_est)}`}
+                      title="원장 실질 세후 부담 (월, 원)"
+                      value={`₩${fmt((res.result as any)._ui?.owner?.ownerAfterTaxCostMonthly_adj || res.result.ownerTaxEffect.ownerAfterTaxCostMonthly_est)}`}
                       sub="현금유출 - 세금절감"
                       tone="blue"
                     />
                     <KpiCard
-                      title="직원 4대보험 부담분"
-                      value={`₩${fmt(res.result.payroll.employee.insuranceMonthly)}`}
+                      title="직원 4대보험 부담분 (월, 원)"
+                      value={`₩${fmt((res.result as any)._ui?.employee?.insuranceMonthly || res.result.payroll.employee.insuranceMonthly)}`}
                       sub="원장 대납 항목"
                       tone="dark"
                     />
                     <KpiCard
-                      title="직원 소득세 부담분"
-                      value={`₩${fmt(res.result.payroll.employee.incomeTaxMonthly)}`}
+                      title="직원 소득세 부담분 (월, 원)"
+                      value={`₩${fmt((res.result as any)._ui?.employee?.incomeTaxMonthly || res.result.payroll.employee.incomeTaxMonthly)}`}
                       sub="원장 대납 항목"
                       tone="red"
                     />
                   </div>
+
+                  {/* 리스크 진단 패널 */}
+                  {(res.result as any)._ui?.riskProfile && (
+                    <div className="mt-10 bg-amber-50 border-4 border-amber-100 rounded-[40px] p-8 lg:p-10 space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <div className="text-2xl font-black text-amber-800">노무·세무 리스크 진단</div>
+                          <div className="text-amber-600 font-bold">
+                            지급방식: <span className="font-black">{PAYMODE_LABEL[(res.result as any)._ui.payMode]}</span> ·
+                            비용인정률: <span className="font-black">{Math.round((res.result as any)._ui.deductibilityRate * 100)}%</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-black text-amber-600 uppercase tracking-widest">Risk Level</div>
+                          <div className="text-4xl font-black text-amber-900">{(res.result as any)._ui.riskProfile.level}</div>
+                          <div className="text-xs font-bold text-amber-700">score {(res.result as any)._ui.riskProfile.score}</div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-3xl p-6 border-2 border-amber-200">
+                          <div className="text-sm font-black text-amber-600 uppercase tracking-widest mb-3">주요 리스크</div>
+                          <ul className="space-y-2 text-slate-700 font-bold">
+                            {(res.result as any)._ui.riskProfile.issues.map((x: string, i: number) => (
+                              <li key={i}>• {x}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="bg-slate-900 rounded-3xl p-6 border-2 border-slate-800">
+                          <div className="text-sm font-black text-slate-300 uppercase tracking-widest mb-3">추천 액션</div>
+                          <ul className="space-y-2 text-slate-100 font-bold">
+                            {(res.result as any)._ui.riskProfile.actions.map((x: string, i: number) => (
+                              <li key={i}>• {x}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-amber-700 font-bold leading-relaxed">
+                        핵심: 네트 계약은 "보험/세율 충격"을 원장이 떠안습니다. 지급방식이 카드/현금일수록 "비용부인/임금성 판단" 리스크가 커집니다.  
+                        → 사근복(복지포인트)로 규정/대상/기준을 구조화하면 절세+리스크 감소를 동시에 설계할 수 있습니다.
+                      </div>
+                    </div>
+                  )}
 
                   {/* Risk */}
                   <div className="mt-12 bg-red-50 rounded-[48px] p-10 lg:p-14 border-4 border-red-100 space-y-8 relative overflow-hidden">
