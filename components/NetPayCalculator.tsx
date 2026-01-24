@@ -427,7 +427,9 @@ const NetPayCalculator: React.FC<NetPayCalculatorProps> = ({
   }
 
   function downloadTextFile(filename: string, content: string) {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    // UTF-8 BOM 추가하여 엑셀에서 한글 깨짐 방지
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename;
