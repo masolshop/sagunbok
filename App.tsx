@@ -480,7 +480,7 @@ const App: React.FC = () => {
       </nav>
 
       {/* Main Content Area - 확대된 레이아웃 */}
-      <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
+      <main className="flex-1 p-6 pt-20 lg:pt-12 lg:p-12 overflow-y-auto">
         <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
           {activeTab === 'sagunbok-info' && <SagunbokInfo />}
           {activeTab === 'sagunbok-tax' && <SagunbokTaxSavings />}
