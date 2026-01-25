@@ -30,8 +30,8 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  // Apps Script Web App URL (v7.0 COMPLETE - 전화번호 정규화 + 승인제 + 이메일)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyP5vT9w2FiixpAKZaeiSvl0ZoSMpv9NBdPJBaYHGC6TYRDahRjTL59AkVBZKH5-qving/exec';
+  // Apps Script Web App URL (v7.1 FINAL - 현재 시트 구조 맞춤)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbygC5q7p_Y2OKxvqFSsyd92ykTjDp_hM8gBr7vOU1EnhDdinKnQMGMen7q9Thtg3Rnc/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
