@@ -280,7 +280,14 @@ const App: React.FC = () => {
       {/* 로그인 모달 */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-hide relative">
+          <div 
+            className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative"
+            style={{
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             <button
               onClick={() => {
                 setShowAuthModal(false);
@@ -351,7 +358,7 @@ const App: React.FC = () => {
         
         <div 
           ref={scrollContainerRef}
-          className="flex flex-col space-y-3 flex-1 overflow-y-auto pb-4 scrollbar-hide cursor-grab active:cursor-grabbing"
+          className="flex flex-col space-y-3 flex-1 overflow-y-auto pb-4 cursor-grab active:cursor-grabbing"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onMouseDown={(e) => {
             setIsDragging(true);
