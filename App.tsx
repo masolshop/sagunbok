@@ -280,6 +280,16 @@ const App: React.FC = () => {
       {/* 로그인 모달 */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          {/* 닫기 버튼 - 모달 외부 */}
+          <button
+            onClick={() => {
+              setShowAuthModal(false);
+              setPendingTab(null);
+            }}
+            className="absolute top-4 right-4 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-gray-800 hover:text-black transition-all z-[60] shadow-2xl text-2xl font-bold border-2 border-gray-200"
+          >
+            ✕
+          </button>
           <div 
             className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative"
             style={{
@@ -288,15 +298,6 @@ const App: React.FC = () => {
               WebkitOverflowScrolling: 'touch'
             }}
           >
-            <button
-              onClick={() => {
-                setShowAuthModal(false);
-                setPendingTab(null);
-              }}
-              className="absolute top-6 right-6 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all z-10 shadow-lg"
-            >
-              ✕
-            </button>
             <Auth onLoginSuccess={handleLoginSuccess} />
           </div>
         </div>
@@ -378,10 +379,10 @@ const App: React.FC = () => {
           }}
         >
           {/* 사내근로복지기금 메뉴 그룹 */}
-          <div className="space-y-2 lg:space-y-2">
+          <div className="space-y-3 lg:space-y-3">
             <button
               onClick={() => setShowSagunbokSubmenu(!showSagunbokSubmenu)}
-              className="w-full py-4 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
+              className="w-full py-5 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
             >
               <div className="flex items-center gap-2 lg:gap-3">
                 <span className="text-2xl lg:text-3xl">🏢</span>
@@ -393,14 +394,14 @@ const App: React.FC = () => {
             </button>
             
             {showSagunbokSubmenu && (
-              <div className="ml-3 lg:ml-4 space-y-2 lg:space-y-2 border-l-2 border-slate-700 pl-3 lg:pl-4">
+              <div className="ml-3 lg:ml-4 space-y-3 lg:space-y-3 border-l-2 border-slate-700 pl-3 lg:pl-4">
                 {MENU_ITEMS.filter(item => item.isSubMenu).map(menuItem => {
                   const isActive = activeTab === menuItem.id;
                   return (
                     <button 
                       key={menuItem.id}
                       onClick={() => handleMenuClick(menuItem)}
-                      className={`w-full py-3 lg:py-4 px-4 lg:px-5 rounded-lg lg:rounded-xl text-base lg:text-lg font-bold transition-all border text-left flex items-center gap-2 lg:gap-3 ${
+                      className={`w-full py-4 lg:py-4 px-4 lg:px-5 rounded-lg lg:rounded-xl text-base lg:text-lg font-bold transition-all border text-left flex items-center gap-2 lg:gap-3 ${
                         isActive 
                           ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
                           : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
@@ -426,7 +427,7 @@ const App: React.FC = () => {
               <button 
                 key={menuItem.id}
                 onClick={() => handleMenuClick(menuItem)}
-                className={`w-full py-4 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
+                className={`w-full py-5 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
                   isSpecial
                     ? isActive
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] text-white'
