@@ -286,7 +286,7 @@ const App: React.FC = () => {
                 setShowAuthModal(false);
                 setPendingTab(null);
               }}
-              className="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all z-10"
+              className="absolute top-6 right-6 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all z-10 shadow-lg"
             >
               ✕
             </button>
