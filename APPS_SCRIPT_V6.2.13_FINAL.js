@@ -1,12 +1,13 @@
 /**
  * 사근복 AI - Google Apps Script 백엔드
- * 버전 6.2.10 - 시트 이름 수정 및 자동 동기화 추가
+ * 버전 6.2.13 - getAllMembers 필드명 수정 (FINAL)
  * 
- * 주요 변경사항 (v6.2.10):
- * - 시트 이름 수정: '매니저' → '사근복컨설턴트(매니저)', '컨설턴트' → '사근복컨설턴트'
- * - 회원가입 시 자동 JSON 동기화 추가 (기업회원, 컨설턴트, 매니저)
- * - 회원 상태 변경 시 자동 JSON 동기화 추가
- * - getAllMembers, updateMemberStatus 시트 이름 통일
+ * 주요 변경사항 (v6.2.13):
+ * - getAllMembers() 함수 필드명 수정: type → userType, status → approvalStatus
+ * - 시트 이름 수정: '사근복매니저', '사근복컨설턴트' (실제 시트 이름)
+ * - 이전 버전에서 잘못된 이름 사용 ('사근복컨설턴트(매니저)' ❌)
+ * - 모든 함수에서 올바른 시트 이름으로 통일
+ * - 이메일 발송, 추천인 검증, G열 처리 개선
  */
 
 // ========================================
@@ -120,7 +121,7 @@ function sendEmail(to, subject, htmlBody) {
  */
 function sendSignupNotificationToAdmin(memberType, name, phone, email, companyName, referrer) {
   const typeLabel = memberType === 'company' ? '기업회원' : 
-                    memberType === 'manager' ? '매니저' : '컨설턴트';
+                    memberType === 'manager' ? '사근복매니저' : '사근복컨설턴트';
   
   const subject = `[사근복] 새로운 ${typeLabel} 가입 신청`;
   
@@ -164,7 +165,7 @@ function sendSignupNotificationToAdmin(memberType, name, phone, email, companyNa
  */
 function sendSignupConfirmationToMember(memberType, name, email, phone) {
   const typeLabel = memberType === 'company' ? '기업회원' : 
-                    memberType === 'manager' ? '매니저' : '컨설턴트';
+                    memberType === 'manager' ? '사근복매니저' : '사근복컨설턴트';
   
   const subject = `[사근복] ${typeLabel} 가입 신청이 완료되었습니다`;
   
@@ -238,7 +239,7 @@ function sendSignupNotificationToReferrer(referrerName, referrerEmail, companyNa
  */
 function sendApprovalEmail(memberType, name, email, phone) {
   const typeLabel = memberType === 'company' ? '기업회원' : 
-                    memberType === 'manager' ? '매니저' : '컨설턴트';
+                    memberType === 'manager' ? '사근복매니저' : '사근복컨설턴트';
   
   const subject = `[사근복] ${typeLabel} 승인 완료`;
   
@@ -288,7 +289,7 @@ function sendApprovalEmail(memberType, name, email, phone) {
  */
 function sendRejectionEmail(memberType, name, email) {
   const typeLabel = memberType === 'company' ? '기업회원' : 
-                    memberType === 'manager' ? '매니저' : '컨설턴트';
+                    memberType === 'manager' ? '사근복매니저' : '사근복컨설턴트';
   
   const subject = `[사근복] ${typeLabel} 가입 검토 결과`;
   
@@ -487,18 +488,20 @@ function loginCompany(phone, password) {
 }
 
 /**
- * 컨설턴트 로그인
+ * 컨설턴트/매니저 로그인
  * 
- * 컬럼 구조 (사근복컨설턴트, 사근복컨설턴트(매니저)):
+ * 컬럼 구조 (사근복컨설턴트, 사근복매니저):
  * [0] 이름
  * [1] 전화번호
  * [2] 이메일
  * [3] 직함
  * [4] 소속 사업단
  * [5] 소속 지사
- * [6] ?
+ * [6] (사용 안 함 - 비밀번호는 고정값 12345 사용)
  * [7] 가입일
  * [8] 승인상태 ← I열 (모든 시트 동일!)
+ * 
+ * 참고: 매니저/컨설턴트는 초기 비밀번호 12345로 고정
  */
 function loginConsultant(phone, password) {
   try {
@@ -506,7 +509,7 @@ function loginConsultant(phone, password) {
     const normalizedPhone = normalizePhoneNumber(phone);
     
     // 매니저 확인
-    const managerSheet = ss.getSheetByName('사근복컨설턴트(매니저)');
+    const managerSheet = ss.getSheetByName('사근복매니저');
     if (managerSheet) {
       const managerData = managerSheet.getDataRange().getValues();
       
@@ -647,7 +650,7 @@ function registerCompany(data) {
       let referrerEmail = '';
       
       // 매니저 시트 확인
-      const managerSheet = ss.getSheetByName('사근복컨설턴트(매니저)');
+      const managerSheet = ss.getSheetByName('사근복매니저');
       if (managerSheet) {
         const managerData = managerSheet.getDataRange().getValues();
         for (let i = 1; i < managerData.length; i++) {
@@ -804,7 +807,7 @@ function registerConsultant(data) {
       data.position || '',      // D: 직함
       data.businessUnit || '',  // E: 소속 사업단
       data.branch || '',        // F: 소속 지사
-      '',                       // G: ?
+      '',                       // G: (사용 안 함 - 매니저/컨설턴트는 고정 비밀번호 12345 사용)
       timestamp,                // H: 가입일
       '승인 대기'               // I: 승인상태 (대기로 변경!)
     ];
@@ -850,7 +853,7 @@ function registerConsultant(data) {
 function registerManager(data) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName('사근복컨설턴트(매니저)');
+    const sheet = ss.getSheetByName('사근복매니저');
     
     if (!sheet) {
       writeLog('회원가입', '매니저', data.phone, '시트 없음', '실패');
@@ -884,7 +887,7 @@ function registerManager(data) {
       data.position || '',      // D: 직함
       data.businessUnit || '',  // E: 소속 사업단
       data.branch || '',        // F: 소속 지사
-      '',                       // G: ?
+      '',                       // G: (사용 안 함 - 매니저/컨설턴트는 고정 비밀번호 12345 사용)
       timestamp,                // H: 가입일
       '승인 대기'               // I: 승인상태 (대기로 변경!)
     ];
@@ -942,8 +945,8 @@ function doGet(e) {
   // 기본 응답
   return createCORSResponse({
     success: true,
-    version: '6.2.10',
-    message: '사근복 AI Apps Script v6.2.10 - 시트 이름 수정 및 자동 동기화 추가'
+    version: '6.2.13',
+    message: '사근복 AI Apps Script v6.2.13 - userType/approvalStatus 필드 사용 (FINAL)'
   });
 }
 
@@ -1044,7 +1047,7 @@ function getAllMembers() {
         const row = companyData[i];
         if (row[0]) { // 회사명이 있으면
           members.push({
-            type: 'company',
+            userType: 'company',
             companyName: row[0],
             companyType: row[1],
             referrer: row[2],
@@ -1052,21 +1055,21 @@ function getAllMembers() {
             phone: row[4],
             email: row[5],
             registeredAt: row[7] ? formatDate(row[7]) : '',
-            status: row[8] || '승인 대기'
+            approvalStatus: row[8] || '승인 대기'
           });
         }
       }
     }
     
     // 매니저 조회
-    const managerSheet = ss.getSheetByName('사근복컨설턴트(매니저)');
+    const managerSheet = ss.getSheetByName('사근복매니저');
     if (managerSheet) {
       const managerData = managerSheet.getDataRange().getValues();
       for (let i = 1; i < managerData.length; i++) {
         const row = managerData[i];
         if (row[0]) { // 이름이 있으면
           members.push({
-            type: 'manager',
+            userType: 'manager',
             name: row[0],
             phone: row[1],
             email: row[2],
@@ -1074,7 +1077,7 @@ function getAllMembers() {
             businessUnit: row[4],
             branch: row[5],
             registeredAt: row[7] ? formatDate(row[7]) : '',
-            status: row[8] || '승인 대기'
+            approvalStatus: row[8] || '승인 대기'
           });
         }
       }
@@ -1088,7 +1091,7 @@ function getAllMembers() {
         const row = consultantData[i];
         if (row[0]) { // 이름이 있으면
           members.push({
-            type: 'consultant',
+            userType: 'consultant',
             name: row[0],
             phone: row[1],
             email: row[2],
@@ -1096,7 +1099,7 @@ function getAllMembers() {
             businessUnit: row[4],
             branch: row[5],
             registeredAt: row[7] ? formatDate(row[7]) : '',
-            status: row[8] || '승인 대기'
+            approvalStatus: row[8] || '승인 대기'
           });
         }
       }
@@ -1132,7 +1135,7 @@ function updateMemberStatus(phone, type, status) {
         sheetName = '기업회원';
         break;
       case 'manager':
-        sheetName = '사근복컨설턴트(매니저)';
+        sheetName = '사근복매니저';
         break;
       case 'consultant':
         sheetName = '사근복컨설턴트';
@@ -1302,5 +1305,72 @@ function formatDate(date) {
     return String(date);
   } catch (error) {
     return String(date);
+  }
+}
+
+// ========================================
+// 이메일 테스트 함수
+// ========================================
+
+/**
+ * 이메일 발송 테스트 (Apps Script 에디터에서 직접 실행)
+ */
+function testEmailSend() {
+  try {
+    Logger.log('=== 이메일 발송 테스트 시작 ===');
+    
+    // 테스트 이메일 발송
+    const result = sendEmail(
+      CONFIG.ADMIN_EMAIL,
+      '[테스트] 사근복 이메일 발송 테스트',
+      '<h2>테스트 이메일입니다</h2><p>이메일 발송이 정상 작동합니다.</p>'
+    );
+    
+    if (result) {
+      Logger.log('✅ 이메일 발송 성공!');
+      return '이메일 발송 성공';
+    } else {
+      Logger.log('❌ 이메일 발송 실패');
+      return '이메일 발송 실패';
+    }
+  } catch (error) {
+    Logger.log('❌ 오류: ' + error);
+    return '오류: ' + error.toString();
+  }
+}
+
+/**
+ * 추천인 검증 테스트
+ */
+function testReferrerValidation() {
+  try {
+    Logger.log('=== 추천인 검증 테스트 시작 ===');
+    
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    
+    // 매니저 목록 확인
+    const managerSheet = ss.getSheetByName('사근복매니저');
+    if (managerSheet) {
+      const managerData = managerSheet.getDataRange().getValues();
+      Logger.log('매니저 시트 행 수: ' + (managerData.length - 1));
+      for (let i = 1; i < Math.min(managerData.length, 5); i++) {
+        Logger.log('  매니저 ' + i + ': ' + managerData[i][0] + ' (' + managerData[i][2] + ')');
+      }
+    }
+    
+    // 컨설턴트 목록 확인
+    const consultantSheet = ss.getSheetByName('사근복컨설턴트');
+    if (consultantSheet) {
+      const consultantData = consultantSheet.getDataRange().getValues();
+      Logger.log('컨설턴트 시트 행 수: ' + (consultantData.length - 1));
+      for (let i = 1; i < Math.min(consultantData.length, 5); i++) {
+        Logger.log('  컨설턴트 ' + i + ': ' + consultantData[i][0] + ' (' + consultantData[i][2] + ')');
+      }
+    }
+    
+    return '테스트 완료';
+  } catch (error) {
+    Logger.log('❌ 오류: ' + error);
+    return '오류: ' + error.toString();
   }
 }

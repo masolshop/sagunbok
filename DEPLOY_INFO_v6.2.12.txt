@@ -1,0 +1,35 @@
+===========================================
+v6.2.12 배포 정보
+===========================================
+
+배포 일시: 2026-01-24 17:19:56
+배포 버전: v6.2.12
+API URL: https://script.google.com/macros/s/AKfycbzeunTWd_3je-kVRzz9ZgDe4NLkz1WSG2oeut8h8b4ZUiKrCiCx-cYmPCi5ioOBZmmH/exec
+
+빌드 파일:
+total 16K
+drwxr-xr-x 2 user user 4.0K Jan 24 17:19 assets
+-rw-r--r-- 1 user user  259 Jan 24 17:19 favicon.svg
+-rw-r--r-- 1 user user 2.1K Jan 24 17:19 index.html
+-rw-r--r-- 1 user user 2.5K Jan 24 17:19 logout.html
+
+빌드 에셋:
+total 676K
+-rw-r--r-- 1 user user 655K Jan 24 17:19 index-C3aa0pzc.js
+-rw-r--r-- 1 user user  18K Jan 24 17:19 index-D7f1ZBkG.css
+
+배포 대상:
+- EC2 Host: 3.34.186.174
+- EC2 User: ubuntu
+- EC2 Path: /var/www/sagunbok
+
+배포 후 확인:
+- 프론트엔드: http://3.34.186.174/
+- API 테스트: http://3.34.186.174/ (F12 → Network 탭)
+
+주요 변경사항:
+- Auth.tsx: 새 API URL 적용
+- AdminView.tsx: 새 API URL 적용
+- v6.2.12 기능: 시트 이름 수정, 이메일 시스템, 추천인 검증
+
+===========================================

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { normalizePhoneNumber, formatPhoneForDisplay, isValidPhoneNumber } from '../utils';
 
 interface AuthProps {
   onLoginSuccess: (user: any) => void;
@@ -7,9 +8,9 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'manager' | 'consultant';
 
-// Apps Script Web App URL (v6.2.8 - I열 승인여부 통일)
-// 새 배포: 2026-01-24 22:45 KST
-const API_URL = 'https://script.google.com/macros/s/AKfycbyULZORS2SzTBYYTK_r_5Kd5Q-I3nELI4RbDim1THqGIX8IT0PiAL-BL2oqomf16ate/exec';
+// Apps Script Web App URL (v6.2.12 FINAL - 시트 이름 수정, 이메일 시스템, 추천인 검증)
+// 새 배포: 2026-01-24 (v6.2.12)
+const API_URL = 'https://script.google.com/macros/s/AKfycbzeunTWd_3je-kVRzz9ZgDe4NLkz1WSG2oeut8h8b4ZUiKrCiCx-cYmPCi5ioOBZmmH/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -34,9 +35,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [consultantName, setConsultantName] = useState('');
   const [consultantPhone, setConsultantPhone] = useState('');
   const [consultantEmail, setConsultantEmail] = useState('');
+  const [consultantPassword, setConsultantPassword] = useState('');
+  const [consultantPasswordConfirm, setConsultantPasswordConfirm] = useState('');
   const [position, setPosition] = useState('');
-  const [businessUnit, setBusinessUnit] = useState('');
-  const [branchOffice, setBranchOffice] = useState('');
+  const [region, setRegion] = useState('수도권사업단');
+  const [consultantReferrer, setConsultantReferrer] = useState('');
   
   // ID/비밀번호 찾기 폼
   const [findName, setFindName] = useState('');
@@ -65,11 +68,18 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       return;
     }
     
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(loginPhone);
+    if (!normalizedPhone) {
+      alert('올바른 전화번호 형식이 아닙니다.');
+      return;
+    }
+    
     setLoading(true);
     try {
       const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
       const result = await callAPI(action, {
-        phone: loginPhone,
+        phone: normalizedPhone,
         password: loginPassword,
       });
       
@@ -102,6 +112,27 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       return;
     }
     
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!normalizedPhone) {
+      alert('올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)');
+      return;
+    }
+    
+    // 추천인 전화번호 정규화
+    const normalizedReferrer = normalizePhoneNumber(referrer);
+    if (!normalizedReferrer) {
+      alert('올바른 추천인 전화번호 형식이 아닙니다.');
+      return;
+    }
+    
+    // 이메일 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+    
     if (password.length < 4) {
       alert('비밀번호는 최소 4자리 이상이어야 합니다.');
       return;
@@ -117,9 +148,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       const result = await callAPI('registerCompany', {
         companyName,
         companyType,
-        referrer,
+        referrer: normalizedReferrer,
         name,
-        phone,
+        phone: normalizedPhone,
         email,
         password,
       });
@@ -149,8 +180,40 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
   
   const handleRegisterConsultant = async () => {
-    if (!consultantName || !consultantPhone || !consultantEmail || !position) {
-      alert('필수 필드를 모두 입력해주세요.');
+    if (!consultantName || !consultantPhone || !consultantEmail || !consultantPassword || !consultantPasswordConfirm || !position || !region || !consultantReferrer) {
+      alert('모든 필수 필드를 입력해주세요.');
+      return;
+    }
+    
+    // 전화번호 정규화
+    const normalizedPhone = normalizePhoneNumber(consultantPhone);
+    if (!normalizedPhone) {
+      alert('올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)');
+      return;
+    }
+    
+    // 추천인 전화번호 정규화
+    const normalizedReferrer = normalizePhoneNumber(consultantReferrer);
+    if (!normalizedReferrer) {
+      alert('올바른 추천인 전화번호 형식이 아닙니다.');
+      return;
+    }
+    
+    // 이메일 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(consultantEmail)) {
+      alert('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+    
+    // 비밀번호 검증
+    if (consultantPassword.length < 4) {
+      alert('비밀번호는 최소 4자리 이상이어야 합니다.');
+      return;
+    }
+    
+    if (consultantPassword !== consultantPasswordConfirm) {
+      alert('비밀번호가 일치하지 않습니다.');
       return;
     }
     
@@ -159,11 +222,12 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       const action = userType === 'manager' ? 'registerManager' : 'registerConsultant';
       const result = await callAPI(action, {
         name: consultantName,
-        phone: consultantPhone,
+        phone: normalizedPhone,
         email: consultantEmail,
+        password: consultantPassword,
         position,
-        division: businessUnit,
-        branch: branchOffice,
+        region,
+        referrer: normalizedReferrer,
       });
       
       if (result.success) {
@@ -174,9 +238,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         setConsultantName('');
         setConsultantPhone('');
         setConsultantEmail('');
+        setConsultantPassword('');
+        setConsultantPasswordConfirm('');
         setPosition('');
-        setBusinessUnit('');
-        setBranchOffice('');
+        setRegion('수도권사업단');
+        setConsultantReferrer('');
       } else {
         alert(result.error || '회원가입 실패');
       }
@@ -499,11 +565,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     </div>
                   </div>
                   
-                  {/* 추천인 입력 */}
+                  {/* 추천인 전화번호 입력 */}
                   <div className="relative">
                     <input
-                      type="text"
-                      placeholder="👔 추천인 (사근복 컨설턴트 이름) *"
+                      type="tel"
+                      placeholder="📞 추천인 전화번호 (필수) *"
                       value={referrer}
                       onChange={(e) => setReferrer(e.target.value)}
                       className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
@@ -512,7 +578,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4">
                     <p className="text-xs text-blue-900 font-semibold flex items-center space-x-2">
                       <span>ℹ️</span>
-                      <span>추천인은 등록된 사근복 컨설턴트 이름이어야 합니다.</span>
+                      <span>사근복매니저/사근복컨설턴트의 전화번호를 입력하세요</span>
                     </p>
                   </div>
                   
@@ -602,36 +668,61 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   <input
+                    type="password"
+                    placeholder="🔒 비밀번호 (최소 4자리) *"
+                    value={consultantPassword}
+                    onChange={(e) => setConsultantPassword(e.target.value)}
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
+                  />
+                  <input
+                    type="password"
+                    placeholder="✅ 비밀번호 확인 *"
+                    value={consultantPasswordConfirm}
+                    onChange={(e) => setConsultantPasswordConfirm(e.target.value)}
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
+                  />
+                  <input
                     type="text"
                     placeholder="👔 직함 *"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
                     className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
-                  <input
-                    type="text"
-                    placeholder="🏢 소속 사업단 (선택)"
-                    value={businessUnit}
-                    onChange={(e) => setBusinessUnit(e.target.value)}
-                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
-                  />
-                  <input
-                    type="text"
-                    placeholder="🏛️ 소속 지사 (선택)"
-                    value={branchOffice}
-                    onChange={(e) => setBranchOffice(e.target.value)}
-                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
-                  />
                   
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm">
-                    <p className="font-bold text-amber-900 mb-2 flex items-center space-x-2">
-                      <span className="text-2xl">💡</span>
-                      <span className="text-lg">안내사항</span>
-                    </p>
-                    <div className="space-y-1 text-sm text-amber-900">
-                      <p>• {userType === 'manager' ? '매니저' : '컨설턴트'} 비밀번호는 <span className="font-black text-lg text-amber-700">12345</span>로 고정됩니다.</p>
-                      <p>• 가입 승인 후 로그인 시 사용하세요.</p>
+                  {/* 소속 사업단 선택 */}
+                  <div className="relative">
+                    <select
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="수도권사업단">🏢 수도권사업단</option>
+                      <option value="대구사업단">🏢 대구사업단</option>
+                      <option value="부산사업단">🏢 부산사업단</option>
+                      <option value="페마연사업단">🏢 페마연사업단</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
+                  </div>
+                  
+                  {/* 추천인 전화번호 입력 */}
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      placeholder="📞 추천인 전화번호 (필수) *"
+                      value={consultantReferrer}
+                      onChange={(e) => setConsultantReferrer(e.target.value)}
+                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
+                    />
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-4">
+                    <p className="text-xs text-purple-900 font-semibold flex items-center space-x-2">
+                      <span>ℹ️</span>
+                      <span>사근복매니저/사근복컨설턴트의 전화번호를 입력하세요</span>
+                    </p>
                   </div>
                   
                   <button

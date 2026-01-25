@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Auth from './components/Auth';
 import { ModuleType, CompanyContext, DiagnosisResult, CalculationResult, ReportSubmission } from './types';
 import CorporateCalculator from './components/CorporateCalculator';
-import CEOCalculator from './components/CEOCalculator';
+import CEOCalculatorV2 from './src/components/CEOCalculatorV2';
 import EmployeeCalculator from './components/EmployeeCalculator';
 import NetPayCalculator from './components/NetPayCalculator';
+import SecretPlan from './src/components/SecretPlan';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import AIChat from './components/AIChat';
@@ -16,13 +17,14 @@ import Sagunbok7Plans from './components/Sagunbok7Plans';
 type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
 
 interface MenuItem {
-  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin';
+  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'admin';
   label: string;
   icon: string;
   access: MenuAccess[];
   description?: string;
   isSubMenu?: boolean;
   parentId?: string;
+  isSpecial?: boolean;
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -34,15 +36,16 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'net', label: '네트급여계산기', icon: '🧮', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
+  { id: 'secret', label: 'SECRET PLAN', icon: '🔐', access: ['company', 'manager', 'consultant'], description: 'VIP 컨설팅', isSpecial: true },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin'>('sagunbok-info');
+  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'admin'>('sagunbok-info');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'diag' | 'admin' | null>(null);
+  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -281,14 +284,13 @@ const App: React.FC = () => {
         </div>
       )}
       
-      <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
+      <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] gap-6">
       {/* Sidebar Nav */}
-      <nav className="w-full lg:w-96 bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-hidden">
+      <nav className="w-full lg:w-[420px] bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-hidden">
         <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transform rotate-3">S</div>
           <div>
-            <span className="text-2xl font-black tracking-tighter block leading-none">사근복 AI</span>
-            <span className="text-xs text-blue-400 font-bold uppercase tracking-widest">Studio v2.5</span>
+            <span className="text-2xl font-black tracking-tighter block leading-none">AI사근복닷컴</span>
           </div>
         </div>
         
@@ -300,8 +302,8 @@ const App: React.FC = () => {
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                 Logged In
               </div>
-              <div className="text-base font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
-              <div className="text-sm text-slate-400 mt-1">
+              <div className="text-lg font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+              <div className="text-base text-slate-400 mt-1">
                 {getUserTypeLabel()}
               </div>
             </div>
@@ -314,8 +316,8 @@ const App: React.FC = () => {
                 <span className="w-2 h-2 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
                 Guest Mode
               </div>
-              <div className="text-base font-black text-blue-400">로그인 / 회원가입</div>
-              <div className="text-sm text-slate-400 mt-1">클릭하여 로그인</div>
+              <div className="text-lg font-black text-blue-400">로그인 / 회원가입</div>
+              <div className="text-base text-slate-400 mt-1">클릭하여 로그인</div>
             </button>
           )}
         </div>
@@ -364,7 +366,7 @@ const App: React.FC = () => {
                     <button 
                       key={menuItem.id}
                       onClick={() => handleMenuClick(menuItem)}
-                      className={`w-full py-4 px-5 rounded-xl text-base font-bold transition-all border text-left flex items-center gap-3 ${
+                      className={`w-full py-4 px-5 rounded-xl text-lg font-bold transition-all border text-left flex items-center gap-3 ${
                         isActive 
                           ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
                           : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
@@ -384,22 +386,30 @@ const App: React.FC = () => {
             const hasAccess = checkAccess(menuItem);
             const isActive = activeTab === menuItem.id;
             const isPublic = menuItem.access.includes('public');
+            const isSpecial = menuItem.isSpecial;
             
             return (
               <button 
                 key={menuItem.id}
                 onClick={() => handleMenuClick(menuItem)}
                 className={`w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
-                  isActive 
-                    ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
-                    : hasAccess
-                      ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
-                      : 'bg-transparent border-slate-800 text-slate-600 hover:border-blue-500/30 hover:text-slate-400'
+                  isSpecial
+                    ? isActive
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] text-white'
+                      : 'bg-gradient-to-r from-slate-800 to-slate-700 border-amber-500/50 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] text-amber-300 hover:text-amber-200'
+                    : isActive 
+                      ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
+                      : hasAccess
+                        ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
+                        : 'bg-transparent border-slate-800 text-slate-600 hover:border-blue-500/30 hover:text-slate-400'
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <span>{menuItem.label}</span>
-                  <span className={`text-base transition-opacity ${
+                  <div className="flex items-center gap-2">
+                    {isSpecial && <span className="text-2xl">✨</span>}
+                    <span>{menuItem.label}</span>
+                  </div>
+                  <span className={`text-xl transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   }`}>{menuItem.icon}</span>
                 </div>
@@ -407,6 +417,12 @@ const App: React.FC = () => {
                   <div className="text-xs text-blue-400 font-semibold flex items-center gap-1">
                     <span className="text-sm">🔒</span>
                     <span>{isPublic ? '누구나' : '로그인 필요'}</span>
+                  </div>
+                )}
+                {isSpecial && hasAccess && !isActive && (
+                  <div className="text-xs text-amber-400 font-semibold flex items-center gap-1">
+                    <span className="text-sm">🔐</span>
+                    <span>{menuItem.description}</span>
                   </div>
                 )}
               </button>
@@ -420,15 +436,15 @@ const App: React.FC = () => {
               <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
               Active Context
             </div>
-            <div className="text-base font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
-            <div className="text-sm text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
+            <div className="text-lg font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
+            <div className="text-base text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
           </div>
 
           {/* 로그아웃 버튼 */}
           {isAuthenticated && (
             <button 
               onClick={handleLogout}
-              className="w-full py-4 px-5 rounded-xl text-sm font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+              className="w-full py-4 px-5 rounded-xl text-base font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
             >
               🚪 로그아웃
             </button>
@@ -455,14 +471,7 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'ceo' && (
-            <CEOCalculator 
-              companyContext={companyContext}
-              setCompanyContext={setCompanyContext}
-              inputs={calculatorInputs}
-              setInputs={setCalculatorInputs}
-              setCalcResults={setCalcResults}
-              calcResults={calcResults}
-            />
+            <CEOCalculatorV2 />
           )}
 
           {activeTab === 'emp' && (
@@ -485,6 +494,10 @@ const App: React.FC = () => {
               setCalcResults={setCalcResults}
               calcResults={calcResults}
             />
+          )}
+
+          {activeTab === 'secret' && (
+            <SecretPlan currentUser={currentUser} />
           )}
 
           {activeTab === 'diag' && (
