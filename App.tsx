@@ -311,40 +311,40 @@ const App: React.FC = () => {
 
       <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] gap-6">
       {/* Sidebar Nav */}
-      <nav className={`fixed lg:static w-full lg:w-[420px] bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 top-0 left-0 h-screen z-40 shadow-2xl overflow-y-hidden transition-transform duration-300 ${
+      <nav className={`fixed lg:static w-full lg:w-[420px] bg-[#0f2e44] text-white flex flex-col p-4 lg:p-8 space-y-3 lg:space-y-6 top-0 left-0 h-screen z-40 shadow-2xl overflow-y-hidden transition-transform duration-300 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
-          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transform rotate-3">S</div>
+        <div className="flex items-center space-x-2 lg:space-x-3 mb-2 lg:mb-4 flex-shrink-0">
+          <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-xl lg:text-2xl shadow-lg transform rotate-3">S</div>
           <div>
-            <span className="text-2xl font-black tracking-tighter block leading-none">AI사근복닷컴</span>
+            <span className="text-xl lg:text-2xl font-black tracking-tighter block leading-none">AI사근복닷컴</span>
           </div>
         </div>
         
-        {/* 사용자 정보 표시 */}
+        {/* 사용자 정보 표시 - 모바일 최적화 */}
         <div className="flex-shrink-0">
           {isAuthenticated ? (
-            <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
-              <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <div className="p-3 lg:p-5 bg-black/20 rounded-xl lg:rounded-2xl border border-white/5 backdrop-blur-md">
+              <div className="text-[10px] lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-1 lg:mb-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-green-400 rounded-full animate-pulse"></span>
                 Logged In
               </div>
-              <div className="text-lg font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
-              <div className="text-base text-slate-400 mt-1">
+              <div className="text-base lg:text-lg font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+              <div className="text-sm lg:text-base text-slate-400 mt-0.5 lg:mt-1">
                 {getUserTypeLabel()}
               </div>
             </div>
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="w-full p-5 bg-blue-500/10 hover:bg-blue-500/20 rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
+              className="w-full p-3 lg:p-5 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl lg:rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
             >
-              <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
+              <div className="text-[10px] lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-1 lg:mb-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
                 Guest Mode
               </div>
-              <div className="text-lg font-black text-blue-400">로그인 / 회원가입</div>
-              <div className="text-base text-slate-400 mt-1">클릭하여 로그인</div>
+              <div className="text-base lg:text-lg font-black text-blue-400">로그인 / 회원가입</div>
+              <div className="text-sm lg:text-base text-slate-400 mt-0.5 lg:mt-1">클릭하여 로그인</div>
             </button>
           )}
         </div>
@@ -371,35 +371,35 @@ const App: React.FC = () => {
           }}
         >
           {/* 사내근로복지기금 메뉴 그룹 */}
-          <div className="space-y-2">
+          <div className="space-y-1 lg:space-y-2">
             <button
               onClick={() => setShowSagunbokSubmenu(!showSagunbokSubmenu)}
-              className="w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
+              className="w-full py-3 lg:py-5 px-4 lg:px-6 rounded-xl lg:rounded-2xl text-base lg:text-xl font-bold transition-all border-2 border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-left flex items-center justify-between group"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🏢</span>
-                <span>사내근로복지기금</span>
+              <div className="flex items-center gap-2 lg:gap-3">
+                <span className="text-2xl lg:text-3xl">🏢</span>
+                <span className="text-sm lg:text-base">사내근로복지기금</span>
               </div>
-              <span className={`transition-transform text-slate-400 text-xl ${
+              <span className={`transition-transform text-slate-400 text-base lg:text-xl ${
                 showSagunbokSubmenu ? 'rotate-180' : ''
               }`}>▼</span>
             </button>
             
             {showSagunbokSubmenu && (
-              <div className="ml-4 space-y-2 border-l-2 border-slate-700 pl-4">
+              <div className="ml-2 lg:ml-4 space-y-1 lg:space-y-2 border-l-2 border-slate-700 pl-2 lg:pl-4">
                 {MENU_ITEMS.filter(item => item.isSubMenu).map(menuItem => {
                   const isActive = activeTab === menuItem.id;
                   return (
                     <button 
                       key={menuItem.id}
                       onClick={() => handleMenuClick(menuItem)}
-                      className={`w-full py-4 px-5 rounded-xl text-lg font-bold transition-all border text-left flex items-center gap-3 ${
+                      className={`w-full py-2 lg:py-4 px-3 lg:px-5 rounded-lg lg:rounded-xl text-sm lg:text-lg font-bold transition-all border text-left flex items-center gap-2 lg:gap-3 ${
                         isActive 
                           ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
                           : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
                       }`}
                     >
-                      <span className="text-2xl">{menuItem.icon}</span>
+                      <span className="text-xl lg:text-2xl">{menuItem.icon}</span>
                       <span>{menuItem.label}</span>
                     </button>
                   );
@@ -419,7 +419,7 @@ const App: React.FC = () => {
               <button 
                 key={menuItem.id}
                 onClick={() => handleMenuClick(menuItem)}
-                className={`w-full py-5 px-6 rounded-2xl text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
+                className={`w-full py-3 lg:py-5 px-4 lg:px-6 rounded-xl lg:rounded-2xl text-base lg:text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
                   isSpecial
                     ? isActive
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] text-white'
@@ -433,22 +433,22 @@ const App: React.FC = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    {isSpecial && <span className="text-2xl">✨</span>}
-                    <span>{menuItem.label}</span>
+                    {isSpecial && <span className="text-xl lg:text-2xl">✨</span>}
+                    <span className="text-sm lg:text-base">{menuItem.label}</span>
                   </div>
-                  <span className={`text-xl transition-opacity ${
+                  <span className={`text-base lg:text-xl transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   }`}>{menuItem.icon}</span>
                 </div>
                 {!hasAccess && (
-                  <div className="text-xs text-blue-400 font-semibold flex items-center gap-1">
-                    <span className="text-sm">🔒</span>
+                  <div className="text-[10px] lg:text-xs text-blue-400 font-semibold flex items-center gap-1">
+                    <span className="text-xs lg:text-sm">🔒</span>
                     <span>{isPublic ? '누구나' : '로그인 필요'}</span>
                   </div>
                 )}
                 {isSpecial && hasAccess && !isActive && (
-                  <div className="text-xs text-amber-400 font-semibold flex items-center gap-1">
-                    <span className="text-sm">🔐</span>
+                  <div className="text-[10px] lg:text-xs text-amber-400 font-semibold flex items-center gap-1">
+                    <span className="text-xs lg:text-sm">🔐</span>
                     <span>{menuItem.description}</span>
                   </div>
                 )}
@@ -457,21 +457,21 @@ const App: React.FC = () => {
           })}
         </div>
 
-        <div className="flex-shrink-0 space-y-4 border-t border-slate-700 pt-4">
-          <div className="p-5 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
-            <div className="text-xs text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+        <div className="flex-shrink-0 space-y-2 lg:space-y-4 border-t border-slate-700 pt-2 lg:pt-4">
+          <div className="p-3 lg:p-5 bg-black/20 rounded-xl lg:rounded-2xl border border-white/5 backdrop-blur-md">
+            <div className="text-[10px] lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-1 lg:mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-400 rounded-full animate-pulse"></span>
               Active Context
             </div>
-            <div className="text-lg font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
-            <div className="text-base text-slate-400 mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
+            <div className="text-base lg:text-lg font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
+            <div className="text-sm lg:text-base text-slate-400 mt-0.5 lg:mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
           </div>
 
           {/* 로그아웃 버튼 */}
           {isAuthenticated && (
             <button 
               onClick={handleLogout}
-              className="w-full py-4 px-5 rounded-xl text-base font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+              className="w-full py-2 lg:py-4 px-3 lg:px-5 rounded-lg lg:rounded-xl text-sm lg:text-base font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
             >
               🚪 로그아웃
             </button>
