@@ -431,21 +431,21 @@ const App: React.FC = () => {
                       ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
                       : hasAccess
                         ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
-                        : 'bg-transparent border-slate-800 text-slate-600 hover:border-blue-500/30 hover:text-slate-400'
+                        : 'bg-transparent border-slate-700 text-slate-300 hover:border-blue-500/30 hover:text-white'
                 }`}
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     {isSpecial && <span className="text-xl lg:text-2xl">✨</span>}
-                    <span className="text-base lg:text-base">{menuItem.label}</span>
+                    <span className="text-xl lg:text-2xl">{menuItem.label}</span>
                   </div>
-                  <span className={`text-lg lg:text-xl transition-opacity ${
+                  <span className={`text-2xl lg:text-3xl transition-opacity ${
                     isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   }`}>{menuItem.icon}</span>
                 </div>
                 {!hasAccess && (
-                  <div className="text-xs lg:text-xs text-blue-400 font-semibold flex items-center gap-1">
-                    <span className="text-sm lg:text-sm">🔒</span>
+                  <div className="text-sm lg:text-base text-blue-400 font-semibold flex items-center gap-1">
+                    <span className="text-base lg:text-lg">🔒</span>
                     <span>{isPublic ? '누구나' : '로그인 필요'}</span>
                   </div>
                 )}
