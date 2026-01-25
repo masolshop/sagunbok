@@ -119,7 +119,7 @@ const SecretPlan: React.FC<SecretPlanProps> = ({ currentUser }) => {
             <p className="text-xl lg:text-2xl font-bold text-slate-300 mb-3">
               사내근로복지기금은 기업과 대표님 <span className="text-amber-400 font-black">'절세'</span>의 필수 <span className="text-amber-400 font-black">'구조'</span>입니다.
             </p>
-            <p className="text-xl lg:text-2xl font-bold text-slate-300">
+            <p className="text-3xl lg:text-4xl font-black text-slate-300">
               잉여금·가지급금·증여세 등…<br />
               합법적으로 절세하고, 개인화하는 설계, <span className="text-amber-400 font-black">SECRET PLAN</span>
             </p>
