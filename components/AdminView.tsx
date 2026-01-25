@@ -30,8 +30,8 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  // Apps Script Web App URL (v7.1.1 - 로그 기능 추가)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwxqVZdlfG4rHiu3A5fGp5SKMS_Dni4IBQAEv5mTk8Dxl1WlMI7yIbKfMvoIrewqBB2/exec';
+  // Apps Script Web App URL (v7.1.2 - 비밀번호 버그 수정)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyvAhqMLf0vAuNi2GtOHyGUIPiIGdIFTo6e6zSwtonR4puobC4ZnFZFsO3j0Y9vFdvuCg/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
