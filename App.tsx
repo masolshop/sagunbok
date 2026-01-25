@@ -280,24 +280,24 @@ const App: React.FC = () => {
       {/* 로그인 모달 */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          {/* 닫기 버튼 - 모달 외부 */}
-          <button
-            onClick={() => {
-              setShowAuthModal(false);
-              setPendingTab(null);
-            }}
-            className="absolute top-4 right-4 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-gray-800 hover:text-black transition-all z-[60] shadow-2xl text-2xl font-bold border-2 border-gray-200"
-          >
-            ✕
-          </button>
           <div 
-            className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative"
+            className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
             style={{
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
               WebkitOverflowScrolling: 'touch'
             }}
           >
+            {/* 닫기 버튼 - 모달 우상단 안쪽 */}
+            <button
+              onClick={() => {
+                setShowAuthModal(false);
+                setPendingTab(null);
+              }}
+              className="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all shadow-md text-xl font-bold z-10"
+            >
+              ✕
+            </button>
             <Auth onLoginSuccess={handleLoginSuccess} />
           </div>
         </div>
@@ -332,27 +332,22 @@ const App: React.FC = () => {
         {/* 사용자 정보 표시 */}
         <div className="flex-shrink-0">
           {isAuthenticated ? (
-            <div className="p-4 lg:p-5 bg-black/20 rounded-xl lg:rounded-2xl border border-white/5 backdrop-blur-md">
-              <div className="text-xs lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-2 lg:mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 lg:w-2 lg:h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <div className="p-3 lg:p-4 bg-black/20 rounded-lg lg:rounded-xl border border-white/5 backdrop-blur-md">
+              <div className="text-[10px] lg:text-xs text-blue-400 font-bold uppercase tracking-wide mb-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-green-400 rounded-full animate-pulse"></span>
                 Logged In
               </div>
-              <div className="text-lg lg:text-lg font-black truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
-              <div className="text-base lg:text-base text-slate-400 mt-1 lg:mt-1">
+              <div className="text-sm lg:text-base font-bold truncate">{currentUser?.name || currentUser?.companyName || '사용자'}</div>
+              <div className="text-xs lg:text-sm text-slate-400 mt-0.5">
                 {getUserTypeLabel()}
               </div>
             </div>
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="w-full p-4 lg:p-5 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl lg:rounded-2xl border-2 border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all group"
+              className="w-full py-2 px-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg border border-blue-500/30 hover:border-blue-500/50 backdrop-blur-md transition-all text-sm text-blue-400 hover:text-blue-300 font-medium"
             >
-              <div className="text-xs lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-2 lg:mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 lg:w-2 lg:h-2 bg-blue-400 rounded-full group-hover:animate-pulse"></span>
-                Guest Mode
-              </div>
-              <div className="text-lg lg:text-lg font-black text-blue-400">로그인 / 회원가입</div>
-              <div className="text-base lg:text-base text-slate-400 mt-1 lg:mt-1">클릭하여 로그인</div>
+              🔑 로그인
             </button>
           )}
         </div>
@@ -465,21 +460,21 @@ const App: React.FC = () => {
           })}
         </div>
 
-        <div className="flex-shrink-0 space-y-3 lg:space-y-4 border-t border-slate-700 pt-3 lg:pt-4">
-          <div className="p-4 lg:p-5 bg-black/20 rounded-xl lg:rounded-2xl border border-white/5 backdrop-blur-md">
-            <div className="text-xs lg:text-xs text-blue-400 font-black uppercase tracking-widest mb-2 lg:mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 lg:w-2 lg:h-2 bg-blue-400 rounded-full animate-pulse"></span>
-              Active Context
+        <div className="flex-shrink-0 space-y-2 lg:space-y-3 border-t border-slate-700 pt-2 lg:pt-3">
+          <div className="p-3 lg:p-4 bg-black/20 rounded-lg lg:rounded-xl border border-white/5 backdrop-blur-md">
+            <div className="text-[10px] lg:text-xs text-blue-400 font-bold uppercase tracking-wide mb-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-400 rounded-full animate-pulse"></span>
+              Context
             </div>
-            <div className="text-lg lg:text-lg font-black truncate">{companyContext.companyName || '업체명 미입력'}</div>
-            <div className="text-base lg:text-base text-slate-400 mt-1 lg:mt-1">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
+            <div className="text-sm lg:text-base font-bold truncate">{companyContext.companyName || '업체명 미입력'}</div>
+            <div className="text-xs lg:text-sm text-slate-400 mt-0.5">{companyContext.region} · {companyContext.employeeCount || 0}명</div>
           </div>
 
           {/* 로그아웃 버튼 */}
           {isAuthenticated && (
             <button 
               onClick={handleLogout}
-              className="w-full py-3 lg:py-4 px-4 lg:px-5 rounded-lg lg:rounded-xl text-base lg:text-base font-black transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
+              className="w-full py-2 lg:py-3 px-3 lg:px-4 rounded-lg lg:rounded-xl text-sm lg:text-base font-bold transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 hover:text-red-300"
             >
               🚪 로그아웃
             </button>
