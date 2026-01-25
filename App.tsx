@@ -47,6 +47,7 @@ const App: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
@@ -179,10 +180,12 @@ const App: React.FC = () => {
   const handleMenuClick = (menuItem: MenuItem) => {
     if (checkAccess(menuItem)) {
       setActiveTab(menuItem.id);
+      setIsMobileMenuOpen(false); // 모바일에서 메뉴 선택 시 자동으로 닫기
     } else {
       // 접근 권한이 없으면 로그인 모달 표시
       setPendingTab(menuItem.id);
       setShowAuthModal(true);
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -266,6 +269,14 @@ const App: React.FC = () => {
   // 메인 렌더링
   return (
     <>
+      {/* 모바일 오버레이 */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* 로그인 모달 */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -284,9 +295,25 @@ const App: React.FC = () => {
         </div>
       )}
       
+      {/* 모바일 햄버거 버튼 */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed top-4 right-4 z-50 lg:hidden w-14 h-14 bg-[#0f2e44] rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-[#1a5f7a] transition-all"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {isMobileMenuOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
       <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] gap-6">
       {/* Sidebar Nav */}
-      <nav className="w-full lg:w-[420px] bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 sticky top-0 lg:h-screen z-20 shadow-2xl overflow-y-hidden">
+      <nav className={`fixed lg:static w-full lg:w-[420px] bg-[#0f2e44] text-white flex flex-col p-8 space-y-6 top-0 left-0 h-screen z-40 shadow-2xl overflow-y-hidden transition-transform duration-300 ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transform rotate-3">S</div>
           <div>
