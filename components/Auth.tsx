@@ -8,9 +8,9 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'manager' | 'consultant';
 
-// Apps Script Web App URL (v6.2.12 FINAL - 시트 이름 수정, 이메일 시스템, 추천인 검증)
-// 새 배포: 2026-01-24 (v6.2.12)
-const API_URL = 'https://script.google.com/macros/s/AKfycbzeunTWd_3je-kVRzz9ZgDe4NLkz1WSG2oeut8h8b4ZUiKrCiCx-cYmPCi5ioOBZmmH/exec';
+// Apps Script Web App URL (v7.0 COMPLETE - 전화번호 정규화 + 승인제 + 이메일)
+// 새 배포: 2026-01-25 (v7.0)
+const API_URL = 'https://script.google.com/macros/s/AKfycbyP5vT9w2FiixpAKZaeiSvl0ZoSMpv9NBdPJBaYHGC6TYRDahRjTL59AkVBZKH5-qving/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
