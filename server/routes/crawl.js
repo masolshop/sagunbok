@@ -1,6 +1,6 @@
 import express from "express";
 import { authenticateConsultant, requireConsultant } from "../middleware/auth.js";
-import { crawlJobPostings, crawlReviews, generateFinalConsulting } from "../controllers/crawlController.js";
+import { crawlJobPostings, crawlReviews } from "../controllers/crawlController.js";
 
 const router = express.Router();
 
