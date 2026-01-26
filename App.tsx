@@ -8,7 +8,7 @@ import NetPayCalculator from './components/NetPayCalculator';
 import SecretPlan from './src/components/SecretPlan';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
-import ConsultantZone from './src/components/ConsultantZone';
+import ConsultantZonePage from './src/pages/ConsultantZonePage';
 import ConsultantAIPanel from './src/components/ConsultantAIPanel';
 import AIChat from './components/AIChat';
 import SagunbokInfo from './components/SagunbokInfo';
@@ -598,7 +598,7 @@ const App: React.FC = () => {
 
 
           {activeTab === 'consultant-zone' && (
-            <ConsultantZone currentUser={currentUser} />
+            <ConsultantZonePage />
           )}
 
           {activeTab === 'admin' && (

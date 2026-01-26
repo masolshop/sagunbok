@@ -1,4 +1,4 @@
-import { PROMPTS, SYSTEM_PROMPT, PROMPT_VERSION } from "../prompts/catalog.js";
+import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, PROMPT_VERSION } from "../prompts/catalog.js";
 import { loadKey } from "../utils/cryptoStore.js";
 
 function render(tpl, vars) {
@@ -50,9 +50,16 @@ export const runAi = async (req, res) => {
     const userPrompt = render(tpl, {
       calcResult,
       caseMeta: caseMeta || {},
+      companyProfile: calcResult?.companyProfile || "",
+      financials: calcResult?.financials || "",
+      reviews: calcResult?.reviews || "",
+      welfare: calcResult?.welfare || "",
     });
 
-    const text = await callClaude(apiKey, SYSTEM_PROMPT, userPrompt);
+    // 컨설턴트존일 때는 전용 SYSTEM PROMPT 사용
+    const systemPrompt = module === "CONSULTANT_ZONE" ? CONSULTANT_ZONE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+
+    const text = await callClaude(apiKey, systemPrompt, userPrompt);
 
     return res.json({
       ok: true,

@@ -20,6 +20,22 @@ export const SYSTEM_PROMPT = `
 7) 면책 문구 1줄(전문가 검토 권장)
 `.trim();
 
+export const CONSULTANT_ZONE_SYSTEM_PROMPT = `
+너는 사근복닷컴 '컨설턴트존' 전용 AI다.
+입력 데이터(재무제표/리뷰/노무·복지 정보)를 기반으로
+기업의 "복지·인력·리스크"를 진단하고 사근복(사내/공동근로복지기금) 기반 컨설팅 제안을 만든다.
+
+규칙:
+- 데이터가 부족하면 "추가 요청 데이터"를 먼저 제시한다.
+- 단정 금지(특히 법/세무/노무). 대신 '가능성/검토 필요/가설'을 명확히 한다.
+- 리뷰 데이터는 편향 가능성이 있으므로 '신뢰도/표본' 코멘트를 포함한다.
+- 출력은 항상: 요약 → 핵심이슈 → 원인(구조) → 처방(사근복/복지설계) → 실행플랜 → 질문리스트 → 면책 순서.
+
+산출물의 목표:
+- 대표/인사/재무/원무(병원)의 의사결정에 바로 쓰일 문서
+- "복지는 비용이 아니라 구조 설계"라는 논리로 사근복 도입을 자연스럽게 연결
+`.trim();
+
 export const PROMPTS = {
   // 1) 기업 절세
   CORP_TAX: {
@@ -309,6 +325,137 @@ CEO 1장 브리프 문안:
 
 [calcResult]
 {{calcResult}}
+`.trim(),
+  },
+
+  // 5) 컨설턴트존 (재무제표/리뷰/복지 데이터 기반)
+  CONSULTANT_ZONE: {
+    FIN_DIAG: `
+[요청]
+financials(손익/BS/현금흐름/주요지표)를 바탕으로
+1) 회사 체력(수익성/안정성/현금흐름) 요약
+2) 인건비/복후비/채용여력 관점 해석
+3) '복지 투자 가능 구간'과 '위험 구간'을 구분
+4) 사근복 설계로 비용을 '고정비→전략비'로 전환하는 논리를 제시
+5) 추가로 필요한 재무 데이터 7개를 요청
+
+[입력]
+companyProfile={{companyProfile}}
+financials={{financials}}
+`.trim(),
+
+    REVIEW_DIAG: `
+[요청]
+reviews 데이터를 기반으로
+1) 리뷰 신뢰도(표본/편향/최근성) 체크
+2) 핵심 불만 TOP5(키워드로) + "이직 트리거" 추정
+3) 긍정 포인트 TOP3(유지해야 할 문화)
+4) 복지/보상/제도 설계로 해결 가능한 항목 vs 구조적 항목 구분
+5) 사근복 도입이 효과적인 문제 3개를 "직원 체감 언어"로 제시
+6) HR/원장/대표가 바로 쓸 '내부 커뮤니케이션 멘트' 6줄
+
+[입력]
+companyProfile={{companyProfile}}
+reviews={{reviews}}
+`.trim(),
+
+    WELFARE_POSITIONING: `
+[요청]
+업종/지역/인력구성 + 리뷰 기반으로
+1) 채용 경쟁에서 밀리는 이유를 3문장으로 요약
+2) 사근복 복지포인트/선택형 복지로 '즉시 체감' 만드는 5가지 아이템 제안
+3) 도입 후 30일 안에 체감시키는 실행 플랜(공지/FAQ/지급) 제시
+4) KPI(이직률/채용리드타임/만족도/복후비효율) 정의
+
+[입력]
+companyProfile={{companyProfile}}
+reviews={{reviews}}
+welfare={{welfare}}
+financials={{financials}}
+`.trim(),
+
+    RISK_SCAN: `
+[요청]
+입력 데이터에서 노무/세무 리스크 신호를 탐지해
+1) 위험 신호 TOP7
+2) 즉시 점검(1주) / 구조 개선(3개월) / 제도 정착(6~12개월)로 나눠 액션 제시
+3) 사근복 설계 시 특히 주의할 포인트(통상임금/퇴직금/운영증빙/규정) 체크리스트 제공
+
+[입력]
+companyProfile={{companyProfile}}
+reviews={{reviews}}
+welfare={{welfare}}
+financials={{financials}}
+`.trim(),
+
+    PITCH_ONEPAGER: `
+[요청]
+대표에게 바로 보여줄 1장 제안서 문안을 작성한다.
+구성:
+- 제목(강한 후킹)
+- 우리 회사 현상 3줄(데이터 기반)
+- 지금 손해 보는 구조 3개
+- 사근복 도입 효과 4개(채용/유지/절세/리스크)
+- 90일 실행 로드맵
+- 무료·비공개 대표 단독 컨설팅 CTA
+- 면책 문구
+
+[입력]
+companyProfile={{companyProfile}}
+financials={{financials}}
+reviews={{reviews}}
+welfare={{welfare}}
+`.trim(),
+
+    MEETING_SCRIPT: `
+[요청]
+컨설턴트가 미팅에서 그대로 읽고 진행할 스크립트를 만든다.
+1) 오프닝(30초) – '복지는 구조' 메시지
+2) 진단 질문 15개(대표/재무/인사 파트로 분류)
+3) 반론 6개 대응 멘트
+4) 클로징 – 다음 액션/자료 요청/컨설팅 제안
+
+[입력]
+companyProfile={{companyProfile}}
+financials={{financials}}
+reviews={{reviews}}
+welfare={{welfare}}
+`.trim(),
+
+    BENEFIT_DESIGN: `
+[요청]
+선택형 복지포인트 패키지를 3안으로 설계한다.
+- A안(보수적) / B안(표준) / C안(공격적)
+각 안:
+1) 지급 대상/조건
+2) 포인트 사용 카테고리(5~8개)
+3) 운영 프로세스(증빙/정산/커뮤니케이션)
+4) 예상 직원 체감 포인트(멘트)
+5) 리스크 주의사항
+
+[입력]
+companyProfile={{companyProfile}}
+welfare={{welfare}}
+financials={{financials}}
+reviews={{reviews}}
+`.trim(),
+
+    DIFF_IDEAS_10: `
+[요청]
+리뷰/업종/지역 특성을 기반으로
+'업계에서 흔치 않은 복지/제도 차별화 아이디어 10개'를 제시.
+각 아이디어는:
+- 효과(채용/유지/브랜딩)
+- 실행 난이도(하/중/상)
+- 비용감(낮음/중간/높음)
+- 사근복과의 연결(가능/매우 적합/부분적합)
+을 포함.
+
+[입력]
+companyProfile={{companyProfile}}
+reviews={{reviews}}
+financials={{financials}}
+welfare={{welfare}}
 `.trim(),
   },
 };
