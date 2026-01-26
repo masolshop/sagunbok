@@ -30,8 +30,8 @@ export default function ConsultantAIPanel({ currentUser, module, calcResult, cas
   const [results, setResults] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // 컨설턴트 계정이 아니면 표시하지 않음
-  if (!currentUser || currentUser.type !== 'consultant') {
+  // 컨설턴트 또는 어드민 계정만 표시
+  if (!currentUser || (currentUser.type !== 'consultant' && currentUser.type !== 'admin')) {
     return null;
   }
 
@@ -253,7 +253,7 @@ export default function ConsultantAIPanel({ currentUser, module, calcResult, cas
       {/* Info Footer */}
       <div className="mt-6 pt-4 border-t-2 border-purple-200">
         <p className="text-xs text-slate-500 text-center">
-          🔒 이 패널은 <span className="font-bold text-purple-600">컨설턴트 계정</span>에서만 표시됩니다
+          🔒 이 패널은 <span className="font-bold text-purple-600">컨설턴트 & 어드민 계정</span>에서만 표시됩니다
         </p>
       </div>
     </div>
