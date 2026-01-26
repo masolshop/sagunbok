@@ -2,6 +2,12 @@ import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PR
 import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function render(tpl, vars) {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => JSON.stringify(vars[k] ?? "", null, 2));
@@ -45,14 +51,21 @@ ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 
 // OpenAI PDF 추출 (Responses API + Files API)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
+  let tempFilePath = null;
+  
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     const client = new OpenAI({ apiKey });
     
+    // 임시 파일로 저장
+    tempFilePath = path.join('/tmp', `temp_${Date.now()}_${originalFilename}`);
+    fs.writeFileSync(tempFilePath, pdfBuffer);
+    console.log(`[GPT PDF] 임시 파일 생성: ${tempFilePath}`);
+    
     // 1. Files API 업로드
     const file = await client.files.create({
-      file: new Blob([pdfBuffer], { type: 'application/pdf' }),
+      file: fs.createReadStream(tempFilePath),
       purpose: 'user_data',
     });
     
@@ -76,6 +89,12 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
   } catch (error) {
     console.error(`[GPT PDF] 추출 실패:`, error.message);
     throw new Error(`GPT PDF extraction failed: ${error.message}`);
+  } finally {
+    // 임시 파일 삭제
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+      console.log(`[GPT PDF] 임시 파일 삭제: ${tempFilePath}`);
+    }
   }
 }
 
