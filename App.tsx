@@ -9,6 +9,7 @@ import SecretPlan from './src/components/SecretPlan';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import ConsultantZone from './src/components/ConsultantZone';
+import ConsultantAIPanel from './src/components/ConsultantAIPanel';
 import AIChat from './components/AIChat';
 import SagunbokInfo from './components/SagunbokInfo';
 import SagunbokTaxSavings from './components/SagunbokTaxSavings';
@@ -492,40 +493,88 @@ const App: React.FC = () => {
           {activeTab === 'sagunbok-plans' && <Sagunbok7Plans />}
           
           {activeTab === 'corp' && (
-            <CorporateCalculator 
-              companyContext={companyContext}
-              setCompanyContext={setCompanyContext}
-              inputs={calculatorInputs}
-              setInputs={setCalculatorInputs}
-              setCalcResults={setCalcResults}
-              calcResults={calcResults}
-            />
+            <>
+              <CorporateCalculator 
+                companyContext={companyContext}
+                setCompanyContext={setCompanyContext}
+                inputs={calculatorInputs}
+                setInputs={setCalculatorInputs}
+                setCalcResults={setCalcResults}
+                calcResults={calcResults}
+              />
+              <ConsultantAIPanel
+                currentUser={currentUser}
+                module="CORP_TAX"
+                calcResult={calcResults.find(r => r.module === 'CORP_TAX')}
+                caseMeta={{
+                  companyName: companyContext.companyName,
+                  region: companyContext.region,
+                  employeeCount: companyContext.employeeCount
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'ceo' && (
-            <CEOCalculatorV2 />
+            <>
+              <CEOCalculatorV2 />
+              <ConsultantAIPanel
+                currentUser={currentUser}
+                module="CEO_TAX"
+                calcResult={calcResults.find(r => r.module === 'CEO_TAX')}
+                caseMeta={{
+                  companyName: companyContext.companyName,
+                  region: companyContext.region,
+                  employeeCount: companyContext.employeeCount
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'emp' && (
-            <EmployeeCalculator 
-              companyContext={companyContext}
-              setCompanyContext={setCompanyContext}
-              inputs={calculatorInputs}
-              setInputs={setCalculatorInputs}
-              setCalcResults={setCalcResults}
-              calcResults={calcResults}
-            />
+            <>
+              <EmployeeCalculator 
+                companyContext={companyContext}
+                setCompanyContext={setCompanyContext}
+                inputs={calculatorInputs}
+                setInputs={setCalculatorInputs}
+                setCalcResults={setCalcResults}
+                calcResults={calcResults}
+              />
+              <ConsultantAIPanel
+                currentUser={currentUser}
+                module="STAFF_TAX"
+                calcResult={calcResults.find(r => r.module === 'STAFF_TAX')}
+                caseMeta={{
+                  companyName: companyContext.companyName,
+                  region: companyContext.region,
+                  employeeCount: companyContext.employeeCount
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'net' && (
-            <NetPayCalculator 
-              companyContext={companyContext}
-              setCompanyContext={setCompanyContext}
-              inputs={calculatorInputs}
-              setInputs={setCalculatorInputs}
-              setCalcResults={setCalcResults}
-              calcResults={calcResults}
-            />
+            <>
+              <NetPayCalculator 
+                companyContext={companyContext}
+                setCompanyContext={setCompanyContext}
+                inputs={calculatorInputs}
+                setInputs={setCalculatorInputs}
+                setCalcResults={setCalcResults}
+                calcResults={calcResults}
+              />
+              <ConsultantAIPanel
+                currentUser={currentUser}
+                module="NETPAY"
+                calcResult={calcResults.find(r => r.module === 'NETPAY')}
+                caseMeta={{
+                  companyName: companyContext.companyName,
+                  region: companyContext.region,
+                  employeeCount: companyContext.employeeCount
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'secret' && (
