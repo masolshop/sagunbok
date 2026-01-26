@@ -20,7 +20,7 @@ const ACTIONS = {
   PDF_ONEPAGER: { label: '📄 PDF 원페이저', emoji: '📄', color: 'indigo' },
 };
 
-const API_BASE_URL = 'http://localhost:3002';
+const API_BASE_URL = 'https://sagunbok.com';
 
 export default function ConsultantAIPanel({ currentUser, module, calcResult, caseMeta }: ConsultantAIPanelProps) {
   const [hasApiKey, setHasApiKey] = useState(false);
