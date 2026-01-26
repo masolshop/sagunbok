@@ -391,10 +391,10 @@ export default function CretopReportPage() {
 
       {/* PDF Upload Section - Compact */}
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-5 space-y-4 shadow-md">
-        <h3 className="flex items-center gap-2 text-purple-700 font-bold text-lg">
-          <span>📤</span> 재무제표 파일 업로드 (선택)
+        <h3 className="flex items-center gap-3 text-purple-700 font-black text-2xl lg:text-3xl">
+          <span className="text-3xl lg:text-4xl">📤</span> 재무제표 파일 업로드 (선택)
         </h3>
-        <p className="text-sm text-purple-600 font-medium">
+        <p className="text-lg lg:text-xl text-purple-600 font-bold">
           PDF 또는 Excel 파일을 업로드하면 AI가 자동으로 분석합니다.
         </p>
 
