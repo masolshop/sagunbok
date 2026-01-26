@@ -334,98 +334,100 @@ export default function ConsultantZonePage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-4xl font-black mb-2">컨설턴트존 🎯</h1>
-        <p className="text-slate-600 font-bold">
-          재무제표 + 블라인드/잡플래닛 + 복지 데이터를 바탕으로 "사근복 컨설팅 산출물"을 버튼으로 생성합니다.
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
+      {/* Header - 절세계산기 스타일 */}
+      <header>
+        <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight">👔 컨설턴트 전용</h1>
+        <p className="text-2xl lg:text-3xl text-slate-500 mt-6 font-bold leading-relaxed">
+          재무제표 + 블라인드/잡플래닛 + 복지 데이터를 바탕으로 "사근복 컨설팅 산출물"을 자동 생성합니다.
         </p>
-      </div>
+      </header>
 
-      {/* API Key Section */}
-      <div className="mb-6 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-3xl border-2 border-purple-200">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-xl font-black">AI 모델 API Key 관리</h3>
-            <p className="text-sm text-slate-600 font-bold mt-1">
-              Claude, GPT, Gemini 중 선택 · 키는 서버에 암호화 저장됩니다
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {Object.entries(apiKeys).map(([model, registered]) => (
-              <div
-                key={model}
-                className={`px-3 py-1 rounded-full font-black text-xs ${
-                  registered ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {model.toUpperCase()}: {registered ? "✓" : "✗"}
-              </div>
-            ))}
-          </div>
+      {/* API Key Section - 절세계산기 스타일 */}
+      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-8 shadow-xl">
+        <h3 className="flex items-center gap-4 text-blue-700 font-black text-3xl lg:text-4xl">
+          <span>🤖</span> AI 모델 API Key 관리
+        </h3>
+        <p className="text-xl text-blue-600 font-bold">
+          Claude, GPT, Gemini 중 선택 · 키는 서버에 AES-256-GCM 암호화 저장됩니다
+        </p>
+
+        <div className="flex gap-3 flex-wrap">
+          {Object.entries(apiKeys).map(([model, registered]) => (
+            <div
+              key={model}
+              className={`px-5 py-3 rounded-full font-black text-lg ${ 
+                registered ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {model.toUpperCase()}: {registered ? "✓" : "✗"}
+            </div>
+          ))}
         </div>
 
-        <div className="space-y-3">
-          {/* 모델 선택 드롭다운 */}
-          <div className="flex items-center gap-3">
-            <label className="font-black text-sm text-slate-700 whitespace-nowrap">AI 모델:</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-blue-700 block">AI 모델 선택</label>
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value as "claude" | "gpt" | "gemini")}
-              className="px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none font-bold bg-white"
+              className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
             >
-              <option value="claude">Claude 3.5 Sonnet (Anthropic)</option>
-              <option value="gpt">GPT-4 Turbo (OpenAI)</option>
-              <option value="gemini">Gemini 2.0 Flash (Google) - 최신!</option>
+              <option value="claude">Claude 3.5 Sonnet (추천)</option>
+              <option value="gpt">GPT-4 Turbo</option>
+              <option value="gemini">Gemini 2.0 Flash</option>
             </select>
-            <div
-              className={`px-3 py-2 rounded-full font-black text-xs ${
-                apiKeys[selectedModel] ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}
-            >
-              {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-blue-700 block">API Key 입력</label>
+            <div className="flex gap-3">
+              <input
+                type="password"
+                value={apiKeyDraft}
+                onChange={(e) => setApiKeyDraft(e.target.value)}
+                placeholder={
+                  selectedModel === "claude"
+                    ? "sk-ant-api03-..."
+                    : selectedModel === "gpt"
+                    ? "sk-..."
+                    : "AIzaSy..."
+                }
+                className="flex-1 px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-bold text-lg bg-white shadow-sm"
+              />
+              <button
+                onClick={saveApiKey}
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+              >
+                저장
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* API Key 입력 */}
-          <div className="flex gap-3">
-            <input
-              type="password"
-              value={apiKeyDraft}
-              onChange={(e) => setApiKeyDraft(e.target.value)}
-              placeholder={
-                selectedModel === "claude"
-                  ? "sk-ant-api03-... (Claude API Key)"
-                  : selectedModel === "gpt"
-                  ? "sk-... (OpenAI API Key)"
-                  : "AIzaSy... (Google API Key)"
-              }
-              className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none font-bold"
-            />
-            <button
-              onClick={saveApiKey}
-              className="px-6 py-3 rounded-xl bg-purple-600 text-white font-black hover:bg-purple-700 transition-colors"
-            >
-              {selectedModel.toUpperCase()} 키 저장
-            </button>
+        {apiKeyMsg && (
+          <div className={`p-4 rounded-xl font-bold text-lg ${apiKeyMsg.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {apiKeyMsg}
           </div>
-          {apiKeyMsg && <p className="text-sm font-bold text-slate-600">{apiKeyMsg}</p>}
+        )}
 
-          {/* 도움말 */}
-          <div className="mt-3 p-3 bg-white rounded-xl text-xs text-slate-600 font-bold">
-            <p className="font-black mb-1">📌 API Key 발급 사이트:</p>
-            <ul className="space-y-1 ml-4">
-              <li>• Claude: <a href="https://console.anthropic.com" target="_blank" className="text-blue-600 underline">console.anthropic.com</a></li>
-              <li>• GPT: <a href="https://platform.openai.com" target="_blank" className="text-blue-600 underline">platform.openai.com</a></li>
-              <li>• Gemini: <a href="https://aistudio.google.com" target="_blank" className="text-blue-600 underline">aistudio.google.com</a></li>
-            </ul>
-          </div>
+        {/* 도움말 */}
+        <div className="bg-white rounded-[24px] p-6 border-2 border-blue-100">
+          <p className="font-black mb-3 text-blue-700 text-lg">📌 API Key 발급 사이트:</p>
+          <ul className="space-y-2 ml-4">
+            <li className="text-blue-600 font-bold">• Claude: <a href="https://console.anthropic.com" target="_blank" className="underline hover:text-blue-800">console.anthropic.com</a></li>
+            <li className="text-blue-600 font-bold">• GPT: <a href="https://platform.openai.com" target="_blank" className="underline hover:text-blue-800">platform.openai.com</a></li>
+            <li className="text-blue-600 font-bold">• Gemini: <a href="https://aistudio.google.com" target="_blank" className="underline hover:text-blue-800">aistudio.google.com</a></li>
+          </ul>
         </div>
       </div>
 
       {/* Inputs 4 Boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">
+        <h3 className="flex items-center gap-4 text-slate-700 font-black text-3xl lg:text-4xl">
+          <span>📝</span> 기업 데이터 입력
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <TextAreaCard
           title="1) 기업 프로필"
           hint="업종/규모/지역/인력구성/최근 이슈(노무·세무·채용) 등"
@@ -450,29 +452,32 @@ export default function ConsultantZonePage() {
           value={welfare}
           onChange={setWelfare}
         />
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="mb-6 p-6 bg-white rounded-3xl border-2 border-slate-200">
-        <div className="flex justify-between items-center mb-4">
+      {/* Action Buttons - 절세계산기 스타일 */}
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-[48px] border-4 border-green-100 p-10 lg:p-14 space-y-8 shadow-xl">
+        <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xl font-black">컨설팅 생성 버튼</h3>
-            <p className="text-sm text-slate-600 font-bold mt-1">
-              입력 데이터를 바탕으로 사근복 컨설팅 산출물을 생성합니다.
+            <h3 className="flex items-center gap-4 text-green-700 font-black text-3xl lg:text-4xl">
+              <span>🚀</span> 컨설팅 생성 버튼
+            </h3>
+            <p className="text-xl text-green-600 font-bold mt-2">
+              입력 데이터를 바탕으로 사근복 컨설팅 산출물을 자동 생성합니다.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={saveCaseToLocal}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-white font-black hover:bg-slate-900 transition-colors text-sm"
+              className="px-6 py-3 rounded-2xl bg-slate-800 text-white font-black hover:bg-slate-900 transition-all text-lg shadow-lg"
             >
-              케이스 저장
+              💾 케이스 저장
             </button>
             <button
               onClick={exportOutputsAsTxt}
-              className="px-4 py-2 rounded-xl bg-slate-600 text-white font-black hover:bg-slate-700 transition-colors text-sm"
+              className="px-6 py-3 rounded-2xl bg-slate-600 text-white font-black hover:bg-slate-700 transition-all text-lg shadow-lg"
             >
-              TXT 내보내기
+              📄 TXT 내보내기
             </button>
             <button
               onClick={() => setOutputs([])}

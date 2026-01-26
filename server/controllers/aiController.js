@@ -113,6 +113,77 @@ async function callAI(modelType, apiKey, system, userPrompt, maxTokens = 1600) {
   }
 }
 
+// 재무제표 PDF/Excel 분석 엔드포인트
+export const analyzeFinancialStatement = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const { modelType = "gpt" } = req.body || {};
+    const apiKey = loadKey(consultantId, modelType);
+
+    // 파일 처리는 multer 등을 통해 req.file로 받는다고 가정
+    // 실제 프로덕션에서는 multer 설정 필요
+    if (!req.file && !req.body.fileContent) {
+      return res.status(400).json({ ok: false, error: "NO_FILE_PROVIDED" });
+    }
+
+    const systemPrompt = `당신은 재무제표 분석 전문가입니다. 
+업로드된 재무제표(PDF, Excel 등)를 분석하여 다음 정보를 JSON 형식으로 추출하세요:
+
+{
+  "company_name": "회사명",
+  "statement_date": "결산일 (YYYY-MM-DD)",
+  "balance_sheet": {
+    "자산총계": 숫자,
+    "부채총계": 숫자,
+    "자본총계": 숫자,
+    "유동자산": 숫자,
+    "비유동자산": 숫자
+  },
+  "income_statement": {
+    "매출액": 숫자,
+    "매출원가": 숫자,
+    "매출총이익": 숫자,
+    "영업이익": 숫자,
+    "당기순이익": 숫자
+  },
+  "cash_flow": {
+    "영업활동현금흐름": 숫자,
+    "투자활동현금흐름": 숫자,
+    "재무활동현금흐름": 숫자
+  }
+}
+
+숫자는 원 단위로 표시하고, 데이터가 없으면 0으로 표시하세요.
+반드시 JSON만 출력하세요. 설명이나 마크다운 코드블록은 제외하세요.`;
+
+    const userPrompt = `아래 재무제표 데이터를 분석하여 JSON으로 추출하세요:\n\n${req.body.fileContent || "[파일 내용]"}`;
+
+    const text = await callAI(modelType, apiKey, systemPrompt, userPrompt, 2000);
+    
+    // JSON 파싱 시도
+    let analysis = null;
+    try {
+      // 마크다운 코드블록 제거
+      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      analysis = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("[ANALYZE] JSON 파싱 실패:", e.message);
+      return res.status(500).json({ ok: false, error: "JSON_PARSE_FAILED", rawText: text });
+    }
+
+    return res.json({
+      ok: true,
+      analysis,
+      modelType,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};
+
 export const runAi = async (req, res) => {
   try {
     const consultantId = req.user?.id;

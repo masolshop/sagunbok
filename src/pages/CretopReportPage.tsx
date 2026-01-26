@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 /**
  * CretopReportPage.tsx
- * CRETOP 스타일 기업분석 리포트 생성 페이지
+ * CRETOP 기업분석 리포트 생성 페이지
+ * - PDF 업로드 + GPT/Claude 자동 분석
+ * - 절세계산기 스타일 UI
  */
 
 const API_BASE_URL = "https://sagunbok.com";
@@ -94,6 +96,12 @@ export default function CretopReportPage() {
     gemini: false,
   });
 
+  // 파일 업로드
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // 입력 필드
   const [companyName, setCompanyName] = useState("");
   const [statementDate, setStatementDate] = useState("");
@@ -127,6 +135,75 @@ export default function CretopReportPage() {
       } catch {}
     })();
   }, []);
+
+  // PDF 파일 처리
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    if (!validTypes.includes(file.type)) {
+      alert('PDF 또는 Excel 파일만 업로드 가능합니다.');
+      return;
+    }
+    setUploadedFile(file);
+    analyzeFinancialStatement(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFileSelect(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const analyzeFinancialStatement = async (file: File) => {
+    if (!apiKeys.gpt && !apiKeys.claude) {
+      alert('GPT 또는 Claude API 키를 먼저 등록해주세요.\n컨설턴트존에서 API 키를 등록할 수 있습니다.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('modelType', selectedModel);
+
+      const res = await fetch(`${API_BASE_URL}/api/ai/analyze-financial-statement`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.ok && data.analysis) {
+        // GPT 분석 결과를 입력 필드에 자동 입력
+        if (data.analysis.balance_sheet) setBalanceSheet(JSON.stringify(data.analysis.balance_sheet, null, 2));
+        if (data.analysis.income_statement) setIncomeStatement(JSON.stringify(data.analysis.income_statement, null, 2));
+        if (data.analysis.cash_flow) setCashflow(JSON.stringify(data.analysis.cash_flow, null, 2));
+        if (data.analysis.company_name) setCompanyName(data.analysis.company_name);
+        if (data.analysis.statement_date) setStatementDate(data.analysis.statement_date);
+        alert('✅ 재무제표 분석 완료! 데이터가 자동 입력되었습니다.');
+      } else {
+        throw new Error(data.error || '분석 실패');
+      }
+    } catch (err: any) {
+      alert(`분석 실패: ${err.message}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!companyName || !statementDate) {
@@ -196,361 +273,372 @@ export default function CretopReportPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-4xl font-black mb-2">🏢 CRETOP 기업분석 리포트</h1>
-        <p className="text-slate-600 font-bold">
-          재무제표 기반 기업 진단 · 사근복 컨설팅 · 실행 로드맵
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
+      {/* Header - 절세계산기 스타일 */}
+      <header>
+        <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight">📊 재무제표 분석</h1>
+        <p className="text-2xl lg:text-3xl text-slate-500 mt-6 font-bold leading-relaxed">
+          재무제표 기반 기업 진단 · 사근복 컨설팅 · 실행 로드맵을 자동 생성합니다.
         </p>
-      </div>
+      </header>
 
       {/* AI Model Selection */}
-      <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border-2 border-blue-200">
-        <div className="flex items-center gap-4 mb-4">
-          <label className="font-black text-slate-700">AI 모델:</label>
+      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-6 shadow-xl">
+        <h3 className="flex items-center gap-4 text-blue-700 font-black text-3xl lg:text-4xl">
+          <span>🤖</span> AI 모델 선택
+        </h3>
+        <div className="flex items-center gap-4 flex-wrap">
           <select
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value as any)}
-            className="px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none font-bold bg-white"
+            className="px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
           >
-            <option value="claude">Claude 3.5 Sonnet</option>
+            <option value="claude">Claude 3.5 Sonnet (추천)</option>
             <option value="gpt">GPT-4 Turbo</option>
             <option value="gemini">Gemini 2.0 Flash</option>
           </select>
           <div
-            className={`px-3 py-2 rounded-full font-black text-xs ${
-              apiKeys[selectedModel] ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            className={`px-5 py-3 rounded-full font-black text-lg ${
+              apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
             }`}
           >
             {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
           </div>
         </div>
         {!apiKeys[selectedModel] && (
-          <p className="text-sm text-red-600 font-bold">
-            ⚠ API Key가 등록되지 않았습니다. 컨설턴트존에서 등록해주세요.
+          <p className="text-lg text-red-600 font-bold bg-red-50 p-4 rounded-xl">
+            ⚠ API Key가 등록되지 않았습니다. 좌측 메뉴의 '컨설턴트 전용'에서 등록해주세요.
           </p>
         )}
       </div>
 
-      {/* Input Form */}
-      <div className="mb-6 p-6 bg-white rounded-3xl border-2 border-slate-200">
-        <h3 className="text-xl font-black mb-4">📝 기본 정보 (필수)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">회사명 *</label>
+      {/* PDF Upload Section */}
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-[48px] border-4 border-purple-100 p-10 lg:p-14 space-y-8 shadow-xl">
+        <h3 className="flex items-center gap-4 text-purple-700 font-black text-3xl lg:text-4xl">
+          <span>📤</span> 재무제표 파일 업로드 (선택)
+        </h3>
+        <p className="text-xl text-purple-600 font-bold">
+          PDF 또는 Excel 파일을 업로드하면 AI가 자동으로 분석합니다.
+        </p>
+
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-4 border-dashed rounded-[32px] p-16 text-center cursor-pointer transition-all ${
+            isDragging
+              ? "border-purple-500 bg-purple-100"
+              : uploadedFile
+              ? "border-green-500 bg-green-50"
+              : "border-purple-300 bg-white hover:border-purple-500 hover:bg-purple-50"
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.xls,.xlsx"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+            }}
+            className="hidden"
+          />
+          {isAnalyzing ? (
+            <div className="space-y-4">
+              <div className="text-6xl animate-pulse">⏳</div>
+              <p className="text-2xl font-black text-purple-700">AI가 재무제표를 분석하고 있습니다...</p>
+            </div>
+          ) : uploadedFile ? (
+            <div className="space-y-4">
+              <div className="text-6xl">✅</div>
+              <p className="text-2xl font-black text-green-700">{uploadedFile.name}</p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUploadedFile(null);
+                }}
+                className="mt-4 px-6 py-3 bg-red-500 text-white rounded-2xl font-black text-lg hover:bg-red-600 transition-all"
+              >
+                다른 파일 선택
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-6xl">📁</div>
+              <p className="text-2xl font-black text-purple-700">파일을 드래그하거나 클릭하여 선택</p>
+              <p className="text-lg text-purple-500 font-bold">PDF, Excel 파일 지원</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Basic Info Input */}
+      <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">
+        <h3 className="flex items-center gap-4 text-slate-700 font-black text-3xl lg:text-4xl">
+          <span>📝</span> 기본 정보 입력
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">회사명 *</label>
             <input
               type="text"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
               placeholder="예: 테스트주식회사"
-              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
             />
           </div>
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">결산일 *</label>
+
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">결산일 *</label>
             <input
               type="date"
               value={statementDate}
               onChange={(e) => setStatementDate(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
             />
           </div>
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">대표자명</label>
+
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">대표자명</label>
             <input
               type="text"
               value={ceoName}
               onChange={(e) => setCeoName(e.target.value)}
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
               placeholder="예: 홍길동"
-              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
             />
           </div>
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">임직원수</label>
+
+          <div className="space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">임직원수</label>
             <input
               type="text"
               value={employeeCount}
               onChange={(e) => setEmployeeCount(e.target.value)}
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
               placeholder="예: 50명"
-              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
             />
           </div>
-          <div className="md:col-span-2">
-            <label className="block font-bold text-sm text-slate-700 mb-1">업종</label>
+
+          <div className="md:col-span-2 space-y-4">
+            <label className="text-xl lg:text-2xl font-black text-slate-700 block">업종</label>
             <input
               type="text"
               value={industryName}
               onChange={(e) => setIndustryName(e.target.value)}
-              placeholder="예: 제조업"
-              className="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
+              placeholder="예: 제조업, IT서비스업 등"
             />
           </div>
         </div>
+      </div>
 
-        <h3 className="text-xl font-black mb-4 mt-6">📊 재무제표 (JSON 형식)</h3>
-        <p className="text-sm text-slate-600 font-bold mb-4">
-          💡 팁: 엑셀에서 복사하거나, JSON 형식으로 입력하세요. 비어있어도 리포트는 생성됩니다.
+      {/* Financial Statements Input */}
+      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-[48px] border-4 border-amber-100 p-10 lg:p-14 space-y-10 shadow-xl">
+        <h3 className="flex items-center gap-4 text-amber-700 font-black text-3xl lg:text-4xl">
+          <span>💰</span> 재무제표 데이터 (선택)
+        </h3>
+        <p className="text-xl text-amber-600 font-bold">
+          💡 PDF 업로드로 자동 입력되거나, 직접 JSON 형식으로 입력하세요. 비어있어도 리포트는 생성됩니다.
         </p>
-        <div className="space-y-4">
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">재무상태표 (Balance Sheet)</label>
+
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <label className="text-xl font-black text-amber-700 block">재무상태표 (Balance Sheet)</label>
             <textarea
               value={balanceSheet}
               onChange={(e) => setBalanceSheet(e.target.value)}
+              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
+              rows={6}
               placeholder='{"자산총계": 5000000000, "부채총계": 2000000000, "자본총계": 3000000000}'
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none font-mono text-sm"
-              rows={4}
             />
           </div>
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">손익계산서 (Income Statement)</label>
+
+          <div className="space-y-4">
+            <label className="text-xl font-black text-amber-700 block">손익계산서 (Income Statement)</label>
             <textarea
               value={incomeStatement}
               onChange={(e) => setIncomeStatement(e.target.value)}
+              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
+              rows={6}
               placeholder='{"매출액": 10000000000, "영업이익": 1000000000, "당기순이익": 800000000}'
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none font-mono text-sm"
-              rows={4}
             />
           </div>
-          <div>
-            <label className="block font-bold text-sm text-slate-700 mb-1">현금흐름표 (Cashflow)</label>
+
+          <div className="space-y-4">
+            <label className="text-xl font-black text-amber-700 block">현금흐름표 (Cash Flow)</label>
             <textarea
               value={cashflow}
               onChange={(e) => setCashflow(e.target.value)}
-              placeholder='{"영업활동현금흐름": 1200000000, "투자활동현금흐름": -500000000}'
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none font-mono text-sm"
-              rows={4}
+              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
+              rows={6}
+              placeholder='{"영업활동현금흐름": 900000000, "투자활동현금흐름": -200000000}'
             />
           </div>
         </div>
-
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className={`mt-6 w-full px-6 py-4 rounded-xl font-black text-white text-lg transition-all ${
-            loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          }`}
-        >
-          {loading ? "🔄 리포트 생성 중..." : "🚀 CRETOP 리포트 생성"}
-        </button>
       </div>
+
+      {/* Generate Button */}
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[48px] py-10 text-3xl lg:text-4xl font-black shadow-2xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+      >
+        {loading ? "⏳ 리포트 생성 중... (약 30초 소요)" : "🚀 CRETOP 기업분석 리포트 생성"}
+      </button>
 
       {/* Error Message */}
       {errorMsg && (
-        <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-          <p className="text-red-700 font-bold">❌ {errorMsg}</p>
+        <div className="bg-red-50 border-4 border-red-200 rounded-[32px] p-8 text-red-700 font-bold text-xl">
+          ❌ 오류: {errorMsg}
         </div>
       )}
 
       {/* Report Display */}
       {report && (
-        <div className="space-y-6">
-          {/* Report Header */}
-          <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-2 border-green-200">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h2 className="text-3xl font-black text-green-900">{report.report_meta.company_name}</h2>
-                <p className="text-sm text-green-700 font-bold mt-1">
-                  기준일: {report.report_meta.statement_period || statementDate} | 생성: {new Date(report.report_meta.generated_at).toLocaleString("ko-KR")}
-                </p>
+        <div className="space-y-8">
+          <div className="flex justify-between items-center bg-green-50 border-4 border-green-200 rounded-[32px] p-8">
+            <h2 className="text-3xl font-black text-green-700">✅ 리포트 생성 완료!</h2>
+            <button
+              onClick={downloadJSON}
+              className="px-8 py-4 bg-green-600 text-white rounded-2xl font-black text-xl hover:bg-green-700 transition-all shadow-lg"
+            >
+              💾 JSON 다운로드
+            </button>
+          </div>
+
+          {/* Report Sections */}
+          <ReportDisplay report={report} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportDisplay({ report }: { report: CretopReport }) {
+  return (
+    <div className="space-y-8">
+      {/* Summary */}
+      <div className="bg-white rounded-[32px] border-4 border-blue-100 p-10 shadow-xl">
+        <h3 className="text-3xl font-black text-blue-700 mb-6">📋 종합 요약</h3>
+        <div className="space-y-4">
+          <p className="text-2xl font-bold text-slate-700">{report.summary_one_page.headline}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            {report.summary_one_page.key_findings?.map((f, i) => (
+              <div key={i} className="bg-blue-50 rounded-2xl p-6 border-2 border-blue-200">
+                <p className="font-black text-blue-700 text-lg">{f.title}</p>
+                <p className="text-sm text-slate-600 mt-2">{f.impact}</p>
               </div>
-              <button
-                onClick={downloadJSON}
-                className="px-4 py-2 bg-green-600 text-white rounded-xl font-black hover:bg-green-700 transition-colors"
-              >
-                📥 JSON 다운로드
-              </button>
-            </div>
-            <div className="text-2xl font-black text-green-900">{report.summary_one_page.headline}</div>
-          </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {report.summary_one_page.key_findings.slice(0, 3).map((finding, idx) => (
-              <div key={idx} className="p-4 bg-blue-50 rounded-2xl border-2 border-blue-200">
-                <div className="text-xs font-black text-blue-600 mb-1">핵심 발견 {idx + 1}</div>
-                <div className="font-black text-blue-900">{finding.title}</div>
-                <div className="text-sm text-blue-700 mt-2">{finding.evidence}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Executive Overview */}
-          <div className="p-6 bg-white rounded-3xl border-2 border-slate-200">
-            <h3 className="text-2xl font-black mb-4">📈 경영진단 종합개요</h3>
-            <div className="mb-4">
-              <span className="text-lg font-black">종합 평가: </span>
-              <span
-                className={`px-4 py-2 rounded-full font-black ${
-                  report.executive_overview.overall_grade === "우수"
-                    ? "bg-green-100 text-green-700"
-                    : report.executive_overview.overall_grade === "양호"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-orange-100 text-orange-700"
-                }`}
-              >
-                {report.executive_overview.overall_grade}
-              </span>
-            </div>
-            <ul className="space-y-2">
-              {report.executive_overview.diagnosis_lines.map((line, idx) => (
-                <li key={idx} className="flex items-start">
-                  <span className="text-blue-600 font-black mr-2">•</span>
-                  <span className="font-bold text-slate-700">{line}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Issue Check */}
-          <div className="p-6 bg-white rounded-3xl border-2 border-slate-200">
-            <h3 className="text-2xl font-black mb-4">⚠️ 이슈 체크</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-100">
-                    <th className="px-4 py-2 text-left font-black">항목</th>
-                    <th className="px-4 py-2 text-left font-black">현재값</th>
-                    <th className="px-4 py-2 text-left font-black">상태</th>
-                    <th className="px-4 py-2 text-left font-black">코멘트</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.issue_check.table.map((item, idx) => (
-                    <tr key={idx} className="border-t border-slate-200">
-                      <td className="px-4 py-3 font-bold">{item.item}</td>
-                      <td className="px-4 py-3">{item.current_value}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-black ${
-                            item.status === "checked"
-                              ? "bg-red-100 text-red-700"
-                              : item.status === "not_checked"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {item.status === "checked" ? "✓ 체크" : item.status === "not_checked" ? "정상" : "확인필요"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{item.comment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Lifecycle */}
-          <div className="p-6 bg-white rounded-3xl border-2 border-slate-200">
-            <h3 className="text-2xl font-black mb-4">🔄 기업 라이프사이클</h3>
-            <div className="mb-4">
-              <span className="text-lg font-black">현재 단계: </span>
-              <span className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-black">
-                {report.lifecycle.stage}
-              </span>
-            </div>
-            <div className="mb-4">
-              <p className="font-bold text-slate-600">근거: {report.lifecycle.basis.join(", ")}</p>
-            </div>
-            <h4 className="font-black mb-2">단계별 우선과제:</h4>
-            <ul className="space-y-2">
-              {report.lifecycle.stage_tasks.map((task, idx) => (
-                <li key={idx} className="flex items-start">
-                  <span className="text-purple-600 font-black mr-2">→</span>
-                  <span className="font-bold">
-                    {task.task} <span className="text-sm text-slate-500">({task.owner})</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Roadmap */}
-          <div className="p-6 bg-white rounded-3xl border-2 border-slate-200">
-            <h3 className="text-2xl font-black mb-4">🗺️ 실행 로드맵</h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-lg font-black mb-3 text-red-600">🔥 30-60-90일 (긴급)</h4>
-                <ul className="space-y-2">
-                  {report.roadmap.days_30_60_90.map((item, idx) => (
-                    <li key={idx} className="p-3 bg-red-50 rounded-xl">
-                      <div className="font-bold">{item.task}</div>
-                      <div className="text-sm text-slate-600 mt-1">
-                        담당: {item.owner} | 난이도: {item.difficulty} | 기대효과: {item.expected_impact}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-lg font-black mb-3 text-orange-600">📅 6개월 (중기)</h4>
-                <ul className="space-y-2">
-                  {report.roadmap.month_6.map((item, idx) => (
-                    <li key={idx} className="p-3 bg-orange-50 rounded-xl">
-                      <div className="font-bold">{item.task}</div>
-                      <div className="text-sm text-slate-600 mt-1">
-                        담당: {item.owner} | 난이도: {item.difficulty}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-lg font-black mb-3 text-green-600">🎯 12개월 (장기)</h4>
-                <ul className="space-y-2">
-                  {report.roadmap.month_12.map((item, idx) => (
-                    <li key={idx} className="p-3 bg-green-50 rounded-xl">
-                      <div className="font-bold">{item.task}</div>
-                      <div className="text-sm text-slate-600 mt-1">
-                        담당: {item.owner} | 난이도: {item.difficulty}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Data Request */}
-          <div className="p-6 bg-yellow-50 rounded-3xl border-2 border-yellow-200">
-            <h3 className="text-2xl font-black mb-4">📋 추가 요청 자료</h3>
-            <div className="space-y-4">
-              {report.additional_data_request.priority_1.length > 0 && (
-                <div>
-                  <h4 className="font-black text-red-600 mb-2">우선순위 1 (긴급)</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {report.additional_data_request.priority_1.map((item, idx) => (
-                      <li key={idx} className="font-bold text-slate-700">{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {report.additional_data_request.priority_2.length > 0 && (
-                <div>
-                  <h4 className="font-black text-orange-600 mb-2">우선순위 2 (중요)</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {report.additional_data_request.priority_2.map((item, idx) => (
-                      <li key={idx} className="font-bold text-slate-700">{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="p-4 bg-slate-100 rounded-2xl border-2 border-slate-300">
-            <h4 className="font-black mb-2">⚠️ 면책사항</h4>
-            {report.disclaimer.lines.map((line, idx) => (
-              <p key={idx} className="text-sm text-slate-600 font-bold">{line}</p>
             ))}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Executive Overview */}
+      <div className="bg-white rounded-[32px] border-4 border-purple-100 p-10 shadow-xl">
+        <h3 className="text-3xl font-black text-purple-700 mb-6">💼 경영진단 종합</h3>
+        <div className="space-y-4">
+          <p className="text-2xl font-bold text-purple-600">등급: {report.executive_overview.overall_grade}</p>
+          <ul className="space-y-2 mt-4">
+            {report.executive_overview.diagnosis_lines?.map((line, i) => (
+              <li key={i} className="text-lg text-slate-700">• {line}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Risks */}
+      <div className="bg-white rounded-[32px] border-4 border-red-100 p-10 shadow-xl">
+        <h3 className="text-3xl font-black text-red-700 mb-6">⚠️ 주요 리스크</h3>
+        <div className="space-y-4">
+          {report.summary_one_page.top_risks?.map((r, i) => (
+            <div key={i} className="bg-red-50 rounded-2xl p-6 border-2 border-red-200">
+              <div className="flex justify-between items-start mb-2">
+                <p className="font-black text-red-700 text-lg">{r.title}</p>
+                <span className="px-3 py-1 bg-red-600 text-white text-sm font-bold rounded-full">
+                  {r.severity}
+                </span>
+              </div>
+              <p className="text-sm text-slate-600 mb-2">{r.evidence}</p>
+              <p className="text-sm text-red-600 font-bold">→ {r.next_action}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Opportunities */}
+      <div className="bg-white rounded-[32px] border-4 border-green-100 p-10 shadow-xl">
+        <h3 className="text-3xl font-black text-green-700 mb-6">🎯 개선 기회</h3>
+        <div className="space-y-4">
+          {report.summary_one_page.top_opportunities?.map((o, i) => (
+            <div key={i} className="bg-green-50 rounded-2xl p-6 border-2 border-green-200">
+              <div className="flex justify-between items-start mb-2">
+                <p className="font-black text-green-700 text-lg">{o.title}</p>
+                <span className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-full">
+                  {o.priority}
+                </span>
+              </div>
+              <p className="text-sm text-slate-600 mb-2">{o.evidence}</p>
+              <p className="text-sm text-green-600 font-bold">→ {o.next_action}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Roadmap */}
+      <div className="bg-white rounded-[32px] border-4 border-indigo-100 p-10 shadow-xl">
+        <h3 className="text-3xl font-black text-indigo-700 mb-6">🗺️ 실행 로드맵</h3>
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-xl font-black text-indigo-600 mb-3">📅 30-90일</h4>
+            <div className="space-y-2">
+              {report.roadmap.days_30_60_90?.map((t, i) => (
+                <div key={i} className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+                  <p className="font-bold text-slate-700">{t.task}</p>
+                  <p className="text-sm text-slate-500">담당: {t.owner} | 난이도: {t.difficulty}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-xl font-black text-indigo-600 mb-3">📅 6개월</h4>
+            <div className="space-y-2">
+              {report.roadmap.month_6?.map((t, i) => (
+                <div key={i} className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+                  <p className="font-bold text-slate-700">{t.task}</p>
+                  <p className="text-sm text-slate-500">담당: {t.owner} | 난이도: {t.difficulty}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-xl font-black text-indigo-600 mb-3">📅 12개월</h4>
+            <div className="space-y-2">
+              {report.roadmap.month_12?.map((t, i) => (
+                <div key={i} className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+                  <p className="font-bold text-slate-700">{t.task}</p>
+                  <p className="text-sm text-slate-500">담당: {t.owner} | 난이도: {t.difficulty}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="bg-slate-50 rounded-[32px] border-2 border-slate-200 p-8">
+        <h3 className="text-xl font-black text-slate-600 mb-4">⚖️ 면책사항</h3>
+        <ul className="space-y-1 text-sm text-slate-600">
+          {report.disclaimer.lines?.map((line, i) => (
+            <li key={i}>• {line}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
