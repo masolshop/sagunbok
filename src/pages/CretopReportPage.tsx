@@ -318,18 +318,18 @@ export default function CretopReportPage() {
 
       {/* AI Model Selection - Compact */}
       <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg space-y-4">
-        <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
-          <span>🤖</span> AI 모델 선택
+        <h3 className="flex items-center gap-3 text-blue-700 font-black text-3xl lg:text-4xl">
+          <span>🤖</span> AI API KEY 등록
         </h3>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: Model Selection & Status */}
           <div className="space-y-3">
-            <label className="text-sm font-bold text-blue-700">사용할 AI 모델</label>
+            <label className="text-lg font-bold text-blue-700">사용할 AI 모델</label>
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="w-full px-4 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-base bg-white shadow-sm"
+              className="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-xl bg-white shadow-sm"
             >
               <option value="claude">Claude 3.5 Sonnet (추천)</option>
               <option value="gpt">GPT-4 Turbo</option>
@@ -338,7 +338,7 @@ export default function CretopReportPage() {
             
             {/* Status Badge */}
             <div
-              className={`px-4 py-2 rounded-xl font-bold text-sm text-center ${
+              className={`px-5 py-3 rounded-xl font-bold text-lg text-center ${
                 apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
               }`}
             >
@@ -348,7 +348,7 @@ export default function CretopReportPage() {
 
           {/* Right: API Key Input */}
           <div className="space-y-3">
-            <label className="text-sm font-bold text-blue-700">API Key 입력</label>
+            <label className="text-lg font-bold text-blue-700">API Key 입력</label>
             <div className="flex gap-2">
               <input
                 type="password"
@@ -357,11 +357,11 @@ export default function CretopReportPage() {
                 placeholder={
                   selectedModel === "claude" ? "sk-ant-api03-..." : selectedModel === "gpt" ? "sk-..." : "AIzaSy..."
                 }
-                className="flex-1 px-4 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-sm bg-white shadow-sm"
+                className="flex-1 px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-lg bg-white shadow-sm"
               />
               <button
                 onClick={saveApiKey}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md whitespace-nowrap"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md whitespace-nowrap"
               >
                 저장
               </button>
@@ -372,7 +372,7 @@ export default function CretopReportPage() {
         {/* Messages */}
         {apiKeyMsg && (
           <div
-            className={`p-3 rounded-xl font-semibold text-sm ${
+            className={`p-4 rounded-xl font-semibold text-lg ${
               apiKeyMsg.includes("✅") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
@@ -381,8 +381,8 @@ export default function CretopReportPage() {
         )}
         
         {!apiKeys[selectedModel] && !apiKeyMsg && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <p className="text-sm text-amber-700 font-semibold">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-lg text-amber-700 font-semibold">
               💡 위에서 선택한 모델의 API Key를 입력하고 저장해주세요.
             </p>
           </div>
