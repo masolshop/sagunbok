@@ -41,7 +41,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'secret', label: 'SECRET PLAN', icon: '🔐', access: ['company', 'manager', 'consultant'], description: 'VIP 컨설팅', isSpecial: true },
   { id: 'consultant-zone', label: '컨설턴트 전용', icon: '👔', access: ['consultant', 'admin'], description: '컨설턴트 전용', isSpecial: true },
-  { id: 'cretop-report', label: 'CRETOP 리포트', icon: '🏢', access: ['consultant', 'admin'], description: '기업분석 리포트', isSpecial: true },
+  { id: 'cretop-report', label: '재무제표 분석', icon: '📊', access: ['consultant', 'admin'], description: 'CRETOP 기업분석', isSubMenu: true, parentId: 'consultant-zone' },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
 
@@ -52,6 +52,7 @@ const App: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
+  const [showConsultantSubmenu, setShowConsultantSubmenu] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -422,45 +423,83 @@ const App: React.FC = () => {
             const isActive = activeTab === menuItem.id;
             const isPublic = menuItem.access.includes('public');
             const isSpecial = menuItem.isSpecial;
+            const hasSubmenu = menuItem.id === 'consultant-zone';
             
             return (
-              <button 
-                key={menuItem.id}
-                onClick={() => handleMenuClick(menuItem)}
-                className={`w-full py-5 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
-                  isSpecial
-                    ? isActive
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] text-white'
-                      : 'bg-gradient-to-r from-slate-800 to-slate-700 border-amber-500/50 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] text-amber-300 hover:text-amber-200'
-                    : isActive 
-                      ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
-                      : hasAccess
-                        ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
-                        : 'bg-transparent border-slate-700 text-slate-300 hover:border-blue-500/30 hover:text-white'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {isSpecial && <span className="text-xl lg:text-2xl">✨</span>}
-                    <span className="text-xl lg:text-2xl">{menuItem.label}</span>
+              <div key={menuItem.id}>
+                <button 
+                  onClick={() => {
+                    if (hasSubmenu) {
+                      setShowConsultantSubmenu(!showConsultantSubmenu);
+                    } else {
+                      handleMenuClick(menuItem);
+                    }
+                  }}
+                  className={`w-full py-5 lg:py-5 px-5 lg:px-6 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-bold transition-all border-2 text-left flex flex-col gap-1 group relative select-none ${
+                    isSpecial
+                      ? isActive
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.4)] text-white'
+                        : 'bg-gradient-to-r from-slate-800 to-slate-700 border-amber-500/50 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] text-amber-300 hover:text-amber-200'
+                      : isActive 
+                        ? 'bg-[#1a5f7a] border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.2)] text-white' 
+                        : hasAccess
+                          ? 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
+                          : 'bg-transparent border-slate-700 text-slate-300 hover:border-blue-500/30 hover:text-white'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      {isSpecial && <span className="text-xl lg:text-2xl">✨</span>}
+                      <span className="text-xl lg:text-2xl">{menuItem.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-2xl lg:text-3xl transition-opacity ${
+                        isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}>{menuItem.icon}</span>
+                      {hasSubmenu && (
+                        <span className={`transition-transform text-slate-400 text-lg lg:text-xl ${
+                          showConsultantSubmenu ? 'rotate-180' : ''
+                        }`}>▼</span>
+                      )}
+                    </div>
                   </div>
-                  <span className={`text-2xl lg:text-3xl transition-opacity ${
-                    isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`}>{menuItem.icon}</span>
-                </div>
-                {!hasAccess && (
-                  <div className="text-sm lg:text-base text-blue-400 font-semibold flex items-center gap-1">
-                    <span className="text-base lg:text-lg">🔒</span>
-                    <span>{isPublic ? '누구나' : '로그인 필요'}</span>
+                  {!hasAccess && (
+                    <div className="text-sm lg:text-base text-blue-400 font-semibold flex items-center gap-1">
+                      <span className="text-base lg:text-lg">🔒</span>
+                      <span>{isPublic ? '누구나' : '로그인 필요'}</span>
+                    </div>
+                  )}
+                  {isSpecial && hasAccess && !isActive && (
+                    <div className="text-xs lg:text-xs text-amber-400 font-semibold flex items-center gap-1">
+                      <span className="text-sm lg:text-sm">🔐</span>
+                      <span>{menuItem.description}</span>
+                    </div>
+                  )}
+                </button>
+                
+                {/* 컨설턴트존 서브메뉴 */}
+                {hasSubmenu && showConsultantSubmenu && hasAccess && (
+                  <div className="ml-3 lg:ml-4 mt-3 space-y-3 lg:space-y-3 border-l-2 border-amber-500/30 pl-3 lg:pl-4">
+                    {MENU_ITEMS.filter(item => item.parentId === 'consultant-zone').map(subItem => {
+                      const isSubActive = activeTab === subItem.id;
+                      return (
+                        <button 
+                          key={subItem.id}
+                          onClick={() => handleMenuClick(subItem)}
+                          className={`w-full py-4 lg:py-4 px-4 lg:px-5 rounded-lg lg:rounded-xl text-base lg:text-lg font-bold transition-all border text-left flex items-center gap-2 lg:gap-3 ${
+                            isSubActive 
+                              ? 'bg-[#1a5f7a] border-blue-400 shadow-lg text-white' 
+                              : 'bg-transparent border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <span className="text-xl lg:text-2xl">{subItem.icon}</span>
+                          <span>{subItem.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
-                {isSpecial && hasAccess && !isActive && (
-                  <div className="text-xs lg:text-xs text-amber-400 font-semibold flex items-center gap-1">
-                    <span className="text-sm lg:text-sm">🔐</span>
-                    <span>{menuItem.description}</span>
-                  </div>
-                )}
-              </button>
+              </div>
             );
           })}
         </div>
