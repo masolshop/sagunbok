@@ -417,8 +417,8 @@ export default function AIConsultantZone() {
               className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm"
             >
               <option value="claude">Claude 3.5 Sonnet (추천)</option>
-              <option value="gpt">GPT-4 Turbo</option>
-              <option value="gemini">Gemini 2.0 Flash</option>
+              <option value="gpt">GPT-5.2</option>
+              <option value="gemini">Gemini 3.5 Pro</option>
             </select>
           </div>
 
