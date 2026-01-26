@@ -10,6 +10,8 @@ import consultantRoutes from './routes/consultant.js';
 import customerRoutes from './routes/customer.js';
 import analyticsRoutes from './routes/analytics.js';
 import resourcesRoutes from './routes/resources.js';
+import aiRoutes from './routes/ai.js';
+import apiKeyRoutes from './routes/apiKey.js';
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/consultant', consultantRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/resources', resourcesRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/consultant/api-key', apiKeyRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
