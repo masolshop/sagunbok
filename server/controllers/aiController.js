@@ -272,7 +272,96 @@ export const runAi = async (req, res) => {
 };
 
 
-// 최종 통합 컨설팅 생성
+// 최종 통합 컨설팅 생성 (7단계 클라이맥스)
+export const generateFinalIntegrated = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const {
+      company_profile,
+      step1_financial_report,
+      step2_jobsite_benefits_report,
+      step3_reviews_report,
+      step4_tax_simulation_report,
+      modelType = "gpt"
+    } = req.body || {};
+
+    const apiKey = loadKey(consultantId, modelType);
+    
+    // 프롬프트 템플릿 로드
+    const finalPrompt = await import('../prompts/finalIntegrated.js').then(m => m.default);
+    
+    const inputData = {
+      company_profile: company_profile || {},
+      step1_financial_report: step1_financial_report || {},
+      step2_jobsite_benefits_report: step2_jobsite_benefits_report || {},
+      step3_reviews_report: step3_reviews_report || {},
+      step4_tax_simulation_report: step4_tax_simulation_report || {}
+    };
+    
+    const systemPrompt = finalPrompt.systemPrompt;
+    const userPrompt = finalPrompt.userPromptTemplate(inputData);
+    
+    // AI 호출 (maxTokens 증가 - 복잡한 리포트)
+    const text = await callAI(modelType, apiKey, systemPrompt, userPrompt, 8000);
+    
+    // JSON 파싱 시도 (재시도 로직 포함)
+    let result = null;
+    let parseError = null;
+    
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // 마크다운 코드블록 제거
+        const cleaned = text
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        
+        result = JSON.parse(cleaned);
+        
+        // 스키마 검증
+        finalPrompt.validateSchema(result);
+        break;
+      } catch (e) {
+        parseError = e.message;
+        if (attempt === 0) {
+          console.warn(`[FINAL] JSON 파싱 실패 (시도 ${attempt + 1}/2):`, e.message);
+        }
+      }
+    }
+    
+    if (!result) {
+      return res.status(500).json({ 
+        ok: false, 
+        error: "JSON_PARSE_FAILED", 
+        details: parseError,
+        rawText: text 
+      });
+    }
+    
+    // 리포트 ID 생성
+    const report_id = `rpt_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}_${Date.now().toString().slice(-4)}`;
+    
+    return res.json({
+      ok: true,
+      report_id,
+      report_type: "final_integrated",
+      company: {
+        name: company_profile?.company_name || company_profile?.name || "",
+        industry: company_profile?.industry || "",
+        period: company_profile?.period || ""
+      },
+      report: result,
+      modelType,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};
+
+// 레거시: 간단한 통합 컨설팅 (기존 호환)
 export const generateFinalConsulting = async (req, res) => {
   try {
     const consultantId = req.user?.id;
