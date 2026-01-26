@@ -332,3 +332,182 @@ ${JSON.stringify(taxCalculatorData, null, 2)}
     return res.status(500).json({ ok: false, error: String(e.message || e) });
   }
 };
+
+// 구인구직(잡코리아 등) 복지/채용 메시지 분석
+export const analyzeJobsite = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const { rawText, json, modelType = "gpt" } = req.body || {};
+    
+    if (!rawText && !json) {
+      return res.status(400).json({ ok: false, error: "NO_DATA_PROVIDED" });
+    }
+
+    const apiKey = loadKey(consultantId, modelType);
+    
+    // 프롬프트 템플릿 로드
+    const jobsitePrompt = await import('../prompts/jobsiteAnalysis.js').then(m => m.default);
+    
+    // 입력 데이터 구성
+    const inputData = json || {
+      company: { name: "", industry: "", headcount: 0 },
+      job_site_data: {
+        source: "user_upload",
+        collected_at: new Date().toISOString(),
+        postings: [],
+        benefit_tags_extracted: []
+      }
+    };
+    
+    // rawText가 있으면 추가
+    if (rawText) {
+      inputData._rawText = rawText;
+    }
+    
+    const systemPrompt = jobsitePrompt.systemPrompt;
+    const userPrompt = jobsitePrompt.userPromptTemplate(inputData);
+    
+    // AI 호출 (JSON 강제 출력, temperature 낮게)
+    const text = await callAI(modelType, apiKey, systemPrompt, userPrompt, 3000);
+    
+    // JSON 파싱 시도 (재시도 로직 포함)
+    let result = null;
+    let parseError = null;
+    
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // 마크다운 코드블록 제거
+        const cleaned = text
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        
+        result = JSON.parse(cleaned);
+        
+        // 스키마 검증
+        jobsitePrompt.validateSchema(result);
+        break;
+      } catch (e) {
+        parseError = e.message;
+        if (attempt === 0) {
+          console.warn(`[JOBSITE] JSON 파싱 실패 (시도 ${attempt + 1}/2):`, e.message);
+        }
+      }
+    }
+    
+    if (!result) {
+      return res.status(500).json({ 
+        ok: false, 
+        error: "JSON_PARSE_FAILED", 
+        details: parseError,
+        rawText: text 
+      });
+    }
+    
+    return res.json({
+      ok: true,
+      report_type: "jobsite",
+      report: result,
+      modelType,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};
+
+// 블라인드/잡플래닛 직원 리뷰 분석
+export const analyzeReviews = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const { rawText, json, modelType = "gpt" } = req.body || {};
+    
+    if (!rawText && !json) {
+      return res.status(400).json({ ok: false, error: "NO_DATA_PROVIDED" });
+    }
+
+    const apiKey = loadKey(consultantId, modelType);
+    
+    // 프롬프트 템플릿 로드
+    const reviewsPrompt = await import('../prompts/reviewsAnalysis.js').then(m => m.default);
+    
+    // 입력 데이터 구성
+    const inputData = json || {
+      company: { name: "", industry: "", headcount: 0 },
+      review_data: {
+        source: "user_upload",
+        collected_at: new Date().toISOString(),
+        rating: {
+          overall: 0,
+          work_life: 0,
+          pay_benefit: 0,
+          culture: 0,
+          management: 0,
+          growth: 0,
+          recommend_to_friend_pct: ""
+        },
+        reviews: [],
+        sample_size: 0
+      }
+    };
+    
+    // rawText가 있으면 추가
+    if (rawText) {
+      inputData._rawText = rawText;
+    }
+    
+    const systemPrompt = reviewsPrompt.systemPrompt;
+    const userPrompt = reviewsPrompt.userPromptTemplate(inputData);
+    
+    // AI 호출 (JSON 강제 출력, temperature 낮게)
+    const text = await callAI(modelType, apiKey, systemPrompt, userPrompt, 4000);
+    
+    // JSON 파싱 시도 (재시도 로직 포함)
+    let result = null;
+    let parseError = null;
+    
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // 마크다운 코드블록 제거
+        const cleaned = text
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        
+        result = JSON.parse(cleaned);
+        
+        // 스키마 검증
+        reviewsPrompt.validateSchema(result);
+        break;
+      } catch (e) {
+        parseError = e.message;
+        if (attempt === 0) {
+          console.warn(`[REVIEWS] JSON 파싱 실패 (시도 ${attempt + 1}/2):`, e.message);
+        }
+      }
+    }
+    
+    if (!result) {
+      return res.status(500).json({ 
+        ok: false, 
+        error: "JSON_PARSE_FAILED", 
+        details: parseError,
+        rawText: text 
+      });
+    }
+    
+    return res.json({
+      ok: true,
+      report_type: "reviews",
+      report: result,
+      modelType,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};

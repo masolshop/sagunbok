@@ -11,6 +11,7 @@ import AdminView from './components/AdminView';
 import ConsultantZonePage from './src/pages/ConsultantZonePage';
 import CretopReportPage from './src/pages/CretopReportPage';
 import AIConsultantZonePage from './src/pages/AIConsultantZonePage';
+import ConsultantInsightsPage from './src/pages/ConsultantInsightsPage';
 import ConsultantAIPanel from './src/components/ConsultantAIPanel';
 import AIChat from './components/AIChat';
 import SagunbokInfo from './components/SagunbokInfo';
@@ -21,7 +22,7 @@ import Sagunbok7Plans from './components/Sagunbok7Plans';
 type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
 
 interface MenuItem {
-  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'cretop-report' | 'admin';
+  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'cretop-report' | 'admin';
   label: string;
   icon: string;
   access: MenuAccess[];
@@ -43,6 +44,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'secret', label: 'SECRET PLAN', icon: '🔐', access: ['company', 'manager', 'consultant'], description: 'VIP 컨설팅', isSpecial: true },
   { id: 'consultant-zone', label: '컨설턴트 전용', icon: '👔', access: ['consultant', 'admin'], description: '컨설턴트 전용', isSpecial: true },
   { id: 'ai-consultant-zone', label: 'AI 컨설팅 존', icon: '🎯', access: ['consultant', 'admin'], description: '7단계 자동화', isSubMenu: true, parentId: 'consultant-zone' },
+  { id: 'consultant-insights', label: '외부데이터 인사이트', icon: '🔍', access: ['consultant', 'admin'], description: '복지/리뷰 분석', isSubMenu: true, parentId: 'consultant-zone' },
   { id: 'cretop-report', label: '재무제표 분석', icon: '📊', access: ['consultant', 'admin'], description: 'CRETOP 기업분석', isSubMenu: true, parentId: 'consultant-zone' },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
@@ -50,9 +52,9 @@ const MENU_ITEMS: MenuItem[] = [
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'cretop-report' | 'admin'>('sagunbok-info');
+  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'cretop-report' | 'admin'>('sagunbok-info');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'admin' | null>(null);
+  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
   const [showConsultantSubmenu, setShowConsultantSubmenu] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -646,6 +648,10 @@ const App: React.FC = () => {
 
           {activeTab === 'ai-consultant-zone' && (
             <AIConsultantZonePage />
+          )}
+
+          {activeTab === 'consultant-insights' && (
+            <ConsultantInsightsPage />
           )}
 
           {activeTab === 'cretop-report' && (
