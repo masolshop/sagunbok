@@ -117,6 +117,13 @@ export default function CretopReportPage() {
   const [ceoName, setCeoName] = useState("");
   const [employeeCount, setEmployeeCount] = useState("");
   const [industryName, setIndustryName] = useState("");
+  
+  // 추가 기업 정보 (PDF 분석 시 자동 추출)
+  const [businessNumber, setBusinessNumber] = useState("");
+  const [statementYear, setStatementYear] = useState("");
+  const [revenue, setRevenue] = useState("");
+  const [retainedEarnings, setRetainedEarnings] = useState("");
+  const [loansToOfficers, setLoansToOfficers] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CretopReport | null>(null);
@@ -222,13 +229,45 @@ export default function CretopReportPage() {
 
       const data = await res.json();
       if (data.ok && data.analysis) {
-        // GPT 분석 결과를 입력 필드에 자동 입력
-        if (data.analysis.balance_sheet) setBalanceSheet(JSON.stringify(data.analysis.balance_sheet, null, 2));
-        if (data.analysis.income_statement) setIncomeStatement(JSON.stringify(data.analysis.income_statement, null, 2));
-        if (data.analysis.cash_flow) setCashflow(JSON.stringify(data.analysis.cash_flow, null, 2));
+        // 기본 정보
         if (data.analysis.company_name) setCompanyName(data.analysis.company_name);
         if (data.analysis.statement_date) setStatementDate(data.analysis.statement_date);
-        alert('✅ 재무제표 분석 완료! 데이터가 자동 입력되었습니다.');
+        
+        // 추가 기업 정보
+        if (data.analysis.ceo_name) setCeoName(data.analysis.ceo_name);
+        if (data.analysis.business_number) setBusinessNumber(data.analysis.business_number);
+        if (data.analysis.industry) setIndustryName(data.analysis.industry);
+        if (data.analysis.statement_year) setStatementYear(data.analysis.statement_year);
+        
+        // 재무 데이터
+        if (data.analysis.balance_sheet) setBalanceSheet(JSON.stringify(data.analysis.balance_sheet, null, 2));
+        if (data.analysis.income_statement) {
+          setIncomeStatement(JSON.stringify(data.analysis.income_statement, null, 2));
+          // 매출액 추출
+          if (data.analysis.income_statement.매출액) {
+            setRevenue(data.analysis.income_statement.매출액.toLocaleString() + '원');
+          }
+        }
+        if (data.analysis.cash_flow) setCashflow(JSON.stringify(data.analysis.cash_flow, null, 2));
+        
+        // 특수 항목 추출
+        if (data.analysis.balance_sheet) {
+          // 잉여금 (미처분이익잉여금 또는 이익잉여금)
+          if (data.analysis.balance_sheet.미처분이익잉여금) {
+            setRetainedEarnings(data.analysis.balance_sheet.미처분이익잉여금.toLocaleString() + '원');
+          } else if (data.analysis.balance_sheet.이익잉여금) {
+            setRetainedEarnings(data.analysis.balance_sheet.이익잉여금.toLocaleString() + '원');
+          }
+          
+          // 가지급금 (대여금)
+          if (data.analysis.balance_sheet.가지급금) {
+            setLoansToOfficers(data.analysis.balance_sheet.가지급금.toLocaleString() + '원');
+          } else if (data.analysis.balance_sheet.단기대여금) {
+            setLoansToOfficers(data.analysis.balance_sheet.단기대여금.toLocaleString() + '원');
+          }
+        }
+        
+        alert('✅ 재무제표 분석 완료! 기업 정보가 자동 입력되었습니다.');
       } else {
         throw new Error(data.error || '분석 실패');
       }
@@ -388,6 +427,85 @@ export default function CretopReportPage() {
           </div>
         )}
       </div>
+
+      {/* 기업 정보 카드 - PDF 분석 시 자동 표시 */}
+      {(companyName || ceoName || businessNumber) && (
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border-2 border-blue-200 p-6 space-y-4 shadow-lg">
+          <h3 className="flex items-center gap-3 text-blue-700 font-black text-2xl lg:text-3xl">
+            <span className="text-3xl lg:text-4xl">📝</span> 기본 정보 입력
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 회사명 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <label className="text-sm font-bold text-blue-600 block mb-1">회사명 *</label>
+              <p className="text-lg font-bold text-slate-800">{companyName || "미입력"}</p>
+            </div>
+            
+            {/* 결산일 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <label className="text-sm font-bold text-blue-600 block mb-1">결산일 *</label>
+              <p className="text-lg font-bold text-slate-800">{statementDate || statementYear || "미입력"}</p>
+            </div>
+            
+            {/* 대표자명 */}
+            {ceoName && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-blue-600 block mb-1">대표자명</label>
+                <p className="text-lg font-bold text-slate-800">{ceoName}</p>
+              </div>
+            )}
+            
+            {/* 사업자등록번호 */}
+            {businessNumber && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-blue-600 block mb-1">사업자등록번호</label>
+                <p className="text-lg font-bold text-slate-800">{businessNumber}</p>
+              </div>
+            )}
+            
+            {/* 업종 */}
+            {industryName && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-blue-600 block mb-1">업종</label>
+                <p className="text-lg font-bold text-slate-800">{industryName}</p>
+              </div>
+            )}
+            
+            {/* 임직원수 */}
+            {employeeCount && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-blue-600 block mb-1">임직원수</label>
+                <p className="text-lg font-bold text-slate-800">{employeeCount}</p>
+              </div>
+            )}
+            
+            {/* 매출액 */}
+            {revenue && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-green-600 block mb-1">매출액</label>
+                <p className="text-lg font-bold text-green-700">{revenue}</p>
+              </div>
+            )}
+            
+            {/* 잉여금 */}
+            {retainedEarnings && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-green-600 block mb-1">잉여금</label>
+                <p className="text-lg font-bold text-green-700">{retainedEarnings}</p>
+              </div>
+            )}
+            
+            {/* 가지급금 */}
+            {loansToOfficers && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <label className="text-sm font-bold text-orange-600 block mb-1">가지급금(대여금)</label>
+                <p className="text-lg font-bold text-orange-700">{loansToOfficers}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PDF Upload Section - Compact */}
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-5 space-y-4 shadow-md">

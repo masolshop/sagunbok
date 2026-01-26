@@ -133,13 +133,21 @@ export const analyzeFinancialStatement = async (req, res) => {
 
 {
   "company_name": "회사명",
+  "ceo_name": "대표자명",
+  "business_number": "사업자등록번호 (123-45-67890 형식)",
+  "industry": "업종명",
   "statement_date": "결산일 (YYYY-MM-DD)",
+  "statement_year": "재무제표 연도 (YYYY)",
   "balance_sheet": {
     "자산총계": 숫자,
     "부채총계": 숫자,
     "자본총계": 숫자,
     "유동자산": 숫자,
-    "비유동자산": 숫자
+    "비유동자산": 숫자,
+    "이익잉여금": 숫자,
+    "미처분이익잉여금": 숫자,
+    "가지급금": 숫자,
+    "단기대여금": 숫자
   },
   "income_statement": {
     "매출액": 숫자,
@@ -155,8 +163,12 @@ export const analyzeFinancialStatement = async (req, res) => {
   }
 }
 
-숫자는 원 단위로 표시하고, 데이터가 없으면 0으로 표시하세요.
-반드시 JSON만 출력하세요. 설명이나 마크다운 코드블록은 제외하세요.`;
+규칙:
+- 숫자는 원 단위로 표시하고, 데이터가 없으면 0 또는 null로 표시하세요.
+- 문자열 정보가 없으면 빈 문자열("")로 표시하세요.
+- 반드시 JSON만 출력하세요. 설명이나 마크다운 코드블록은 제외하세요.
+- 가지급금은 "가지급금", "임원가지급금", "단기대여금" 등의 계정과목에서 찾으세요.
+- 잉여금은 "이익잉여금", "미처분이익잉여금" 계정에서 찾으세요.`;
 
     const userPrompt = `아래 재무제표 데이터를 분석하여 JSON으로 추출하세요:\n\n${req.body.fileContent || "[파일 내용]"}`;
 
