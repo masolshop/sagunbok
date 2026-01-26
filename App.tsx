@@ -401,7 +401,7 @@ const App: React.FC = () => {
             
             {showSagunbokSubmenu && (
               <div className="ml-3 lg:ml-4 space-y-3 lg:space-y-3 border-l-2 border-slate-700 pl-3 lg:pl-4">
-                {MENU_ITEMS.filter(item => item.isSubMenu).map(menuItem => {
+                {MENU_ITEMS.filter(item => item.isSubMenu && item.parentId === 'sagunbok').map(menuItem => {
                   const isActive = activeTab === menuItem.id;
                   return (
                     <button 
