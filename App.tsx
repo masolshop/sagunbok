@@ -9,6 +9,7 @@ import SecretPlan from './src/components/SecretPlan';
 import Diagnosis from './components/Diagnosis';
 import AdminView from './components/AdminView';
 import ConsultantZonePage from './src/pages/ConsultantZonePage';
+import CretopReportPage from './src/pages/CretopReportPage';
 import ConsultantAIPanel from './src/components/ConsultantAIPanel';
 import AIChat from './components/AIChat';
 import SagunbokInfo from './components/SagunbokInfo';
@@ -19,7 +20,7 @@ import Sagunbok7Plans from './components/Sagunbok7Plans';
 type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
 
 interface MenuItem {
-  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'admin';
+  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'cretop-report' | 'admin';
   label: string;
   icon: string;
   access: MenuAccess[];
@@ -39,14 +40,15 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'net', label: '네트급여계산기', icon: '🧮', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'secret', label: 'SECRET PLAN', icon: '🔐', access: ['company', 'manager', 'consultant'], description: 'VIP 컨설팅', isSpecial: true },
-  { id: 'consultant-zone', label: '컨설턴트 전용', icon: '👔', access: ['consultant'], description: '컨설턴트 전용', isSpecial: true },
+  { id: 'consultant-zone', label: '컨설턴트 전용', icon: '👔', access: ['consultant', 'admin'], description: '컨설턴트 전용', isSpecial: true },
+  { id: 'cretop-report', label: 'CRETOP 리포트', icon: '🏢', access: ['consultant', 'admin'], description: '기업분석 리포트', isSpecial: true },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'admin'>('sagunbok-info');
+  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'cretop-report' | 'admin'>('sagunbok-info');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
@@ -599,6 +601,10 @@ const App: React.FC = () => {
 
           {activeTab === 'consultant-zone' && (
             <ConsultantZonePage />
+          )}
+
+          {activeTab === 'cretop-report' && (
+            <CretopReportPage />
           )}
 
           {activeTab === 'admin' && (
