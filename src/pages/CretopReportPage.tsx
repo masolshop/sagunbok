@@ -353,7 +353,7 @@ export default function CretopReportPage() {
               className="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-xl bg-white shadow-sm"
             >
               <option value="gpt">GPT-5.2</option>
-              <option value="gemini">Gemini 3.5 Pro</option>
+              <option value="gemini">Gemini 3 Pro</option>
               <option value="claude">Claude 3.5 Sonnet</option>
             </select>
             

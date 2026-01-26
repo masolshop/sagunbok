@@ -2,12 +2,6 @@ import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PR
 import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 function render(tpl, vars) {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => JSON.stringify(vars[k] ?? "", null, 2));
@@ -49,123 +43,51 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
-// OpenAI PDF 추출 (Assistants API + File Search)
+// OpenAI PDF 추출 (Responses API with base64 PDF - 권장 방식)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
-  let tempFilePath = null;
-  let assistant = null;
-  let thread = null;
-  
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
+    // 1. PDF 파일 헤더 검증 (%PDF로 시작해야 함)
+    const header = pdfBuffer.slice(0, 4).toString('utf8');
+    if (header !== '%PDF') {
+      throw new Error(`업로드된 파일이 PDF가 아닙니다. 헤더=${JSON.stringify(header)} (처음 4바이트). 실제 타입을 확인하세요.`);
+    }
+    
     const client = new OpenAI({ apiKey });
     
-    // 1. 임시 파일로 저장
-    tempFilePath = path.join('/tmp', `temp_${Date.now()}_${originalFilename}`);
-    fs.writeFileSync(tempFilePath, pdfBuffer);
-    console.log(`[GPT PDF] 임시 파일 생성: ${tempFilePath}`);
+    // 2. Base64 인코딩 및 data URL 생성
+    const base64 = pdfBuffer.toString('base64');
+    const file_data = `data:application/pdf;base64,${base64}`;
     
-    // 2. Files API 업로드 (assistants용)
-    const file = await client.files.create({
-      file: fs.createReadStream(tempFilePath),
-      purpose: 'assistants',
-    });
-    console.log(`[GPT PDF] 파일 업로드 완료 (file_id: ${file.id})`);
+    console.log(`[GPT PDF] Base64 인코딩 완료 (${Math.round(base64.length / 1024)} KB)`);
     
-    // 3. Vector Store 생성 및 파일 추가
-    const vectorStore = await client.beta.vectorStores.create({
-      name: `PDF Analysis ${Date.now()}`,
-      file_ids: [file.id],
-    });
-    console.log(`[GPT PDF] Vector Store 생성 완료 (vs_id: ${vectorStore.id})`);
-    
-    // 4. Assistant 생성 (file_search 도구 활성화)
-    assistant = await client.beta.assistants.create({
-      name: "PDF 재무제표 분석기",
-      instructions: PDF_EXTRACTION_PROMPT,
-      model: "gpt-5.2", // 최신 모델
-      tools: [{ type: "file_search" }],
-      tool_resources: {
-        file_search: {
-          vector_store_ids: [vectorStore.id]
-        }
-      }
-    });
-    console.log(`[GPT PDF] Assistant 생성 완료 (asst_id: ${assistant.id})`);
-    
-    // 5. Thread 생성 및 메시지 전송
-    thread = await client.beta.threads.create();
-    
-    await client.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: `첨부된 PDF 파일(${originalFilename})을 분석하여 8개 항목을 JSON 형식으로 추출해주세요.`
+    // 3. Responses API로 PDF 직접 분석 (Files API 없이)
+    const response = await client.responses.create({
+      model: 'gpt-5.2', // 최신 모델
+      input: [{
+        role: 'user',
+        content: [
+          {
+            type: 'input_file',
+            filename: originalFilename || 'document.pdf',
+            file_data, // base64 PDF 직접 전달
+          },
+          {
+            type: 'input_text',
+            text: PDF_EXTRACTION_PROMPT
+          }
+        ],
+      }],
     });
     
-    // 6. Run 실행 및 대기
-    const run = await client.beta.threads.runs.create(thread.id, {
-      assistant_id: assistant.id
-    });
-    
-    console.log(`[GPT PDF] Run 시작 (run_id: ${run.id}), 완료 대기 중...`);
-    
-    // Run 완료 대기 (최대 60초)
-    let runStatus = await client.beta.threads.runs.retrieve(thread.id, run.id);
-    let attempts = 0;
-    while (runStatus.status !== 'completed' && attempts < 60) {
-      if (runStatus.status === 'failed' || runStatus.status === 'cancelled' || runStatus.status === 'expired') {
-        throw new Error(`Run failed with status: ${runStatus.status}`);
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      runStatus = await client.beta.threads.runs.retrieve(thread.id, run.id);
-      attempts++;
-    }
-    
-    if (runStatus.status !== 'completed') {
-      throw new Error(`Run timeout after ${attempts} seconds`);
-    }
-    
-    console.log(`[GPT PDF] Run 완료`);
-    
-    // 7. 응답 가져오기
-    const messages = await client.beta.threads.messages.list(thread.id);
-    const assistantMessage = messages.data.find(m => m.role === 'assistant');
-    
-    if (!assistantMessage || !assistantMessage.content[0]) {
-      throw new Error('No assistant response found');
-    }
-    
-    const result = assistantMessage.content[0].text.value;
     console.log(`[GPT PDF] 추출 완료`);
     
-    return result;
+    return response.output_text;
     
   } catch (error) {
     console.error(`[GPT PDF] 추출 실패:`, error.message);
     throw new Error(`GPT PDF extraction failed: ${error.message}`);
-  } finally {
-    // Cleanup
-    if (tempFilePath && fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-      console.log(`[GPT PDF] 임시 파일 삭제`);
-    }
-    
-    if (assistant) {
-      try {
-        await client.beta.assistants.del(assistant.id);
-        console.log(`[GPT PDF] Assistant 삭제 완료`);
-      } catch (e) {
-        console.error(`[GPT PDF] Assistant 삭제 실패:`, e.message);
-      }
-    }
-    
-    if (thread) {
-      try {
-        await client.beta.threads.del(thread.id);
-        console.log(`[GPT PDF] Thread 삭제 완료`);
-      } catch (e) {
-        console.error(`[GPT PDF] Thread 삭제 실패:`, e.message);
-      }
-    }
   }
 }
 
@@ -175,8 +97,8 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename) {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
-    // 최신 모델: gemini-3.5 (PDF 완벽 지원)
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.5' });
+    // 최신 모델: gemini-3-pro (PDF 완벽 지원, 2026년 stable)
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-pro' });
     
     const result = await model.generateContent([
       {
@@ -312,8 +234,8 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
 
 // Gemini API 호출 (최신 모델)
 async function callGemini(apiKey, system, userPrompt) {
-  // 최신 모델: gemini-3.5
-  const model = process.env.GEMINI_MODEL || "gemini-3.5";
+  // 최신 모델: gemini-3-pro (2026년 stable)
+  const model = process.env.GEMINI_MODEL || "gemini-3-pro";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const payload = {
