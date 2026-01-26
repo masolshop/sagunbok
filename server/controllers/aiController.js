@@ -49,51 +49,122 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
-// OpenAI PDF 추출 (Responses API + Files API)
+// OpenAI PDF 추출 (Assistants API + File Search)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
   let tempFilePath = null;
+  let assistant = null;
+  let thread = null;
   
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     const client = new OpenAI({ apiKey });
     
-    // 임시 파일로 저장
+    // 1. 임시 파일로 저장
     tempFilePath = path.join('/tmp', `temp_${Date.now()}_${originalFilename}`);
     fs.writeFileSync(tempFilePath, pdfBuffer);
     console.log(`[GPT PDF] 임시 파일 생성: ${tempFilePath}`);
     
-    // 1. Files API 업로드
+    // 2. Files API 업로드 (assistants용)
     const file = await client.files.create({
       file: fs.createReadStream(tempFilePath),
-      purpose: 'user_data',
+      purpose: 'assistants',
     });
-    
     console.log(`[GPT PDF] 파일 업로드 완료 (file_id: ${file.id})`);
     
-    // 2. Responses API로 PDF 직접 분석
-    const response = await client.responses.create({
-      model: 'gpt-4o', // PDF 입력 지원
-      input: [{
-        role: 'user',
-        content: [
-          { type: 'input_file', file_id: file.id },
-          { type: 'input_text', text: PDF_EXTRACTION_PROMPT },
-        ],
-      }],
+    // 3. Vector Store 생성 및 파일 추가
+    const vectorStore = await client.beta.vectorStores.create({
+      name: `PDF Analysis ${Date.now()}`,
+      file_ids: [file.id],
+    });
+    console.log(`[GPT PDF] Vector Store 생성 완료 (vs_id: ${vectorStore.id})`);
+    
+    // 4. Assistant 생성 (file_search 도구 활성화)
+    assistant = await client.beta.assistants.create({
+      name: "PDF 재무제표 분석기",
+      instructions: PDF_EXTRACTION_PROMPT,
+      model: "gpt-4o", // 최신 stable 모델
+      tools: [{ type: "file_search" }],
+      tool_resources: {
+        file_search: {
+          vector_store_ids: [vectorStore.id]
+        }
+      }
+    });
+    console.log(`[GPT PDF] Assistant 생성 완료 (asst_id: ${assistant.id})`);
+    
+    // 5. Thread 생성 및 메시지 전송
+    thread = await client.beta.threads.create();
+    
+    await client.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: `첨부된 PDF 파일(${originalFilename})을 분석하여 8개 항목을 JSON 형식으로 추출해주세요.`
     });
     
+    // 6. Run 실행 및 대기
+    const run = await client.beta.threads.runs.create(thread.id, {
+      assistant_id: assistant.id
+    });
+    
+    console.log(`[GPT PDF] Run 시작 (run_id: ${run.id}), 완료 대기 중...`);
+    
+    // Run 완료 대기 (최대 60초)
+    let runStatus = await client.beta.threads.runs.retrieve(thread.id, run.id);
+    let attempts = 0;
+    while (runStatus.status !== 'completed' && attempts < 60) {
+      if (runStatus.status === 'failed' || runStatus.status === 'cancelled' || runStatus.status === 'expired') {
+        throw new Error(`Run failed with status: ${runStatus.status}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runStatus = await client.beta.threads.runs.retrieve(thread.id, run.id);
+      attempts++;
+    }
+    
+    if (runStatus.status !== 'completed') {
+      throw new Error(`Run timeout after ${attempts} seconds`);
+    }
+    
+    console.log(`[GPT PDF] Run 완료`);
+    
+    // 7. 응답 가져오기
+    const messages = await client.beta.threads.messages.list(thread.id);
+    const assistantMessage = messages.data.find(m => m.role === 'assistant');
+    
+    if (!assistantMessage || !assistantMessage.content[0]) {
+      throw new Error('No assistant response found');
+    }
+    
+    const result = assistantMessage.content[0].text.value;
     console.log(`[GPT PDF] 추출 완료`);
     
-    return response.output_text;
+    return result;
+    
   } catch (error) {
     console.error(`[GPT PDF] 추출 실패:`, error.message);
     throw new Error(`GPT PDF extraction failed: ${error.message}`);
   } finally {
-    // 임시 파일 삭제
+    // Cleanup
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
-      console.log(`[GPT PDF] 임시 파일 삭제: ${tempFilePath}`);
+      console.log(`[GPT PDF] 임시 파일 삭제`);
+    }
+    
+    if (assistant) {
+      try {
+        await client.beta.assistants.del(assistant.id);
+        console.log(`[GPT PDF] Assistant 삭제 완료`);
+      } catch (e) {
+        console.error(`[GPT PDF] Assistant 삭제 실패:`, e.message);
+      }
+    }
+    
+    if (thread) {
+      try {
+        await client.beta.threads.del(thread.id);
+        console.log(`[GPT PDF] Thread 삭제 완료`);
+      } catch (e) {
+        console.error(`[GPT PDF] Thread 삭제 실패:`, e.message);
+      }
     }
   }
 }
@@ -104,7 +175,8 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename) {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' }); // PDF 지원 (사용자 코드 예시)
+    // 최신 stable 모델: gemini-1.5-pro-002 (PDF 완벽 지원)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-002' });
     
     const result = await model.generateContent([
       {
@@ -210,7 +282,8 @@ async function callClaudeWithDocument(apiKey, system, userText, documentBuffer, 
 // GPT API 호출
 async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   const url = "https://api.openai.com/v1/chat/completions";
-  const model = process.env.OPENAI_MODEL || "gpt-4-turbo-preview";
+  // 최신 stable 모델: gpt-4o (멀티모달 지원, PDF 가능)
+  const model = process.env.OPENAI_MODEL || "gpt-4o";
 
   const payload = {
     model,
@@ -237,10 +310,10 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   return j.choices?.[0]?.message?.content?.trim() || "";
 }
 
-// Gemini API 호출 (최신 2.0 Flash 지원)
+// Gemini API 호출 (최신 stable 모델)
 async function callGemini(apiKey, system, userPrompt) {
-  // Gemini 2.0 Flash (최신) 또는 1.5 Pro
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp";
+  // 최신 stable 모델: gemini-1.5-pro-002 또는 gemini-1.5-flash-002
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash-002";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const payload = {
