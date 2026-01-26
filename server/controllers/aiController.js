@@ -151,7 +151,7 @@ async function callGemini(apiKey, system, userPrompt) {
 
 // Gemini Vision API 호출 (PDF/이미지 분석)
 async function callGeminiWithDocument(apiKey, system, userText, documentBuffer, mimeType, maxTokens = 2048) {
-  // Gemini 2.0 Flash Experimental (Vision 지원, 최신)
+  // Gemini 2.0 Flash Experimental (Vision 지원, PDF 분석)
   const model = "gemini-2.0-flash-exp";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
