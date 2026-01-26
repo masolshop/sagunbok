@@ -50,8 +50,12 @@ export function saveKey(consultantId, apiKey, modelType = "claude") {
   }
   
   // 모델별로 키 저장: { consultantId: { claude: "...", gpt: "...", gemini: "..." } }
-  if (!db[consultantId]) db[consultantId] = {};
-  if (typeof db[consultantId] !== "object") db[consultantId] = {};
+  if (!db[consultantId]) {
+    db[consultantId] = {};
+  } else if (typeof db[consultantId] !== "object" || Array.isArray(db[consultantId])) {
+    // 문자열이나 배열인 경우 빈 객체로 초기화
+    db[consultantId] = {};
+  }
   
   db[consultantId][modelType] = encrypt(apiKey);
   
