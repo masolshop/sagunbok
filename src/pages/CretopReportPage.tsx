@@ -95,6 +95,10 @@ export default function CretopReportPage() {
     gpt: false,
     gemini: false,
   });
+  
+  // API Key 입력 관련
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
+  const [apiKeyMsg, setApiKeyMsg] = useState("");
 
   // 파일 업로드
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +139,36 @@ export default function CretopReportPage() {
       } catch {}
     })();
   }, []);
+
+  const saveApiKey = async () => {
+    if (!apiKeyDraft.trim()) {
+      setApiKeyMsg("❌ API 키를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ apiKey: apiKeyDraft.trim(), modelType: selectedModel }),
+      });
+
+      const j = await r.json();
+      if (j.ok) {
+        setApiKeys((prev) => ({ ...prev, [selectedModel]: true }));
+        setApiKeyDraft("");
+        setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
+        setTimeout(() => setApiKeyMsg(""), 3000);
+      } else {
+        throw new Error(j.error || "저장 실패");
+      }
+    } catch (e: any) {
+      setApiKeyMsg(`❌ 저장 실패: ${e.message}`);
+    }
+  };
 
   // PDF 파일 처리
   const handleFileSelect = (file: File) => {
@@ -283,41 +317,73 @@ export default function CretopReportPage() {
       </header>
 
       {/* AI Model Selection - Compact */}
-      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg">
-        <div className="flex items-center justify-between gap-6 flex-wrap">
-          {/* Left: Title */}
-          <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
-            <span>🤖</span> AI 모델 선택
-          </h3>
+      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg space-y-4">
+        <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
+          <span>🤖</span> AI 모델 선택
+        </h3>
 
-          {/* Right: Model Selection & Status */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Model Dropdown - Larger */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left: Model Selection & Status */}
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-blue-700">사용할 AI 모델</label>
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="px-5 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-base bg-white shadow-sm appearance-none cursor-pointer min-w-[240px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1rem_center]"
+              className="w-full px-4 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-base bg-white shadow-sm"
             >
               <option value="claude">Claude 3.5 Sonnet (추천)</option>
               <option value="gpt">GPT-4 Turbo</option>
               <option value="gemini">Gemini 2.0 Flash</option>
             </select>
             
-            {/* Status Badge - Larger */}
+            {/* Status Badge */}
             <div
-              className={`px-5 py-2.5 rounded-xl font-bold text-base ${
+              className={`px-4 py-2 rounded-xl font-bold text-sm text-center ${
                 apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
               }`}
             >
               {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
             </div>
           </div>
+
+          {/* Right: API Key Input */}
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-blue-700">API Key 입력</label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={apiKeyDraft}
+                onChange={(e) => setApiKeyDraft(e.target.value)}
+                placeholder={
+                  selectedModel === "claude" ? "sk-ant-api03-..." : selectedModel === "gpt" ? "sk-..." : "AIzaSy..."
+                }
+                className="flex-1 px-4 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-sm bg-white shadow-sm"
+              />
+              <button
+                onClick={saveApiKey}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md whitespace-nowrap"
+              >
+                저장
+              </button>
+            </div>
+          </div>
         </div>
         
-        {!apiKeys[selectedModel] && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
-            <p className="text-sm text-red-700 font-semibold">
-              ⚠ API Key가 등록되지 않았습니다. 좌측 메뉴의 '컨설턴트 전용'에서 등록해주세요.
+        {/* Messages */}
+        {apiKeyMsg && (
+          <div
+            className={`p-3 rounded-xl font-semibold text-sm ${
+              apiKeyMsg.includes("✅") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+            }`}
+          >
+            {apiKeyMsg}
+          </div>
+        )}
+        
+        {!apiKeys[selectedModel] && !apiKeyMsg && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-sm text-amber-700 font-semibold">
+              💡 위에서 선택한 모델의 API Key를 입력하고 저장해주세요.
             </p>
           </div>
         )}
