@@ -83,7 +83,7 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
     assistant = await client.beta.assistants.create({
       name: "PDF 재무제표 분석기",
       instructions: PDF_EXTRACTION_PROMPT,
-      model: "gpt-4o", // 최신 stable 모델
+      model: "gpt-5.2", // 최신 모델
       tools: [{ type: "file_search" }],
       tool_resources: {
         file_search: {
@@ -175,8 +175,8 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename) {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
-    // 최신 stable 모델: gemini-1.5-pro-002 (PDF 완벽 지원)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-002' });
+    // 최신 모델: gemini-3.5 (PDF 완벽 지원)
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.5' });
     
     const result = await model.generateContent([
       {
@@ -282,8 +282,8 @@ async function callClaudeWithDocument(apiKey, system, userText, documentBuffer, 
 // GPT API 호출
 async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   const url = "https://api.openai.com/v1/chat/completions";
-  // 최신 stable 모델: gpt-4o (멀티모달 지원, PDF 가능)
-  const model = process.env.OPENAI_MODEL || "gpt-4o";
+  // 최신 모델: gpt-5.2
+  const model = process.env.OPENAI_MODEL || "gpt-5.2";
 
   const payload = {
     model,
@@ -310,10 +310,10 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   return j.choices?.[0]?.message?.content?.trim() || "";
 }
 
-// Gemini API 호출 (최신 stable 모델)
+// Gemini API 호출 (최신 모델)
 async function callGemini(apiKey, system, userPrompt) {
-  // 최신 stable 모델: gemini-1.5-pro-002 또는 gemini-1.5-flash-002
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash-002";
+  // 최신 모델: gemini-3.5
+  const model = process.env.GEMINI_MODEL || "gemini-3.5";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const payload = {
