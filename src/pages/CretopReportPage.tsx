@@ -282,33 +282,44 @@ export default function CretopReportPage() {
         </p>
       </header>
 
-      {/* AI Model Selection */}
-      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-6 shadow-xl">
-        <h3 className="flex items-center gap-4 text-blue-700 font-black text-3xl lg:text-4xl">
-          <span>🤖</span> AI 모델 선택
-        </h3>
-        <div className="flex items-center gap-4 flex-wrap">
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as any)}
-            className="px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
-          >
-            <option value="claude">Claude 3.5 Sonnet (추천)</option>
-            <option value="gpt">GPT-4 Turbo</option>
-            <option value="gemini">Gemini 2.0 Flash</option>
-          </select>
-          <div
-            className={`px-5 py-3 rounded-full font-black text-lg ${
-              apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
-            }`}
-          >
-            {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
+      {/* AI Model Selection - Compact */}
+      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
+          {/* Left: Title */}
+          <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
+            <span>🤖</span> AI 모델 선택
+          </h3>
+
+          {/* Right: Model Selection & Status */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Model Dropdown - Larger */}
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as any)}
+              className="px-5 py-2.5 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-base bg-white shadow-sm appearance-none cursor-pointer min-w-[240px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1rem_center]"
+            >
+              <option value="claude">Claude 3.5 Sonnet (추천)</option>
+              <option value="gpt">GPT-4 Turbo</option>
+              <option value="gemini">Gemini 2.0 Flash</option>
+            </select>
+            
+            {/* Status Badge - Larger */}
+            <div
+              className={`px-5 py-2.5 rounded-xl font-bold text-base ${
+                apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
+              }`}
+            >
+              {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
+            </div>
           </div>
         </div>
+        
         {!apiKeys[selectedModel] && (
-          <p className="text-lg text-red-600 font-bold bg-red-50 p-4 rounded-xl">
-            ⚠ API Key가 등록되지 않았습니다. 좌측 메뉴의 '컨설턴트 전용'에서 등록해주세요.
-          </p>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
+            <p className="text-sm text-red-700 font-semibold">
+              ⚠ API Key가 등록되지 않았습니다. 좌측 메뉴의 '컨설턴트 전용'에서 등록해주세요.
+            </p>
+          </div>
         )}
       </div>
 

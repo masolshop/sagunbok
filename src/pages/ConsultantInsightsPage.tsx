@@ -26,7 +26,6 @@ export default function ConsultantInsightsPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string>("");
-  const [modelType, setModelType] = useState<"claude" | "gpt" | "gemini">("gpt");
 
   const canRun = useMemo(
     () => payload.rawText.trim().length > 0 || !!payload.json,
@@ -50,7 +49,7 @@ export default function ConsultantInsightsPage() {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ ...payload, modelType }),
+        body: JSON.stringify({ ...payload, modelType: "claude" }), // Use registered API key from CretopReportPage
       });
 
       if (!res.ok) {
@@ -96,39 +95,6 @@ export default function ConsultantInsightsPage() {
         <p style={{ fontSize: 14, marginTop: 8, opacity: 0.9 }}>
           구인구직/직원리뷰 데이터를 분석하여 사근복 프로그램 추천 및 조직 진단 리포트를 생성합니다.
         </p>
-      </div>
-
-      {/* AI 모델 선택 */}
-      <div
-        style={{
-          padding: 16,
-          borderRadius: 16,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "white",
-        }}
-      >
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-          AI 모델 선택
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {(["claude", "gpt", "gemini"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setModelType(m)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 10,
-                border: `2px solid ${modelType === m ? "#3b82f6" : "#e5e7eb"}`,
-                background: modelType === m ? "#eff6ff" : "white",
-                color: modelType === m ? "#1e40af" : "#374151",
-                fontWeight: modelType === m ? 600 : 400,
-                cursor: "pointer",
-              }}
-            >
-              {m === "claude" ? "Claude 3.5" : m === "gpt" ? "GPT-4" : "Gemini 2.0"}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Tabs */}

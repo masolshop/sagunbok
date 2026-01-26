@@ -70,14 +70,6 @@ function getAuthHeaders() {
 }
 
 export default function AIConsultantZonePage() {
-  // API Key (Read-only from CretopReportPage)
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini">("claude");
-  const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
-    claude: false,
-    gpt: false,
-    gemini: false,
-  });
-
   // 기업 기본정보
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
     companyName: "",
@@ -129,26 +121,6 @@ export default function AIConsultantZonePage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    fetchApiKeyStatus();
-  }, []);
-
-  const fetchApiKeyStatus = async () => {
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/consultant/api-key/status`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-      });
-      const j = await r.json();
-      if (j.ok && j.keys) {
-        setApiKeys(j.keys);
-      }
-    } catch {}
-  };
-
   // 1단계: 재무제표 업로드 및 분석
   const handleFileSelect = (file: File) => {
     if (!file) return;
@@ -173,17 +145,12 @@ export default function AIConsultantZonePage() {
   };
 
   const analyzeFinancialStatement = async (file: File) => {
-    if (!apiKeys[selectedModel]) {
-      alert("기업재무제표분석 메뉴에서 AI API 키를 먼저 등록해주세요.");
-      return;
-    }
-
     setStage1({ ...stage1, status: "processing" });
 
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("modelType", selectedModel);
+      formData.append("modelType", "claude"); // Use registered API key from CretopReportPage
 
       const res = await fetch(`${API_BASE_URL}/api/ai/analyze-financial-statement`, {
         method: "POST",
@@ -228,7 +195,7 @@ export default function AIConsultantZonePage() {
         },
         body: JSON.stringify({
           companyName: companyInfo.companyName,
-          modelType: selectedModel,
+          modelType: "claude", // Use registered API key from CretopReportPage
         }),
       });
 
@@ -269,7 +236,7 @@ export default function AIConsultantZonePage() {
         },
         body: JSON.stringify({
           companyName: companyInfo.companyName,
-          modelType: selectedModel,
+          modelType: "claude", // Use registered API key from CretopReportPage
         }),
       });
 
@@ -345,7 +312,7 @@ export default function AIConsultantZonePage() {
           stage2Data: stage2,
           stage3Data: stage3,
           stage4Data: stage4,
-          modelType: selectedModel,
+          modelType: "claude", // Use registered API key from CretopReportPage
         }),
       });
 
@@ -385,54 +352,6 @@ export default function AIConsultantZonePage() {
           통합 기업분석 → 사내근로복지기금 컨설팅 자동화 플랫폼
         </p>
       </header>
-
-      {/* API Key Status Display (Read-only) - Compact Layout */}
-      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg">
-        <div className="flex items-center justify-between gap-6 flex-wrap">
-          {/* Left: Title & Warning */}
-          <div className="flex-1 min-w-[300px] space-y-3">
-            <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
-              <span>🤖</span> AI API 키 상태
-            </h3>
-            
-            {!apiKeys.claude && !apiKeys.gpt && !apiKeys.gemini && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                <p className="text-amber-800 font-semibold text-sm">
-                  💡 <strong>기업재무제표분석</strong> 메뉴에서 AI API 키를 먼저 등록해주세요.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Right: API Status & Model Selection */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* API Key Status Badges */}
-            <div className="flex gap-2">
-              {Object.entries(apiKeys).map(([model, registered]) => (
-                <div
-                  key={model}
-                  className={`px-3 py-1.5 rounded-full font-bold text-sm ${
-                    registered ? "bg-green-100 text-green-700 ring-1 ring-green-300" : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {model.toUpperCase()}: {registered ? "✓" : "✗"}
-                </div>
-              ))}
-            </div>
-
-            {/* Model Selection */}
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="px-4 py-2 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-sm bg-white shadow-sm min-w-[200px]"
-            >
-              <option value="claude">Claude 3.5 Sonnet (추천)</option>
-              <option value="gpt">GPT-4 Turbo</option>
-              <option value="gemini">Gemini 2.0 Flash</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* 기업 기본정보 */}
       <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">

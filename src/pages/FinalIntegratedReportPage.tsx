@@ -72,8 +72,6 @@ export default function FinalIntegratedReportPage() {
     }
   });
 
-  const [modelType, setModelType] = useState<"claude" | "gpt" | "gemini">("gpt");
-
   useEffect(() => {
     // sessionStorage에서 이전 리포트 로드
     const raw = sessionStorage.getItem("final_integrated_report");
@@ -97,7 +95,7 @@ export default function FinalIntegratedReportPage() {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ ...testData, modelType }),
+        body: JSON.stringify({ ...testData, modelType: "claude" }), // Use registered API key from CretopReportPage
       });
 
       if (!res.ok) {
@@ -151,7 +149,7 @@ export default function FinalIntegratedReportPage() {
         </p>
       </div>
 
-      {/* AI 모델 선택 & 생성 버튼 */}
+      {/* 생성 버튼 */}
       {!report && (
         <div
           style={{
@@ -161,29 +159,6 @@ export default function FinalIntegratedReportPage() {
             backgroundColor: "white",
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-            AI 모델 선택
-          </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {(["claude", "gpt", "gemini"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setModelType(m)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 10,
-                  border: `2px solid ${modelType === m ? "#3b82f6" : "#e5e7eb"}`,
-                  background: modelType === m ? "#eff6ff" : "white",
-                  color: modelType === m ? "#1e40af" : "#374151",
-                  fontWeight: modelType === m ? 600 : 400,
-                  cursor: "pointer",
-                }}
-              >
-                {m === "claude" ? "Claude 3.5" : m === "gpt" ? "GPT-4" : "Gemini 2.0"}
-              </button>
-            ))}
-          </div>
-
           <button
             onClick={generateReport}
             disabled={loading}
