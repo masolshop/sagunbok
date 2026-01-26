@@ -149,6 +149,52 @@ async function callGemini(apiKey, system, userPrompt) {
   return j.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
+// Gemini Vision API 호출 (PDF/이미지 분석)
+async function callGeminiWithDocument(apiKey, system, userText, documentBuffer, mimeType, maxTokens = 2048) {
+  // Gemini 2.0 Flash Experimental (Vision 지원, 최신)
+  const model = "gemini-2.0-flash-exp";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  // PDF를 base64로 인코딩
+  const base64Document = documentBuffer.toString('base64');
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          {
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Document
+            }
+          },
+          {
+            text: `${system}\n\n---\n\n${userText}`
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    },
+  };
+
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await r.text();
+  if (!r.ok) throw new Error(`GEMINI_VISION_ERROR ${r.status}: ${txt}`);
+
+  const j = JSON.parse(txt);
+  return j.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+}
+
 // AI 모델별 호출 라우터
 async function callAI(modelType, apiKey, system, userPrompt, maxTokens = 1600) {
   switch (modelType) {
@@ -281,26 +327,56 @@ export const analyzeFinancialStatement = async (req, res) => {
 - 재무제표 연도: "YYYY년 재무제표" 또는 표지의 연도
 - 매출액: 손익계산서의 "매출액" 항목
 - 이익잉여금: 재무상태표의 "이익잉여금" 또는 "미처분이익잉여금" 항목
-- 가지급금: 재무상태표의 "가지급금", "임원가지급금", "단기대여금" 항목 (없으면 "미확인")
+- 가지급금: 재무상태표의 자산 항목에서 다음을 찾기
+  * "가지급금" (가장 일반적)
+  * "임원가지급금" (임원 대상)
+  * "단기대여금", "장기대여금" (대여금 계정)
+  * "기타유동자산", "기타비유동자산" 항목의 상세 내역
+  * 만약 위 계정이 모두 없거나 금액이 0이면 value를 "0원" 또는 "없음"으로 표시하고 snippet에 "해당 계정과목 없음" 기재
+  * 절대 null로 표시하지 말고, 없으면 명시적으로 "0원" 또는 "없음"으로 표시
 
-찾을 수 없는 항목은 null로 표시하세요.
-반드시 순수 JSON만 출력하고, 설명이나 마크다운 코드블록은 제외하세요.`;
+중요 규칙:
+- 가지급금은 반드시 찾아서 표시해야 합니다 (없으면 "0원" 또는 "없음")
+- 찾을 수 없는 다른 항목은 null로 표시하세요
+- 반드시 순수 JSON만 출력하고, 설명이나 마크다운 코드블록은 제외하세요`;
 
     const userPrompt = `위의 재무제표 문서를 분석하여 JSON 형식으로 필요한 정보를 추출해주세요.`;
 
     let text;
-    // 파일이 있으면 Vision API 사용 (Claude만 지원)
-    if (req.file && modelType === "claude") {
-      text = await callClaudeWithDocument(
-        apiKey, 
-        systemPrompt, 
-        userPrompt, 
-        req.file.buffer, 
-        req.file.mimetype, 
-        4000 // PDF 분석에는 더 많은 토큰 필요
-      );
+    // 파일이 있으면 Vision API 사용 (Claude, Gemini 지원)
+    if (req.file && (modelType === "claude" || modelType === "gemini")) {
+      console.log(`[ANALYZE] 🤖 ${modelType.toUpperCase()} Vision API 호출 중... (파일: ${req.file.originalname}, ${(req.file.size / 1024).toFixed(1)} KB)`);
+      if (modelType === "claude") {
+        text = await callClaudeWithDocument(
+          apiKey, 
+          systemPrompt, 
+          userPrompt, 
+          req.file.buffer, 
+          req.file.mimetype, 
+          4000 // PDF 분석에는 더 많은 토큰 필요
+        );
+      } else if (modelType === "gemini") {
+        text = await callGeminiWithDocument(
+          apiKey, 
+          systemPrompt, 
+          userPrompt, 
+          req.file.buffer, 
+          req.file.mimetype, 
+          4000 // PDF 분석에는 더 많은 토큰 필요
+        );
+      }
+      console.log(`[ANALYZE] ✅ Vision API 응답 길이: ${text.length}자`);
+    } else if (req.file && modelType === "gpt") {
+      // GPT는 Vision API를 지원하지 않으므로 에러 반환
+      console.log(`[ANALYZE] ❌ GPT는 이미지 기반 PDF Vision을 지원하지 않음`);
+      return res.status(400).json({ 
+        ok: false, 
+        error: "GPT_VISION_NOT_SUPPORTED",
+        message: "GPT 모델은 현재 이미지 기반 PDF Vision 분석을 지원하지 않습니다. Claude 또는 Gemini 모델을 사용해주세요."
+      });
     } else {
       // 텍스트 기반 분석 (fallback)
+      console.log(`[ANALYZE] 📝 텍스트 기반 분석 (모델: ${modelType})`);
       const fileInfo = req.file 
         ? `파일명: ${req.file.originalname}, 타입: ${req.file.mimetype}`
         : "파일 내용";
@@ -314,8 +390,22 @@ export const analyzeFinancialStatement = async (req, res) => {
       // 마크다운 코드블록 제거
       const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       analysis = JSON.parse(cleaned);
+      console.log(`[ANALYZE] ✅ JSON 파싱 성공`);
+      
+      // 추출된 필드 요약 로그
+      const extractedCount = Object.values(analysis).filter(v => v !== null && v?.value !== "미확인").length;
+      console.log(`[ANALYZE] 📊 추출 완료: ${extractedCount}/8 필드`);
+      
+      // 각 필드의 신뢰도 로그
+      Object.entries(analysis).forEach(([key, field]) => {
+        if (field && field.value) {
+          const conf = Math.round(field.confidence * 100);
+          console.log(`[ANALYZE]   - ${key}: "${field.value}" (신뢰도: ${conf}%)`);
+        }
+      });
     } catch (e) {
-      console.error("[ANALYZE] JSON 파싱 실패:", e.message);
+      console.error("[ANALYZE] ❌ JSON 파싱 실패:", e.message);
+      console.error("[ANALYZE] 원본 응답 (처음 500자):", text.substring(0, 500));
       return res.status(500).json({ ok: false, error: "JSON_PARSE_FAILED", rawText: text });
     }
 
