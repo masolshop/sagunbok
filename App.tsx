@@ -44,10 +44,10 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'diag', label: '기업리스크진단', icon: '🩺', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'secret', label: 'SECRET PLAN', icon: '🔐', access: ['company', 'manager', 'consultant'], description: 'VIP 컨설팅', isSpecial: true },
   { id: 'consultant-zone', label: '컨설턴트 전용', icon: '👔', access: ['consultant', 'admin'], description: '컨설턴트 전용', isSpecial: true },
-  { id: 'ai-consultant-zone', label: 'AI 컨설팅 존', icon: '🎯', access: ['consultant', 'admin'], description: '7단계 자동화', isSubMenu: true, parentId: 'consultant-zone' },
-  { id: 'consultant-insights', label: '외부데이터 인사이트', icon: '🔍', access: ['consultant', 'admin'], description: '복지/리뷰 분석', isSubMenu: true, parentId: 'consultant-zone' },
-  { id: 'final-integrated', label: '최종 통합 리포트', icon: '🎬', access: ['consultant', 'admin'], description: '7단계 클라이맥스', isSubMenu: true, parentId: 'consultant-zone' },
-  { id: 'cretop-report', label: '재무제표 분석', icon: '📊', access: ['consultant', 'admin'], description: 'CRETOP 기업분석', isSubMenu: true, parentId: 'consultant-zone' },
+  { id: 'cretop-report', label: '1단계: 재무제표 분석', icon: '📊', access: ['consultant', 'admin'], description: 'CRETOP 기업분석', isSubMenu: true, parentId: 'consultant-zone' },
+  { id: 'consultant-insights', label: '2-3단계: 외부데이터 인사이트', icon: '🔍', access: ['consultant', 'admin'], description: '복지/리뷰 분석', isSubMenu: true, parentId: 'consultant-zone' },
+  { id: 'ai-consultant-zone', label: '7단계: AI 컨설팅 존', icon: '🎯', access: ['consultant', 'admin'], description: '전체 자동화', isSubMenu: true, parentId: 'consultant-zone' },
+  { id: 'final-integrated', label: '최종 통합 리포트', icon: '🎬', access: ['consultant', 'admin'], description: '클라이맥스', isSubMenu: true, parentId: 'consultant-zone' },
   { id: 'admin', label: 'ADMIN DASHBOARD', icon: '⚙️', access: ['admin'], description: '관리자 전용' },
 ];
 
