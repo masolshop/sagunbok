@@ -389,12 +389,12 @@ export default function CretopReportPage() {
         )}
       </div>
 
-      {/* PDF Upload Section */}
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-[48px] border-4 border-purple-100 p-10 lg:p-14 space-y-8 shadow-xl">
-        <h3 className="flex items-center gap-4 text-purple-700 font-black text-3xl lg:text-4xl">
+      {/* PDF Upload Section - Compact */}
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-5 space-y-4 shadow-md">
+        <h3 className="flex items-center gap-2 text-purple-700 font-bold text-lg">
           <span>📤</span> 재무제표 파일 업로드 (선택)
         </h3>
-        <p className="text-xl text-purple-600 font-bold">
+        <p className="text-sm text-purple-600 font-medium">
           PDF 또는 Excel 파일을 업로드하면 AI가 자동으로 분석합니다.
         </p>
 
@@ -403,7 +403,7 @@ export default function CretopReportPage() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current?.click()}
-          className={`border-4 border-dashed rounded-[32px] p-16 text-center cursor-pointer transition-all ${
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
             isDragging
               ? "border-purple-500 bg-purple-100"
               : uploadedFile
@@ -422,29 +422,29 @@ export default function CretopReportPage() {
             className="hidden"
           />
           {isAnalyzing ? (
-            <div className="space-y-4">
-              <div className="text-6xl animate-pulse">⏳</div>
-              <p className="text-2xl font-black text-purple-700">AI가 재무제표를 분석하고 있습니다...</p>
+            <div className="space-y-3">
+              <div className="text-4xl animate-pulse">⏳</div>
+              <p className="text-base font-bold text-purple-700">AI가 재무제표를 분석하고 있습니다...</p>
             </div>
           ) : uploadedFile ? (
-            <div className="space-y-4">
-              <div className="text-6xl">✅</div>
-              <p className="text-2xl font-black text-green-700">{uploadedFile.name}</p>
+            <div className="space-y-3">
+              <div className="text-4xl">✅</div>
+              <p className="text-base font-bold text-green-700">{uploadedFile.name}</p>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setUploadedFile(null);
                 }}
-                className="mt-4 px-6 py-3 bg-red-500 text-white rounded-2xl font-black text-lg hover:bg-red-600 transition-all"
+                className="mt-2 px-4 py-2 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all"
               >
                 다른 파일 선택
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="text-6xl">📁</div>
-              <p className="text-2xl font-black text-purple-700">파일을 드래그하거나 클릭하여 선택</p>
-              <p className="text-lg text-purple-500 font-bold">PDF, Excel 파일 지원</p>
+            <div className="space-y-2">
+              <div className="text-4xl">📁</div>
+              <p className="text-base font-bold text-purple-700">파일을 드래그하거나 클릭하여 선택</p>
+              <p className="text-sm text-purple-500 font-medium">PDF, Excel 파일 지원</p>
             </div>
           )}
         </div>
