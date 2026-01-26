@@ -361,7 +361,7 @@ export default function CretopReportPage() {
               />
               <button
                 onClick={saveApiKey}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md whitespace-nowrap"
+                className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 transition-all shadow-md whitespace-nowrap"
               >
                 저장
               </button>
