@@ -386,44 +386,51 @@ export default function AIConsultantZonePage() {
         </p>
       </header>
 
-      {/* API Key Status Display (Read-only) */}
-      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-6 shadow-xl">
-        <h3 className="flex items-center gap-4 text-blue-700 font-black text-3xl lg:text-4xl">
-          <span>🤖</span> AI API 키 상태
-        </h3>
-
-        <div className="flex gap-3 flex-wrap">
-          {Object.entries(apiKeys).map(([model, registered]) => (
-            <div
-              key={model}
-              className={`px-5 py-3 rounded-full font-black text-lg ${
-                registered ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-gray-100 text-gray-500"
-              }`}
-            >
-              {model.toUpperCase()}: {registered ? "✓ 등록됨" : "✗ 미등록"}
-            </div>
-          ))}
-        </div>
-
-        {!apiKeys.claude && !apiKeys.gpt && !apiKeys.gemini && (
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
-            <p className="text-amber-800 font-bold text-lg">
-              💡 <strong>기업재무제표분석</strong> 메뉴에서 AI API 키를 먼저 등록해주세요.
-            </p>
+      {/* API Key Status Display (Read-only) - Compact Layout */}
+      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
+          {/* Left: Title & Warning */}
+          <div className="flex-1 min-w-[300px] space-y-3">
+            <h3 className="flex items-center gap-3 text-blue-700 font-black text-xl lg:text-2xl">
+              <span>🤖</span> AI API 키 상태
+            </h3>
+            
+            {!apiKeys.claude && !apiKeys.gpt && !apiKeys.gemini && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p className="text-amber-800 font-semibold text-sm">
+                  💡 <strong>기업재무제표분석</strong> 메뉴에서 AI API 키를 먼저 등록해주세요.
+                </p>
+              </div>
+            )}
           </div>
-        )}
 
-        <div className="space-y-4">
-          <label className="text-xl lg:text-2xl font-black text-blue-700 block">사용할 AI 모델 선택</label>
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as any)}
-            className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm"
-          >
-            <option value="claude">Claude 3.5 Sonnet (추천)</option>
-            <option value="gpt">GPT-4 Turbo</option>
-            <option value="gemini">Gemini 2.0 Flash</option>
-          </select>
+          {/* Right: API Status & Model Selection */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* API Key Status Badges */}
+            <div className="flex gap-2">
+              {Object.entries(apiKeys).map(([model, registered]) => (
+                <div
+                  key={model}
+                  className={`px-3 py-1.5 rounded-full font-bold text-sm ${
+                    registered ? "bg-green-100 text-green-700 ring-1 ring-green-300" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {model.toUpperCase()}: {registered ? "✓" : "✗"}
+                </div>
+              ))}
+            </div>
+
+            {/* Model Selection */}
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as any)}
+              className="px-4 py-2 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-sm bg-white shadow-sm min-w-[200px]"
+            >
+              <option value="claude">Claude 3.5 Sonnet (추천)</option>
+              <option value="gpt">GPT-4 Turbo</option>
+              <option value="gemini">Gemini 2.0 Flash</option>
+            </select>
+          </div>
         </div>
       </div>
 
