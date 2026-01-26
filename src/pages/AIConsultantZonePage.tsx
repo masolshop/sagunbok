@@ -70,15 +70,13 @@ function getAuthHeaders() {
 }
 
 export default function AIConsultantZonePage() {
-  // API Key
+  // API Key (Read-only from CretopReportPage)
   const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini">("claude");
   const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
     claude: false,
     gpt: false,
     gemini: false,
   });
-  const [apiKeyDraft, setApiKeyDraft] = useState("");
-  const [apiKeyMsg, setApiKeyMsg] = useState("");
 
   // 기업 기본정보
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
@@ -151,36 +149,6 @@ export default function AIConsultantZonePage() {
     } catch {}
   };
 
-  const saveApiKey = async () => {
-    if (!apiKeyDraft.trim()) {
-      setApiKeyMsg("❌ API 키를 입력해주세요.");
-      return;
-    }
-
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ apiKey: apiKeyDraft.trim(), modelType: selectedModel }),
-      });
-
-      const j = await r.json();
-      if (j.ok) {
-        setApiKeys((prev) => ({ ...prev, [selectedModel]: true }));
-        setApiKeyDraft("");
-        setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
-        setTimeout(() => setApiKeyMsg(""), 3000);
-      } else {
-        throw new Error(j.error || "저장 실패");
-      }
-    } catch (e: any) {
-      setApiKeyMsg(`❌ 저장 실패: ${e.message}`);
-    }
-  };
-
   // 1단계: 재무제표 업로드 및 분석
   const handleFileSelect = (file: File) => {
     if (!file) return;
@@ -206,7 +174,7 @@ export default function AIConsultantZonePage() {
 
   const analyzeFinancialStatement = async (file: File) => {
     if (!apiKeys[selectedModel]) {
-      alert("AI API 키를 먼저 등록해주세요.");
+      alert("기업재무제표분석 메뉴에서 AI API 키를 먼저 등록해주세요.");
       return;
     }
 
@@ -418,10 +386,10 @@ export default function AIConsultantZonePage() {
         </p>
       </header>
 
-      {/* API Key Section */}
-      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-8 shadow-xl">
+      {/* API Key Status Display (Read-only) */}
+      <div className="bg-[#f1f7ff] rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-6 shadow-xl">
         <h3 className="flex items-center gap-4 text-blue-700 font-black text-3xl lg:text-4xl">
-          <span>🤖</span> AI API 등록
+          <span>🤖</span> AI API 키 상태
         </h3>
 
         <div className="flex gap-3 flex-wrap">
@@ -432,56 +400,31 @@ export default function AIConsultantZonePage() {
                 registered ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-gray-100 text-gray-500"
               }`}
             >
-              {model.toUpperCase()}: {registered ? "✓" : "✗"}
+              {model.toUpperCase()}: {registered ? "✓ 등록됨" : "✗ 미등록"}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-blue-700 block">AI 모델 선택</label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm"
-            >
-              <option value="claude">Claude 3.5 Sonnet (추천)</option>
-              <option value="gpt">GPT-4 Turbo</option>
-              <option value="gemini">Gemini 2.0 Flash</option>
-            </select>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-blue-700 block">API Key 입력</label>
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={apiKeyDraft}
-                onChange={(e) => setApiKeyDraft(e.target.value)}
-                placeholder={
-                  selectedModel === "claude" ? "sk-ant-api03-..." : selectedModel === "gpt" ? "sk-..." : "AIzaSy..."
-                }
-                className="flex-1 px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-bold text-lg bg-white shadow-sm"
-              />
-              <button
-                onClick={saveApiKey}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
-              >
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {apiKeyMsg && (
-          <div
-            className={`p-4 rounded-xl font-bold text-lg ${
-              apiKeyMsg.includes("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-            }`}
-          >
-            {apiKeyMsg}
+        {!apiKeys.claude && !apiKeys.gpt && !apiKeys.gemini && (
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+            <p className="text-amber-800 font-bold text-lg">
+              💡 <strong>기업재무제표분석</strong> 메뉴에서 AI API 키를 먼저 등록해주세요.
+            </p>
           </div>
         )}
+
+        <div className="space-y-4">
+          <label className="text-xl lg:text-2xl font-black text-blue-700 block">사용할 AI 모델 선택</label>
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value as any)}
+            className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm"
+          >
+            <option value="claude">Claude 3.5 Sonnet (추천)</option>
+            <option value="gpt">GPT-4 Turbo</option>
+            <option value="gemini">Gemini 2.0 Flash</option>
+          </select>
+        </div>
       </div>
 
       {/* 기업 기본정보 */}
