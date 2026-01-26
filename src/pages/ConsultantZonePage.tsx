@@ -69,7 +69,12 @@ function getAuthHeaders() {
 
 type ApiKeyStatusResponse = {
   ok: boolean;
-  hasKey?: boolean;
+  keys?: {
+    claude: boolean;
+    gpt: boolean;
+    gemini: boolean;
+  };
+  hasKey?: boolean; // 하위 호환성
   error?: string;
 };
 
@@ -77,6 +82,7 @@ type AiRunResponse = {
   ok: boolean;
   module?: string;
   action?: string;
+  modelType?: string;
   promptVersion?: string;
   text?: string;
   createdAt?: string;
@@ -101,13 +107,19 @@ export default function ConsultantZonePage() {
   const [reviews, setReviews] = useState<string>("");
   const [welfare, setWelfare] = useState<string>("");
 
-  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
+  // API Key 관리 - 3개 모델 지원
+  const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
+    claude: false,
+    gpt: false,
+    gemini: false,
+  });
+  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini">("claude");
   const [apiKeyDraft, setApiKeyDraft] = useState<string>("");
   const [apiKeyMsg, setApiKeyMsg] = useState<string>("");
 
   const [loadingAction, setLoadingAction] = useState<ActionKey | null>(null);
   const [outputs, setOutputs] = useState<
-    { action: ActionKey; label: string; text: string; createdAt: string; promptVersion?: string; color: string }[]
+    { action: ActionKey; label: string; text: string; createdAt: string; promptVersion?: string; color: string; modelType?: string }[]
   >([]);
 
   const [savedCases, setSavedCases] = useState<SavedCase[]>(() => {
@@ -143,7 +155,9 @@ export default function ConsultantZonePage() {
           },
         });
         const j = (await r.json()) as ApiKeyStatusResponse;
-        if (j.ok) setHasApiKey(!!j.hasKey);
+        if (j.ok && j.keys) {
+          setApiKeys(j.keys);
+        }
       } catch {}
     })();
   }, []);
@@ -175,16 +189,16 @@ export default function ConsultantZonePage() {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ apiKey: key }),
+        body: JSON.stringify({ apiKey: key, modelType: selectedModel }),
       });
       const j = await r.json();
       if (!j.ok) {
         setApiKeyMsg(`저장 실패: ${j.error || "UNKNOWN"}`);
         return;
       }
-      setHasApiKey(true);
+      setApiKeys((prev) => ({ ...prev, [selectedModel]: true }));
       setApiKeyDraft("");
-      setApiKeyMsg("✅ 저장 완료! 이제 컨설팅 생성 버튼을 사용할 수 있어요.");
+      setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
     } catch (e: any) {
       setApiKeyMsg(`저장 실패: ${String(e?.message || e)}`);
     }
@@ -192,8 +206,8 @@ export default function ConsultantZonePage() {
 
   const runAction = async (action: ActionKey) => {
     if (!validateInputs()) return;
-    if (!hasApiKey) {
-      alert("컨설턴트 개인 Claude API 키 등록이 필요합니다.\n(상단의 API 키 등록 섹션)");
+    if (!apiKeys[selectedModel]) {
+      alert(`${selectedModel.toUpperCase()} API 키 등록이 필요합니다.\n(상단의 API 키 등록 섹션)`);
       return;
     }
 
@@ -210,6 +224,7 @@ export default function ConsultantZonePage() {
           action,
           calcResult,
           caseMeta,
+          modelType: selectedModel,
         }),
       });
 
@@ -225,6 +240,7 @@ export default function ConsultantZonePage() {
           createdAt: j.createdAt || nowISO(),
           promptVersion: j.promptVersion,
           color: actionInfo?.color || "gray",
+          modelType: j.modelType || selectedModel,
         },
         ...prev,
       ]);
@@ -331,46 +347,81 @@ export default function ConsultantZonePage() {
       <div className="mb-6 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-3xl border-2 border-purple-200">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="text-xl font-black">컨설턴트 개인 Claude API Key</h3>
+            <h3 className="text-xl font-black">AI 모델 API Key 관리</h3>
             <p className="text-sm text-slate-600 font-bold mt-1">
-              키는 서버에 암호화 저장됩니다. (등록 후 컨설팅 생성 가능)
+              Claude, GPT, Gemini 중 선택 · 키는 서버에 암호화 저장됩니다
             </p>
           </div>
-          <div
-            className={`px-4 py-2 rounded-full font-black text-sm ${
-              hasApiKey ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {hasApiKey ? "✓ 등록됨" : "⚠ 미등록"}
+          <div className="flex gap-2">
+            {Object.entries(apiKeys).map(([model, registered]) => (
+              <div
+                key={model}
+                className={`px-3 py-1 rounded-full font-black text-xs ${
+                  registered ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {model.toUpperCase()}: {registered ? "✓" : "✗"}
+              </div>
+            ))}
           </div>
         </div>
 
-        {!hasApiKey && (
-          <div className="space-y-3">
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={apiKeyDraft}
-                onChange={(e) => setApiKeyDraft(e.target.value)}
-                placeholder="sk-ant-... (Claude API Key)"
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none font-bold"
-              />
-              <button
-                onClick={saveApiKey}
-                className="px-6 py-3 rounded-xl bg-purple-600 text-white font-black hover:bg-purple-700 transition-colors"
-              >
-                API 키 저장
-              </button>
+        <div className="space-y-3">
+          {/* 모델 선택 드롭다운 */}
+          <div className="flex items-center gap-3">
+            <label className="font-black text-sm text-slate-700 whitespace-nowrap">AI 모델:</label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as "claude" | "gpt" | "gemini")}
+              className="px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none font-bold bg-white"
+            >
+              <option value="claude">Claude 3.5 Sonnet (Anthropic)</option>
+              <option value="gpt">GPT-4 Turbo (OpenAI)</option>
+              <option value="gemini">Gemini 1.5 Pro (Google)</option>
+            </select>
+            <div
+              className={`px-3 py-2 rounded-full font-black text-xs ${
+                apiKeys[selectedModel] ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
             </div>
-            {apiKeyMsg && <p className="text-sm font-bold text-slate-600">{apiKeyMsg}</p>}
           </div>
-        )}
 
-        {hasApiKey && (
-          <p className="text-sm font-black text-green-600">
-            ✅ 등록 완료. 아래 버튼을 눌러 컨설팅 산출물을 생성하세요.
-          </p>
-        )}
+          {/* API Key 입력 */}
+          <div className="flex gap-3">
+            <input
+              type="password"
+              value={apiKeyDraft}
+              onChange={(e) => setApiKeyDraft(e.target.value)}
+              placeholder={
+                selectedModel === "claude"
+                  ? "sk-ant-api03-... (Claude API Key)"
+                  : selectedModel === "gpt"
+                  ? "sk-... (OpenAI API Key)"
+                  : "AIzaSy... (Google API Key)"
+              }
+              className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:outline-none font-bold"
+            />
+            <button
+              onClick={saveApiKey}
+              className="px-6 py-3 rounded-xl bg-purple-600 text-white font-black hover:bg-purple-700 transition-colors"
+            >
+              {selectedModel.toUpperCase()} 키 저장
+            </button>
+          </div>
+          {apiKeyMsg && <p className="text-sm font-bold text-slate-600">{apiKeyMsg}</p>}
+
+          {/* 도움말 */}
+          <div className="mt-3 p-3 bg-white rounded-xl text-xs text-slate-600 font-bold">
+            <p className="font-black mb-1">📌 API Key 발급 사이트:</p>
+            <ul className="space-y-1 ml-4">
+              <li>• Claude: <a href="https://console.anthropic.com" target="_blank" className="text-blue-600 underline">console.anthropic.com</a></li>
+              <li>• GPT: <a href="https://platform.openai.com" target="_blank" className="text-blue-600 underline">platform.openai.com</a></li>
+              <li>• Gemini: <a href="https://aistudio.google.com" target="_blank" className="text-blue-600 underline">aistudio.google.com</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Inputs 4 Boxes */}
@@ -470,6 +521,7 @@ export default function ConsultantZonePage() {
                   </h4>
                   <p className="text-xs text-slate-500 font-bold mt-1">
                     생성: {o.createdAt} {o.promptVersion && `· prompt ${o.promptVersion}`}
+                    {o.modelType && ` · AI: ${o.modelType.toUpperCase()}`}
                   </p>
                 </div>
                 <div className="flex gap-2">

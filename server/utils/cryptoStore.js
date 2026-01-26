@@ -37,22 +37,27 @@ export function decrypt(payload) {
   return dec.toString("utf8");
 }
 
-export function saveKey(consultantId, apiKey) {
+export function saveKey(consultantId, apiKey, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
-  db[consultantId] = encrypt(apiKey);
+  
+  // 모델별로 키 저장: { consultantId: { claude: "...", gpt: "...", gemini: "..." } }
+  if (!db[consultantId]) db[consultantId] = {};
+  db[consultantId][modelType] = encrypt(apiKey);
+  
   fs.writeFileSync(STORE_PATH, JSON.stringify(db, null, 2), "utf-8");
 }
 
-export function hasKey(consultantId) {
+export function hasKey(consultantId, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
-  return !!db[consultantId];
+  return !!(db[consultantId]?.[modelType]);
 }
 
-export function loadKey(consultantId) {
+export function loadKey(consultantId, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
-  if (!db[consultantId]) throw new Error("NO_SAVED_API_KEY");
-  return decrypt(db[consultantId]);
+  const encrypted = db[consultantId]?.[modelType];
+  if (!encrypted) throw new Error(`NO_SAVED_API_KEY_FOR_${modelType.toUpperCase()}`);
+  return decrypt(encrypted);
 }
