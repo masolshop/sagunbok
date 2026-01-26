@@ -65,9 +65,10 @@ async function callGPT(apiKey, system, userPrompt) {
   return j.choices?.[0]?.message?.content?.trim() || "";
 }
 
-// Gemini API 호출
+// Gemini API 호출 (최신 2.0 Flash 지원)
 async function callGemini(apiKey, system, userPrompt) {
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-pro";
+  // Gemini 2.0 Flash (최신) 또는 1.5 Pro
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const payload = {
@@ -79,7 +80,7 @@ async function callGemini(apiKey, system, userPrompt) {
       }
     ],
     generationConfig: {
-      maxOutputTokens: 1600,
+      maxOutputTokens: 2048,
       temperature: 0.7,
     },
   };

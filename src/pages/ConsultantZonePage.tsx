@@ -377,7 +377,7 @@ export default function ConsultantZonePage() {
             >
               <option value="claude">Claude 3.5 Sonnet (Anthropic)</option>
               <option value="gpt">GPT-4 Turbo (OpenAI)</option>
-              <option value="gemini">Gemini 1.5 Pro (Google)</option>
+              <option value="gemini">Gemini 2.0 Flash (Google) - 최신!</option>
             </select>
             <div
               className={`px-3 py-2 rounded-full font-black text-xs ${

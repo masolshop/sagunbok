@@ -41,8 +41,18 @@ export function saveKey(consultantId, apiKey, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
   
+  // 마이그레이션: 기존 문자열 형태를 객체로 변환
+  if (db[consultantId] && typeof db[consultantId] === "string") {
+    const oldEncrypted = db[consultantId];
+    db[consultantId] = {
+      claude: oldEncrypted // 기존 키는 Claude로 간주
+    };
+  }
+  
   // 모델별로 키 저장: { consultantId: { claude: "...", gpt: "...", gemini: "..." } }
   if (!db[consultantId]) db[consultantId] = {};
+  if (typeof db[consultantId] !== "object") db[consultantId] = {};
+  
   db[consultantId][modelType] = encrypt(apiKey);
   
   fs.writeFileSync(STORE_PATH, JSON.stringify(db, null, 2), "utf-8");
@@ -51,12 +61,28 @@ export function saveKey(consultantId, apiKey, modelType = "claude") {
 export function hasKey(consultantId, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
+  
+  // 마이그레이션: 기존 문자열 형태 처리
+  if (db[consultantId] && typeof db[consultantId] === "string") {
+    return modelType === "claude"; // 기존 키는 Claude만 있음
+  }
+  
   return !!(db[consultantId]?.[modelType]);
 }
 
 export function loadKey(consultantId, modelType = "claude") {
   ensureStore();
   const db = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8"));
+  
+  // 마이그레이션: 기존 문자열 형태 처리
+  if (db[consultantId] && typeof db[consultantId] === "string") {
+    if (modelType === "claude") {
+      return decrypt(db[consultantId]);
+    } else {
+      throw new Error(`NO_SAVED_API_KEY_FOR_${modelType.toUpperCase()}`);
+    }
+  }
+  
   const encrypted = db[consultantId]?.[modelType];
   if (!encrypted) throw new Error(`NO_SAVED_API_KEY_FOR_${modelType.toUpperCase()}`);
   return decrypt(encrypted);
