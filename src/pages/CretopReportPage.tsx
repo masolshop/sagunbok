@@ -210,8 +210,8 @@ export default function CretopReportPage() {
   };
 
   const analyzeFinancialStatement = async (file: File) => {
-    if (!apiKeys.gpt && !apiKeys.claude) {
-      alert('GPT 또는 Claude API 키를 먼저 등록해주세요.\n컨설턴트존에서 API 키를 등록할 수 있습니다.');
+    if (!apiKeys[selectedModel]) {
+      alert(`${selectedModel.toUpperCase()} API 키를 먼저 등록해주세요.\n위의 'AI API KEY 등록' 섹션에서 등록할 수 있습니다.`);
       return;
     }
 
