@@ -12,6 +12,7 @@ import analyticsRoutes from './routes/analytics.js';
 import resourcesRoutes from './routes/resources.js';
 import aiRoutes from './routes/ai.js';
 import apiKeyRoutes from './routes/apiKey.js';
+import crawlRoutes from './routes/crawl.js';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/consultant/api-key', apiKeyRoutes);
+app.use('/api/crawl', crawlRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

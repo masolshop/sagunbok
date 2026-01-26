@@ -270,3 +270,65 @@ export const runAi = async (req, res) => {
     return res.status(500).json({ ok: false, error: String(e.message || e) });
   }
 };
+
+
+// 최종 통합 컨설팅 생성
+export const generateFinalConsulting = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const {
+      companyInfo,
+      financialData,
+      jobPostingData,
+      reviewData,
+      taxCalculatorData,
+      modelType = "claude",
+    } = req.body || {};
+
+    const apiKey = loadKey(consultantId, modelType);
+
+    const systemPrompt = `당신은 사내근로복지기금 전문 컨설턴트입니다.
+다음 데이터를 종합 분석하여 실행 가능한 컨설팅 리포트를 작성하세요:
+
+1. 재무 분석 및 여력 진단
+2. 복지 경쟁력 비교 (구인구직 데이터 기반)
+3. 조직 리스크 진단 (직원 리뷰 기반)
+4. 절세 효과 분석 (절세계산기 데이터 기반)
+5. 사근복 도입 제안 (3개 시나리오: 보수적/중립적/공격적)
+6. 실행 로드맵 (30일/60일/90일)
+7. 예상 ROI 및 면책사항
+
+한국어로 작성하고, 구체적인 수치와 근거를 포함하세요.`;
+
+    const userPrompt = `
+=== 기업 정보 ===
+${JSON.stringify(companyInfo, null, 2)}
+
+=== 재무제표 데이터 ===
+${JSON.stringify(financialData, null, 2)}
+
+=== 구인구직 복지 데이터 ===
+${JSON.stringify(jobPostingData, null, 2)}
+
+=== 직원 리뷰 데이터 ===
+${JSON.stringify(reviewData, null, 2)}
+
+=== 절세계산기 데이터 ===
+${JSON.stringify(taxCalculatorData, null, 2)}
+
+위 데이터를 종합하여 사내근로복지기금 컨설팅 리포트를 작성하세요.
+`;
+
+    const report = await callAI(modelType, apiKey, systemPrompt, userPrompt, 4096);
+
+    return res.json({
+      ok: true,
+      report,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};
