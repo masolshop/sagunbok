@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import { authenticateConsultant, requireConsultant } from "../middleware/auth.js";
 import { 
   runAi, 
@@ -11,8 +12,14 @@ import {
 
 const router = express.Router();
 
+// Multer 설정 - 메모리에 파일 저장
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB 제한
+});
+
 router.post("/run", authenticateConsultant, requireConsultant, runAi);
-router.post("/analyze-financial-statement", authenticateConsultant, requireConsultant, analyzeFinancialStatement);
+router.post("/analyze-financial-statement", authenticateConsultant, requireConsultant, upload.single('file'), analyzeFinancialStatement);
 router.post("/final-consulting", authenticateConsultant, requireConsultant, generateFinalConsulting);
 router.post("/final-integrated", authenticateConsultant, requireConsultant, generateFinalIntegrated);
 

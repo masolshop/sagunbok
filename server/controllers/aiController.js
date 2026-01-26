@@ -35,6 +35,55 @@ async function callClaude(apiKey, system, userPrompt, maxTokens = 1600) {
   return parts.map((p) => p.text || "").join("\n").trim();
 }
 
+// Claude Vision API 호출 (PDF/이미지 분석)
+async function callClaudeWithDocument(apiKey, system, userText, documentBuffer, mimeType, maxTokens = 2000) {
+  const url = "https://api.anthropic.com/v1/messages";
+  const model = "claude-3-5-sonnet-20241022"; // Vision 지원 모델
+
+  // PDF를 base64로 인코딩
+  const base64Document = documentBuffer.toString('base64');
+
+  const payload = {
+    model,
+    max_tokens: maxTokens,
+    system,
+    messages: [{
+      role: "user",
+      content: [
+        {
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: mimeType,
+            data: base64Document
+          }
+        },
+        {
+          type: "text",
+          text: userText
+        }
+      ]
+    }],
+  };
+
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await r.text();
+  if (!r.ok) throw new Error(`CLAUDE_VISION_ERROR ${r.status}: ${txt}`);
+
+  const j = JSON.parse(txt);
+  const parts = j.content || [];
+  return parts.map((p) => p.text || "").join("\n").trim();
+}
+
 // GPT API 호출
 async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   const url = "https://api.openai.com/v1/chat/completions";
@@ -119,13 +168,34 @@ export const analyzeFinancialStatement = async (req, res) => {
     const consultantId = req.user?.id;
     if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
 
-    const { modelType = "gpt" } = req.body || {};
-    const apiKey = loadKey(consultantId, modelType);
+    // modelType은 필수로 받아야 함 (기본값 제거)
+    const { modelType } = req.body || {};
+    if (!modelType || !["claude", "gpt", "gemini"].includes(modelType)) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: "INVALID_MODEL_TYPE. Please provide modelType (claude, gpt, or gemini)" 
+      });
+    }
+    
+    // API 키 로드 (에러 처리 추가)
+    let apiKey;
+    try {
+      apiKey = loadKey(consultantId, modelType);
+    } catch (keyError) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: keyError.message || `NO_SAVED_API_KEY_FOR_${modelType.toUpperCase()}`
+      });
+    }
 
-    // 파일 처리는 multer 등을 통해 req.file로 받는다고 가정
-    // 실제 프로덕션에서는 multer 설정 필요
+    // 파일 처리 - multer로 req.file에 업로드된 파일 정보 확인
     if (!req.file && !req.body.fileContent) {
       return res.status(400).json({ ok: false, error: "NO_FILE_PROVIDED" });
+    }
+
+    // 파일 정보 로깅
+    if (req.file) {
+      console.log(`[ANALYZE] 파일 업로드됨: ${req.file.originalname}, ${req.file.mimetype}, ${req.file.size} bytes, modelType: ${modelType}`);
     }
 
     const systemPrompt = `당신은 재무제표 분석 전문가입니다. 
@@ -170,9 +240,27 @@ export const analyzeFinancialStatement = async (req, res) => {
 - 가지급금은 "가지급금", "임원가지급금", "단기대여금" 등의 계정과목에서 찾으세요.
 - 잉여금은 "이익잉여금", "미처분이익잉여금" 계정에서 찾으세요.`;
 
-    const userPrompt = `아래 재무제표 데이터를 분석하여 JSON으로 추출하세요:\n\n${req.body.fileContent || "[파일 내용]"}`;
+    const userPrompt = `위의 재무제표 문서를 분석하여 JSON 형식으로 필요한 정보를 추출해주세요.`;
 
-    const text = await callAI(modelType, apiKey, systemPrompt, userPrompt, 2000);
+    let text;
+    // 파일이 있으면 Vision API 사용 (Claude만 지원)
+    if (req.file && modelType === "claude") {
+      text = await callClaudeWithDocument(
+        apiKey, 
+        systemPrompt, 
+        userPrompt, 
+        req.file.buffer, 
+        req.file.mimetype, 
+        4000 // PDF 분석에는 더 많은 토큰 필요
+      );
+    } else {
+      // 텍스트 기반 분석 (fallback)
+      const fileInfo = req.file 
+        ? `파일명: ${req.file.originalname}, 타입: ${req.file.mimetype}`
+        : "파일 내용";
+      const fullPrompt = `${userPrompt}\n\n${fileInfo}\n\n${req.body.fileContent || "[파일 분석이 필요합니다]"}`;
+      text = await callAI(modelType, apiKey, systemPrompt, fullPrompt, 2000);
+    }
     
     // JSON 파싱 시도
     let analysis = null;
