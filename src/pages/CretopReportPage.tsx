@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import ExtractedFieldsTable from "../components/ExtractedFieldsTable";
 
 /**
  * CretopReportPage.tsx
@@ -124,6 +125,9 @@ export default function CretopReportPage() {
   const [revenue, setRevenue] = useState("");
   const [retainedEarnings, setRetainedEarnings] = useState("");
   const [loansToOfficers, setLoansToOfficers] = useState("");
+  
+  // 추출된 필드 전체 데이터 (ExtractedFieldsTable용)
+  const [extractedFieldsData, setExtractedFieldsData] = useState<any>(null);
 
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CretopReport | null>(null);
@@ -229,45 +233,23 @@ export default function CretopReportPage() {
 
       const data = await res.json();
       if (data.ok && data.analysis) {
-        // 기본 정보
-        if (data.analysis.company_name) setCompanyName(data.analysis.company_name);
-        if (data.analysis.statement_date) setStatementDate(data.analysis.statement_date);
+        // 새로운 구조화된 응답 처리 (8개 필드)
+        setExtractedFieldsData(data.analysis);
         
-        // 추가 기업 정보
-        if (data.analysis.ceo_name) setCeoName(data.analysis.ceo_name);
-        if (data.analysis.business_number) setBusinessNumber(data.analysis.business_number);
-        if (data.analysis.industry) setIndustryName(data.analysis.industry);
-        if (data.analysis.statement_year) setStatementYear(data.analysis.statement_year);
-        
-        // 재무 데이터
-        if (data.analysis.balance_sheet) setBalanceSheet(JSON.stringify(data.analysis.balance_sheet, null, 2));
-        if (data.analysis.income_statement) {
-          setIncomeStatement(JSON.stringify(data.analysis.income_statement, null, 2));
-          // 매출액 추출
-          if (data.analysis.income_statement.매출액) {
-            setRevenue(data.analysis.income_statement.매출액.toLocaleString() + '원');
-          }
+        // 기존 UI 필드 업데이트 (하위 호환성)
+        if (data.analysis.company_name?.value) setCompanyName(data.analysis.company_name.value);
+        if (data.analysis.ceo_name?.value) setCeoName(data.analysis.ceo_name.value);
+        if (data.analysis.business_number?.value) setBusinessNumber(data.analysis.business_number.value);
+        if (data.analysis.industry?.value) setIndustryName(data.analysis.industry.value);
+        if (data.analysis.statement_year?.value) {
+          setStatementYear(data.analysis.statement_year.value);
+          setStatementDate(data.analysis.statement_year.value + '-12-31'); // 기본 결산일
         }
-        if (data.analysis.cash_flow) setCashflow(JSON.stringify(data.analysis.cash_flow, null, 2));
+        if (data.analysis.revenue?.value) setRevenue(data.analysis.revenue.value);
+        if (data.analysis.retained_earnings?.value) setRetainedEarnings(data.analysis.retained_earnings.value);
+        if (data.analysis.loans_to_officers?.value) setLoansToOfficers(data.analysis.loans_to_officers.value);
         
-        // 특수 항목 추출
-        if (data.analysis.balance_sheet) {
-          // 잉여금 (미처분이익잉여금 또는 이익잉여금)
-          if (data.analysis.balance_sheet.미처분이익잉여금) {
-            setRetainedEarnings(data.analysis.balance_sheet.미처분이익잉여금.toLocaleString() + '원');
-          } else if (data.analysis.balance_sheet.이익잉여금) {
-            setRetainedEarnings(data.analysis.balance_sheet.이익잉여금.toLocaleString() + '원');
-          }
-          
-          // 가지급금 (대여금)
-          if (data.analysis.balance_sheet.가지급금) {
-            setLoansToOfficers(data.analysis.balance_sheet.가지급금.toLocaleString() + '원');
-          } else if (data.analysis.balance_sheet.단기대여금) {
-            setLoansToOfficers(data.analysis.balance_sheet.단기대여금.toLocaleString() + '원');
-          }
-        }
-        
-        alert('✅ 재무제표 분석 완료! 기업 정보가 자동 입력되었습니다.');
+        alert('✅ 재무제표 분석 완료! 8개 항목이 자동 추출되었습니다.\n아래 표에서 결과를 확인하세요.');
       } else {
         throw new Error(data.error || '분석 실패');
       }
@@ -567,6 +549,16 @@ export default function CretopReportPage() {
           )}
         </div>
       </div>
+
+      {/* 추출된 필드 테이블 - PDF 분석 결과 표시 */}
+      {extractedFieldsData && (
+        <ExtractedFieldsTable 
+          data={extractedFieldsData}
+          onCopy={() => {
+            console.log('텍스트 표가 복사되었습니다.');
+          }}
+        />
+      )}
 
       {/* Basic Info Input */}
       <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">

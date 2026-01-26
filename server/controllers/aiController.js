@@ -199,46 +199,92 @@ export const analyzeFinancialStatement = async (req, res) => {
     }
 
     const systemPrompt = `당신은 재무제표 분석 전문가입니다. 
-업로드된 재무제표(PDF, Excel 등)를 분석하여 다음 정보를 JSON 형식으로 추출하세요:
+업로드된 재무제표(PDF, Excel 등)를 분석하여 다음 8개 항목을 구조화된 JSON 형식으로 추출하세요.
+각 항목마다 value, confidence, page_number, snippet, method를 포함해야 합니다.
 
+출력 형식:
 {
-  "company_name": "회사명",
-  "ceo_name": "대표자명",
-  "business_number": "사업자등록번호 (123-45-67890 형식)",
-  "industry": "업종명",
-  "statement_date": "결산일 (YYYY-MM-DD)",
-  "statement_year": "재무제표 연도 (YYYY)",
-  "balance_sheet": {
-    "자산총계": 숫자,
-    "부채총계": 숫자,
-    "자본총계": 숫자,
-    "유동자산": 숫자,
-    "비유동자산": 숫자,
-    "이익잉여금": 숫자,
-    "미처분이익잉여금": 숫자,
-    "가지급금": 숫자,
-    "단기대여금": 숫자
+  "company_name": {
+    "value": "회사명 (예: 쏠라리버(주))",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "추출된 원문 일부 (최대 100자)",
+    "method": "vision_api"
   },
-  "income_statement": {
-    "매출액": 숫자,
-    "매출원가": 숫자,
-    "매출총이익": 숫자,
-    "영업이익": 숫자,
-    "당기순이익": 숫자
+  "ceo_name": {
+    "value": "대표자명 (예: 홍길동)",
+    "confidence": 0.9,
+    "page_number": 1,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api"
   },
-  "cash_flow": {
-    "영업활동현금흐름": 숫자,
-    "투자활동현금흐름": 숫자,
-    "재무활동현금흐름": 숫자
+  "business_number": {
+    "value": "123-45-67890",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api"
+  },
+  "industry": {
+    "value": "업종명",
+    "confidence": 0.9,
+    "page_number": 1,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api"
+  },
+  "statement_year": {
+    "value": "2024",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api"
+  },
+  "revenue": {
+    "value": "5,432,100,000원",
+    "confidence": 0.92,
+    "page_number": 2,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api",
+    "unit": "원"
+  },
+  "retained_earnings": {
+    "value": "1,234,567,890원",
+    "confidence": 0.88,
+    "page_number": 2,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api",
+    "unit": "원"
+  },
+  "loans_to_officers": {
+    "value": "50,000,000원",
+    "confidence": 0.85,
+    "page_number": 2,
+    "snippet": "추출된 원문 일부",
+    "method": "vision_api",
+    "unit": "원"
   }
 }
 
-규칙:
-- 숫자는 원 단위로 표시하고, 데이터가 없으면 0 또는 null로 표시하세요.
-- 문자열 정보가 없으면 빈 문자열("")로 표시하세요.
-- 반드시 JSON만 출력하세요. 설명이나 마크다운 코드블록은 제외하세요.
-- 가지급금은 "가지급금", "임원가지급금", "단기대여금" 등의 계정과목에서 찾으세요.
-- 잉여금은 "이익잉여금", "미처분이익잉여금" 계정에서 찾으세요.`;
+중요한 규칙:
+1. value: 추출된 값 (문자열). 숫자는 쉼표로 구분하고 단위 포함 (예: "1,234,567원")
+2. confidence: 신뢰도 점수 0.0~1.0 (높을수록 확실함)
+3. page_number: 해당 정보가 있는 페이지 번호 (1부터 시작)
+4. snippet: 실제 원문에서 추출한 텍스트 일부 (최대 100자, 큰따옴표 제거)
+5. method: "vision_api"로 고정
+6. unit (선택): 금액 항목의 경우 단위 (원, 천원, 백만원 등)
+
+추출 우선순위:
+- 회사명: 상단 헤더나 표지에서 찾기
+- 대표자: "대표이사", "대표자" 키워드 근처
+- 사업자등록번호: "123-45-67890" 형식
+- 업종: "업종", "업태" 키워드 근처
+- 재무제표 연도: "YYYY년 재무제표" 또는 표지의 연도
+- 매출액: 손익계산서의 "매출액" 항목
+- 이익잉여금: 재무상태표의 "이익잉여금" 또는 "미처분이익잉여금" 항목
+- 가지급금: 재무상태표의 "가지급금", "임원가지급금", "단기대여금" 항목 (없으면 "미확인")
+
+찾을 수 없는 항목은 null로 표시하세요.
+반드시 순수 JSON만 출력하고, 설명이나 마크다운 코드블록은 제외하세요.`;
 
     const userPrompt = `위의 재무제표 문서를 분석하여 JSON 형식으로 필요한 정보를 추출해주세요.`;
 
