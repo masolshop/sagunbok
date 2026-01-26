@@ -23,7 +23,7 @@ import Sagunbok7Plans from './components/Sagunbok7Plans';
 type MenuAccess = 'public' | 'company' | 'manager' | 'consultant' | 'admin';
 
 interface MenuItem {
-  id: 'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'cretop-report' | 'admin';
+  id: 'sagunbok-info' | 'sagunbok-tax' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'cretop-report' | 'admin';
   label: string;
   icon: string;
   access: MenuAccess[];
@@ -36,7 +36,6 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { id: 'sagunbok-info', label: '사근복이란?', icon: '📚', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
   { id: 'sagunbok-tax', label: '사근복 절세', icon: '💰', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
-  { id: 'sagunbok-plans', label: '사근복 7대플랜', icon: '🎯', access: ['public'], description: '누구나 이용 가능', isSubMenu: true, parentId: 'sagunbok' },
   { id: 'corp', label: '기업절세계산기', icon: '📊', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'emp', label: '직원절세계산기', icon: '👤', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
   { id: 'ceo', label: 'CEO절세계산기', icon: '👑', access: ['company', 'manager', 'consultant'], description: '회원 전용' },
@@ -54,9 +53,9 @@ const MENU_ITEMS: MenuItem[] = [
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'cretop-report' | 'admin'>('sagunbok-info');
+  const [activeTab, setActiveTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'cretop-report' | 'admin'>('sagunbok-info');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'sagunbok-plans' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'admin' | null>(null);
+  const [pendingTab, setPendingTab] = useState<'sagunbok-info' | 'sagunbok-tax' | 'corp' | 'ceo' | 'emp' | 'net' | 'secret' | 'diag' | 'consultant-zone' | 'ai-consultant-zone' | 'consultant-insights' | 'final-integrated' | 'cretop-report' | 'admin' | null>(null);
   const [showSagunbokSubmenu, setShowSagunbokSubmenu] = useState(true);
   const [showConsultantSubmenu, setShowConsultantSubmenu] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -537,7 +536,6 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
           {activeTab === 'sagunbok-info' && <SagunbokInfo />}
           {activeTab === 'sagunbok-tax' && <SagunbokTaxSavings />}
-          {activeTab === 'sagunbok-plans' && <Sagunbok7Plans />}
           
           {activeTab === 'corp' && (
             <>
