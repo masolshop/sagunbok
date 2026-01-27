@@ -352,6 +352,17 @@ export default function CretopReportPage() {
         body: formData,
       });
 
+      // 🔍 응답 상태 및 Content-Type 확인
+      console.log(`[Frontend] Response status: ${res.status}, Content-Type: ${res.headers.get('content-type')}`);
+      
+      // HTML 응답인 경우 에러 처리
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        const html = await res.text();
+        console.error('[Frontend] Received HTML instead of JSON:', html.substring(0, 500));
+        throw new Error(`서버 에러 (HTML 응답): ${res.status} ${res.statusText}`);
+      }
+
       const data = await res.json();
       if (data.ok && data.analysis) {
         // 새로운 구조화된 응답 처리 (8개 필드)
@@ -375,6 +386,7 @@ export default function CretopReportPage() {
         throw new Error(data.error || '분석 실패');
       }
     } catch (err: any) {
+      console.error('[Frontend] Analysis error:', err);
       alert(`분석 실패: ${err.message}`);
     } finally {
       setIsAnalyzing(false);
