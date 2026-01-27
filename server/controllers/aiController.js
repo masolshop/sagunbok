@@ -155,7 +155,54 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
   }
 }
 
-// Gemini PDF 추출 (inline bytes)
+// 📋 Gemini 2.5/3.0 Controlled Generation용 Response Schema (2026년형)
+const financeSchema = {
+  type: "object",
+  description: "재무제표 PDF에서 추출한 8개 핵심 항목",
+  properties: {
+    company_name: {
+      type: "string",
+      description: "재무제표 상의 정확한 법인명 또는 상호명 (예: ㈜쏠라리버, 삼성전자㈜)"
+    },
+    ceo_name: {
+      type: "string",
+      description: "대표자 성명 (예: 홍길동, 이순신)",
+      nullable: true
+    },
+    business_number: {
+      type: "string",
+      description: "사업자등록번호 (예: 123-45-67890), 없으면 빈 문자열",
+      nullable: true
+    },
+    industry: {
+      type: "string",
+      description: "업종명 (예: 제조업, 도소매업, 서비스업)",
+      nullable: true
+    },
+    statement_year: {
+      type: "string",
+      description: "재무제표 연도 (예: 2024, 2023)"
+    },
+    revenue: {
+      type: "number",
+      description: "매출액 (단위: 원), 숫자만. 없으면 0",
+      nullable: true
+    },
+    retained_earnings: {
+      type: "number",
+      description: "잉여금(이익잉여금) (단위: 원), 숫자만. 없으면 0",
+      nullable: true
+    },
+    loans_to_officers: {
+      type: "number",
+      description: "가지급금 (단위: 원), 숫자만. 없으면 0",
+      nullable: true
+    }
+  },
+  required: ["company_name", "statement_year"]
+};
+
+// Gemini PDF 추출 (inline bytes + Controlled Generation)
 async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelType = 'gemini-flash') {
   try {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
@@ -173,7 +220,15 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
     console.log(`[GEMINI PDF] 모델: ${modelType} → ${actualModel}`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: actualModel });
+    
+    // 🎯 Controlled Generation: JSON Schema 강제
+    const model = genAI.getGenerativeModel({ 
+      model: actualModel,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: financeSchema
+      }
+    });
     
     const result = await model.generateContent([
       {
@@ -182,14 +237,15 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
           mimeType: 'application/pdf'
         }
       },
-      PDF_EXTRACTION_PROMPT
+      "첨부된 PDF 재무제표에서 8개 항목(회사명, 대표자명, 사업자등록번호, 업종, 재무제표연도, 매출액, 잉여금, 가지급금)을 추출하여 JSON 형식으로 응답해줘. 숫자는 콤마 없이 순수 숫자로만 반환."
     ]);
     
     const response = await result.response;
     const text = response.text();
     
-    console.log(`[GEMINI PDF] 추출 완료`);
+    console.log(`[GEMINI PDF] 추출 완료 (Controlled Generation)`);
     
+    // ✅ 이제 text는 항상 유효한 JSON 문자열
     return text;
   } catch (error) {
     console.error(`[GEMINI PDF] 추출 실패:`, error.message);
