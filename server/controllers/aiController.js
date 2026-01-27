@@ -113,44 +113,85 @@ function render(tpl, vars) {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => JSON.stringify(vars[k] ?? "", null, 2));
 }
 
-// 9개 항목 추출 JSON 스키마
+// 강화된 추출 스키마 (단위/스케일 검증 포함)
 const EXTRACTION_SCHEMA = {
-  company_name: { value: null, evidence: { page: null, quote: null } },
-  ceo_name: { value: null, evidence: { page: null, quote: null } },
-  biz_reg_no: { value: null, evidence: { page: null, quote: null } },
-  industry: { value: null, evidence: { page: null, quote: null } },
-  fs_year: { value: null, evidence: { page: null, quote: null } },
-  revenue: { value: null, unit: null, year: null, evidence: { page: null, quote: null } },
-  retained_earnings: { value: null, unit: null, year: null, evidence: { page: null, quote: null } },
-  due_from_officers_etc: { value: null, unit: null, year: null, evidence: { page: null, quote: null } },
-  welfare_expenses: { value: null, unit: null, year: null, evidence: { page: null, quote: null } },
-  notes: []
+  meta: {
+    company_name: null,
+    asof_date: null,
+    detected_units: [],
+    notes: []
+  },
+  items: [
+    {
+      key: "company_name",
+      original_text: null,
+      unit: null,
+      multiplier_to_won: 1,
+      value_won: null,
+      pretty_krw: null,
+      confidence: 0,
+      evidence: { page: null, section_hint: null }
+    }
+  ],
+  anomalies: []
 };
 
-// PDF 추출용 공통 프롬프트
+// PDF 추출용 강화 프롬프트 (단위/스케일 자동 교정)
 const PDF_EXTRACTION_PROMPT = `
-너는 재무제표 PDF에서 아래 9개 항목을 추출해 JSON으로만 답해야 한다.
+너는 PDF 재무제표에서 숫자를 정확히 추출하는 회계 데이터 추출기다.
 
-추출 항목:
-1. company_name(회사명)
-2. ceo_name(대표자)
-3. biz_reg_no(사업자등록번호)
-4. industry(업종)
-5. fs_year(재무제표 연도/결산일)
-6. revenue(매출액) - 금액 + 단위(천원/원 등) + 해당 연도
-7. retained_earnings(잉여금/이익잉여금/결손금) - 금액 + 단위 + 해당 연도
-8. due_from_officers_etc(가지급금/대여금) - 금액 + 단위 + 해당 연도
-   - 없으면 null로 두고, 유사 계정(미수금/가수금/대여금 등)이 있으면 notes에 남겨라.
-9. welfare_expenses(복리후생비) - 금액 + 단위 + 해당 연도
-   - 손익계산서의 복리후생비 또는 판매비와관리비 중 복리후생비 항목
-   - 없으면 null
+[필수 규칙]
+1) 단위 감지: (단위: 원/천원/백만원/억원) 문구를 우선 탐색한다. 단위가 천원이면 모든 표 숫자에 ×1,000을 적용해 원화로 변환한다.
+2) 모든 금액 항목은 반드시 5개 필드를 함께 출력:
+   - original_text: PDF에 보이는 원문 문자열(콤마 포함)
+   - unit: 원/천원/백만원/억원/unknown
+   - multiplier_to_won: 1/1000/1000000/100000000
+   - value_won: 변환된 정수 원화(콤마 없는 숫자)
+   - pretty_krw: 사람이 읽는 한글 단위(예: 1조 2,295억…)
+3) 교차검증:
+   - '재무현황 개요(억원)' 값과 '손익계산서(천원)' 값의 스케일이 일치하는지 검사한다.
+   - 10/100/1000배 오류가 의심되면 anomalies에 기록하고, scale_fix(multiplier)를 제안한다.
+4) 계정 매핑 강화:
+   - 가지급금은 {가지급금, 단기대여금, 임원/주주/종업원대여금, 기타당좌자산 중 가지급금성} 후보를 모두 검색한다.
+   - '0원'으로 출력하기 전, 후보 계정이 존재하는지 최소 2번 확인한다.
+5) 출력은 오직 JSON만. 설명/마크다운/코드블럭 금지.
 
-반드시 각 항목에 evidence를 포함:
-- evidence.page: 페이지 번호(문서 기준 1부터)
-- evidence.quote: PDF에서 그대로 베껴온 짧은 근거 문장/표 행(최대 25단어 정도)
+추출 항목 (2024 기준 우선):
+- 회사명, 대표자, 사업자등록번호, 업종, 결산기준일
+- 매출액, 복리후생비, 이익잉여금, 미처분이익잉여금, 가지급금
 
-출력은 JSON 단 하나(설명 금지). 아래 스키마 형태를 최대한 따를 것:
-${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
+출력 JSON 스키마:
+{
+  "meta": {
+    "company_name": "",
+    "asof_date": "",
+    "detected_units": [],
+    "notes": []
+  },
+  "items": [
+    {
+      "key": "company_name|ceo_name|business_number|industry|statement_year|revenue|retained_earnings|loans_to_officers|welfare_expenses",
+      "original_text": "PDF 원문",
+      "unit": "원|천원|백만원|억원|unknown",
+      "multiplier_to_won": 1,
+      "value_won": 0,
+      "pretty_krw": "1조 2,295억 원",
+      "confidence": 0.95,
+      "evidence": {
+        "page": 1,
+        "section_hint": "손익계산서 / 재무상태표"
+      }
+    }
+  ],
+  "anomalies": [
+    {
+      "issue": "스케일 불일치",
+      "suspected_cause": "단위 누락 (천원→원 변환 안됨)",
+      "scale_fix_multiplier_to_won": 1000,
+      "how_to_verify": "재무현황 개요(억원)와 표(천원) 비교"
+    }
+  ]
+}
 `;
 
 // 🔧 모델별 토큰 파라미터 자동 선택 (o3/o4-mini/gpt-5 계열 호환)
@@ -734,6 +775,70 @@ export const analyzeFinancialStatement = async (req, res) => {
       });
     }
 
+    // ✅ 안전장치: 새 스키마(items 배열) vs 구 스키마(직접 필드) 자동 감지
+    const parseNewSchema = (data) => {
+      if (data.items && Array.isArray(data.items)) {
+        // 새 스키마: items 배열을 객체로 변환
+        const result = {};
+        data.items.forEach(item => {
+          result[item.key] = {
+            original_text: item.original_text,
+            unit: item.unit,
+            multiplier_to_won: item.multiplier_to_won || 1,
+            value_won: item.value_won,
+            pretty_krw: item.pretty_krw,
+            confidence: item.confidence || 0.9,
+            evidence: item.evidence || {}
+          };
+        });
+        result._anomalies = data.anomalies || [];
+        result._meta = data.meta || {};
+        return result;
+      }
+      // 구 스키마: 그대로 반환
+      return data;
+    };
+
+    const parsedData = parseNewSchema(rawAnalysis);
+
+    // ✅ 안전장치 1: value_won 재계산 (LLM 숫자 실수 방지)
+    const recalculateValueWon = (item) => {
+      if (!item || !item.original_text) return 0;
+      
+      // original_text에서 숫자 추출
+      const numStr = String(item.original_text).replace(/[^\d.-]/g, '');
+      const num = Number(numStr);
+      
+      if (isNaN(num)) return 0;
+      
+      // multiplier 적용
+      const multiplier = item.multiplier_to_won || 1;
+      return Math.floor(num * multiplier);
+    };
+
+    // ✅ 안전장치 2: 스케일 검증 (매출액 기준)
+    const verifyScale = (revenue, expectedRange) => {
+      if (!revenue) return true;
+      const val = typeof revenue === 'number' ? revenue : recalculateValueWon(revenue);
+      
+      // 예상 범위: 1억 ~ 100조
+      const min = 100000000; // 1억
+      const max = 100000000000000; // 100조
+      
+      if (val < min || val > max) {
+        console.warn(`[ANALYZE] 스케일 이상: 매출액 ${val}원이 범위(1억~100조)를 벗어남`);
+        return false;
+      }
+      return true;
+    };
+
+    // ✅ 안전장치 3: 가지급금 0 방지
+    const checkLoansToOfficers = (loans) => {
+      if (!loans || !loans.original_text) {
+        console.warn(`[ANALYZE] 가지급금 누락: 후보 계정(단기대여금/임원대여금) 재확인 필요`);
+      }
+    };
+
     // 🔄 프론트엔드 호환성을 위해 ExtractedFieldsTable 구조로 변환
     // { value, confidence, page_number, snippet, method }
     
@@ -747,8 +852,23 @@ export const analyzeFinancialStatement = async (req, res) => {
       return v;
     };
 
-    // 2) 금액 파싱: "9,571,217,000원" / "95억 7,121만 7,000" 모두 처리
-    const parseMoney = (v) => {
+    // 2) 금액 파싱: "9,571,217,000원" / "95억 7,121만 7,000" / multiplier 처리
+    const parseMoney = (v, autoMultiplier = null) => {
+      // 새 스키마 (object with original_text + multiplier)
+      if (v && typeof v === 'object' && 'original_text' in v) {
+        const numStr = String(v.original_text).replace(/[^\d.-]/g, '');
+        const num = Number(numStr);
+        if (!isNaN(num) && Number.isFinite(num)) {
+          const multiplier = v.multiplier_to_won || autoMultiplier || 1;
+          return Math.floor(num * multiplier);
+        }
+        // value_won이 이미 계산되어 있으면 사용
+        if (v.value_won != null && Number.isFinite(v.value_won)) {
+          return v.value_won;
+        }
+      }
+      
+      // 기존 로직
       v = unwrap(v);
       if (v == null) return 0;
       if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
@@ -758,7 +878,10 @@ export const analyzeFinancialStatement = async (req, res) => {
 
       // 2-1) 단순 숫자(콤마/원 포함) 먼저
       const plain = s.replace(/[^\d.-]/g, ''); // 콤마/원/공백 제거
-      if (/^-?\d+(\.\d+)?$/.test(plain)) return Number(plain);
+      if (/^-?\d+(\.\d+)?$/.test(plain)) {
+        const num = Number(plain);
+        return Math.floor(num * (autoMultiplier || 1));
+      }
 
       // 2-2) 한국 단위(조/억/만) 처리: "95억 7,121만 7,000"
       let total = 0;
@@ -776,6 +899,10 @@ export const analyzeFinancialStatement = async (req, res) => {
 
       // 남은 숫자(원 단위) 더하기
       const tail = rest.replace(/[^\d.-]/g, '');
+      if (/^-?\d+(\.\d+)?$/.test(tail)) total += Number(tail);
+
+      return Number.isFinite(total) ? total : 0;
+    };
       if (/^-?\d+(\.\d+)?$/.test(tail)) total += Number(tail);
 
       return Number.isFinite(total) ? total : 0;
