@@ -162,13 +162,21 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
     
     // 2. PDF를 텍스트로 변환 (pdf-parse v2 API)
     console.log(`[GPT PDF] PDF 텍스트 추출 시작...`);
-    const parser = new PDFParse({ buffer: pdfBuffer });
-    const pdfData = await parser.getText();
-    const pdfText = pdfData.text;
-    const numPages = pdfData.totalPages || 0;
-    console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자)`);
+    const parser = new PDFParse({ data: pdfBuffer });  // ✅ buffer → data
+    let pdfText = '';
+    let numPages = 0;
     
-    if (!pdfText || pdfText.trim().length === 0) {
+    try {
+      const pdfData = await parser.getText();
+      pdfText = pdfData.text || '';
+      numPages = pdfData.total || pdfData.totalPages || pdfData.numpages || 0;
+      console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자)`);
+    } finally {
+      // ✅ v2는 destroy() 권장 (메모리/워커 정리)
+      await parser.destroy();
+    }
+    
+    if (!pdfText.trim()) {
       throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 보호된 PDF일 수 있습니다.');
     }
     
