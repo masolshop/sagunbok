@@ -12,6 +12,27 @@ const API_BASE_URL = "https://sagunbok.com";
 const MODULE = "CRETOP_REPORT" as const;
 const ACTION = "FULL_REPORT" as const;
 
+// 💰 숫자 포맷팅 유틸리티 (천단위 콤마 + 한글 표기)
+function formatCurrency(value: number | string): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num) || num === 0) return '0원';
+  
+  // 천단위 콤마
+  const formatted = num.toLocaleString('ko-KR');
+  
+  // 한글 단위 변환
+  let koreanUnit = '';
+  if (num >= 1_000_000_000_000) {
+    koreanUnit = `(${(num / 1_000_000_000_000).toFixed(1)}조원)`;
+  } else if (num >= 100_000_000) {
+    koreanUnit = `(${(num / 100_000_000).toFixed(1)}억원)`;
+  } else if (num >= 10_000) {
+    koreanUnit = `(${(num / 10_000).toFixed(1)}만원)`;
+  }
+  
+  return `${formatted}원 ${koreanUnit}`.trim();
+}
+
 type ApiKeyStatus = {
   ok: boolean;
   keys?: {
@@ -602,24 +623,24 @@ export default function CretopReportPage() {
             {/* 매출액 */}
             {revenue && (
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <label className="text-sm font-bold text-green-600 block mb-1">매출액</label>
-                <p className="text-lg font-bold text-green-700">{revenue}</p>
+                <label className="text-sm font-bold text-green-600 block mb-1">💰 매출액</label>
+                <p className="text-lg font-bold text-green-700">{formatCurrency(revenue)}</p>
               </div>
             )}
             
             {/* 잉여금 */}
             {retainedEarnings && (
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <label className="text-sm font-bold text-green-600 block mb-1">잉여금</label>
-                <p className="text-lg font-bold text-green-700">{retainedEarnings}</p>
+                <label className="text-sm font-bold text-green-600 block mb-1">💵 이익잉여금</label>
+                <p className="text-lg font-bold text-green-700">{formatCurrency(retainedEarnings)}</p>
               </div>
             )}
             
             {/* 가지급금 */}
             {loansToOfficers && (
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <label className="text-sm font-bold text-orange-600 block mb-1">가지급금(대여금)</label>
-                <p className="text-lg font-bold text-orange-700">{loansToOfficers}</p>
+                <label className="text-sm font-bold text-orange-600 block mb-1">⚠️ 가지급금(대여금)</label>
+                <p className="text-lg font-bold text-orange-700">{formatCurrency(loansToOfficers)}</p>
               </div>
             )}
           </div>
