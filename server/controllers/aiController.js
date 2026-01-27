@@ -155,47 +155,48 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
   }
 }
 
-// 📋 Gemini 2.5/3.0 Controlled Generation용 Response Schema (2026년형)
+// 📋 Gemini 2.5/3.0 Controlled Generation용 Response Schema (2026년형 - 사근복닷컴 전용)
+// Claude 컨설팅 반영: 가지급금 추출 정밀도 향상, 단위 환산 명시
 const financeSchema = {
   type: "object",
-  description: "재무제표 PDF에서 추출한 8개 핵심 항목",
+  description: "한국 기업 재무제표 PDF에서 추출한 8대 핵심 금융 지표",
   properties: {
     company_name: {
       type: "string",
-      description: "재무제표 상의 정확한 법인명 또는 상호명 (예: ㈜쏠라리버, 삼성전자㈜)"
+      description: "재무제표 상의 정확한 법인명 또는 상호명. 예: ㈜쏠라리버, 삼성전자㈜, (주)네이버"
     },
     ceo_name: {
       type: "string",
-      description: "대표자 성명 (예: 홍길동, 이순신)",
+      description: "대표이사 또는 대표자 성명. 예: 최무영, 홍길동. 없으면 빈 문자열",
       nullable: true
     },
     business_number: {
       type: "string",
-      description: "사업자등록번호 (예: 123-45-67890), 없으면 빈 문자열",
+      description: "사업자등록번호 (형식: 000-00-00000). 예: 122-81-94563. 없으면 빈 문자열",
       nullable: true
     },
     industry: {
       type: "string",
-      description: "업종명 (예: 제조업, 도소매업, 서비스업)",
+      description: "주요 업종 및 사업 내용. 예: 태양광 발전 장치 제조 및 공사업, 제조업, 도소매업. 명확하지 않으면 '제품 매출' 또는 '서비스업'으로 추정",
       nullable: true
     },
     statement_year: {
       type: "string",
-      description: "재무제표 연도 (예: 2024, 2023)"
+      description: "재무제표 기준 연도 (YYYY 형식). 예: 2024, 2023. 가장 최근 결산일(예: 2024-12-31) 기준"
     },
     revenue: {
       type: "number",
-      description: "매출액 (단위: 원), 숫자만. 없으면 0",
+      description: "매출액 (단위: 원). 주의: 재무제표 단위가 '천원'이면 반드시 1,000을 곱해 '원' 단위로 환산. 손익계산서의 '매출액(*)' 항목 참조. 예: 9571217 (천원) → 9571217000 (원). 없으면 0",
       nullable: true
     },
     retained_earnings: {
       type: "number",
-      description: "잉여금(이익잉여금) (단위: 원), 숫자만. 없으면 0",
+      description: "이익잉여금 (단위: 원). 주의: 재무제표 단위가 '천원'이면 반드시 1,000을 곱해 '원' 단위로 환산. 재무상태표의 '이익잉여금(*)' 항목 참조. 예: 1379030 (천원) → 1379030000 (원). 결손금은 음수로 표시. 없으면 0",
       nullable: true
     },
     loans_to_officers: {
       type: "number",
-      description: "가지급금 (단위: 원), 숫자만. 없으면 0",
+      description: "가지급금/대여금 합계 (단위: 원). 재무상태표 유동자산 또는 비유동자산 항목 중 '단기대여금', '장기대여금', '임원대여금', '주주단기대여금', '가지급금' 등을 합산. 주의: '매출채권', '미수금(영업용)', '선급금'은 제외. 단위가 '천원'이면 1,000 곱해 환산. 해당 항목이 없으면 0",
       nullable: true
     }
   },
@@ -230,6 +231,62 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
       }
     });
     
+    // 📝 Claude 컨설팅 기반 프롬프트 (2026년 사근복닷컴 전용)
+    const expertPrompt = `
+당신은 한국 기업 재무제표 전문 회계 컨설턴트입니다. 첨부된 PDF 재무제표를 정밀 분석하세요.
+
+[핵심 분석 지침]
+
+1️⃣ **단위 환산 (최우선)**
+   - 재무제표 상단에서 기본 단위 확인 (예: "단위: 천원", "단위: 백만원", "단위: 원")
+   - **"천원" 단위인 경우 반드시 ×1,000 환산하여 "원" 단위로 출력**
+   - 예: 재무제표에 "9,571,217 (천원)" → JSON 출력: 9571217000
+   - 예: 재무제표에 "1,379,030 (천원)" → JSON 출력: 1379030000
+
+2️⃣ **가지급금/대여금 추출 정밀도 향상**
+   재무상태표의 **유동자산** 및 **비유동자산** 항목에서 아래 계정과목을 스캔:
+   
+   ✅ **포함 대상** (합산):
+   - 단기대여금
+   - 장기대여금
+   - 임원대여금
+   - 주주대여금
+   - 주임종단기대여금 (주주·임원·종업원 단기대여금)
+   - 가지급금
+   
+   ❌ **제외 대상** (영업 관련 계정):
+   - 매출채권 / 받을어음
+   - 미수금 (단, "미수금(비영업용)" 명시 시 포함 고려)
+   - 선급금 / 선급비용
+   - 선급법인세
+   
+   ⚠️ **판단 기준**:
+   - 해당 계정이 **주주·임원·관계사** 등에 대한 금전 대여 성격이면 포함
+   - 정상 영업 활동(매출/비용 선지급)과 관련되면 제외
+   - 확실하지 않으면 **0으로 처리** (과대 추정 방지)
+
+3️⃣ **최신 데이터 우선**
+   - 여러 연도가 표시된 경우 **가장 우측(최신 결산일)** 데이터 사용
+   - 예: "2023년 / 2024년" 표시 시 → 2024년 데이터만 추출
+
+4️⃣ **정확한 항목 식별**
+   - 매출액: 손익계산서의 **"매출액(*)"** 또는 **"I. 매출액"** 합계
+   - 이익잉여금: 재무상태표 자본 항목의 **"이익잉여금(*)"** 또는 **"V. 이익잉여금"**
+   - 결손금은 음수(-)로 표시
+
+5️⃣ **출력 형식**
+   - 숫자는 콤마 없이 순수 숫자로 반환 (예: 9571217000)
+   - 사업자등록번호는 하이픈 포함 (예: "122-81-94563")
+   - 업종은 구체적으로 (예: "태양광 발전 장치 제조 및 공사업")
+
+[예시]
+재무제표에 "매출액 9,571,217 (단위: 천원)" 표시 시:
+→ revenue: 9571217000 (천원 × 1,000)
+
+재무제표에 "가지급금" 항목 없음:
+→ loans_to_officers: 0
+`;
+
     const result = await model.generateContent([
       {
         inlineData: {
@@ -237,7 +294,7 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
           mimeType: 'application/pdf'
         }
       },
-      "첨부된 PDF 재무제표에서 8개 항목(회사명, 대표자명, 사업자등록번호, 업종, 재무제표연도, 매출액, 잉여금, 가지급금)을 추출하여 JSON 형식으로 응답해줘. 숫자는 콤마 없이 순수 숫자로만 반환."
+      expertPrompt
     ]);
     
     const response = await result.response;
