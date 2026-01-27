@@ -149,6 +149,25 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
+// 🔧 모델별 토큰 파라미터 자동 선택 (o3/o4-mini/gpt-5 계열 호환)
+function buildTokenParams(model, maxTokens) {
+  // Reasoning 모델(o3, o4-mini) 및 최신 gpt-5 계열은 max_completion_tokens 사용
+  if (model.startsWith('o3') || model.startsWith('o4') || model.startsWith('gpt-5')) {
+    return { max_completion_tokens: maxTokens };
+  }
+  // 기존 모델(gpt-4, gpt-4o, gpt-4.1 등)은 max_tokens 사용
+  return { max_tokens: maxTokens };
+}
+
+// 🔧 모델별 temperature 파라미터 체크 (reasoning 모델은 temperature 불가)
+function buildTemperatureParam(model, temperature) {
+  // Reasoning 모델은 temperature를 지원하지 않음 (기본값 1만 허용)
+  if (model.startsWith('o3') || model.startsWith('o4')) {
+    return {};  // temperature 파라미터 제외
+  }
+  return { temperature };
+}
+
 // OpenAI PDF 추출 (PDF → Text 변환 후 Chat Completions API)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
@@ -206,8 +225,8 @@ ${pdfText.slice(0, 50000)}
         }
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 4096,
-      temperature: 0.1
+      ...buildTokenParams(model, 4096),       // ✅ 모델별 자동 토큰 파라미터
+      ...buildTemperatureParam(model, 0.1)    // ✅ reasoning 모델은 temperature 제외
     });
     
     console.log(`[GPT PDF] 추출 완료 (모델: ${model}, Task: ${taskType})`);
@@ -473,7 +492,7 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {
 
   const payload = {
     model,
-    max_tokens: maxTokens,
+    ...buildTokenParams(model, maxTokens),  // ✅ 모델별 자동 토큰 파라미터
     messages: [
       { role: "system", content: system },
       { role: "user", content: userPrompt },
