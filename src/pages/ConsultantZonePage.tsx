@@ -250,8 +250,8 @@ export default function ConsultantZonePage() {
       if (key.startsWith('AIzaSy')) {
         setDetectedModel({
           type: 'gemini',
-          info: 'Gemini 3 Flash (추천)',
-          recommended: { free: 'gemini-3-flash' }
+          info: 'Gemini 1.5 Flash (추천)',
+          recommended: { free: 'gemini-1.5-flash' }
         });
         setSelectedModel('gemini-flash');
         setApiKeyMsg("✅ Gemini API 키 감지됨!");

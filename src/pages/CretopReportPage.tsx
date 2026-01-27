@@ -353,9 +353,9 @@ export default function CretopReportPage() {
               className="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-xl bg-white shadow-sm"
             >
               <option value="gpt">GPT-5.2</option>
-              <option value="gemini-pro">Gemini 3 Pro (최고 성능)</option>
-              <option value="gemini-flash">Gemini 3 Flash (빠른 속도, 무료 추천)</option>
-              <option value="gemini-preview">Gemini 3 Pro Preview (실험 버전)</option>
+              <option value="gemini-pro">Gemini 1.5 Pro (최고 성능)</option>
+              <option value="gemini-flash">Gemini 1.5 Flash (빠른 속도, 무료 추천)</option>
+              <option value="gemini-preview">Gemini 2.0 Flash Exp (실험 버전)</option>
               <option value="claude">Claude 3.5 Sonnet</option>
             </select>
             
