@@ -874,13 +874,14 @@ function ReportDisplay({ report }: { report: CretopReport }) {
                 h1: ({ node, ...props }) => <h1 className="text-4xl font-black text-blue-700 mt-10 mb-5" {...props} />,
                 h2: ({ node, ...props }) => <h2 className="text-3xl font-black text-slate-800 mt-8 mb-4 pb-3 border-b-4 border-blue-200" {...props} />,
                 h3: ({ node, children, ...props }) => {
-                  // Special styling for 4대 지표 cards
+                  // Special styling for all section cards (B: 4대 지표, C: 이슈체크, D: 컨설팅 제안, E: 로드맵)
                   const text = String(children);
                   let bgColor = 'bg-gradient-to-br from-blue-50 to-indigo-50';
                   let borderColor = 'border-blue-300';
                   let iconBg = 'bg-blue-100';
                   let icon = '📊';
                   
+                  // B. 4대 지표 스냅샷
                   if (text.includes('매출액') || text.includes('💰')) {
                     bgColor = 'bg-gradient-to-br from-green-50 to-emerald-50';
                     borderColor = 'border-green-300';
@@ -901,6 +902,27 @@ function ReportDisplay({ report }: { report: CretopReport }) {
                     borderColor = 'border-purple-300';
                     iconBg = 'bg-purple-100';
                     icon = '🎁';
+                  }
+                  // C. 이슈체크
+                  else if (text.includes('이슈') || text.includes('체크') || text.includes('🔍')) {
+                    bgColor = 'bg-gradient-to-br from-red-50 to-rose-50';
+                    borderColor = 'border-red-300';
+                    iconBg = 'bg-red-100';
+                    icon = '🔍';
+                  }
+                  // D. 컨설팅 제안 (패키지)
+                  else if (text.includes('패키지') || text.includes('제안') || text.includes('💼')) {
+                    bgColor = 'bg-gradient-to-br from-teal-50 to-cyan-50';
+                    borderColor = 'border-teal-300';
+                    iconBg = 'bg-teal-100';
+                    icon = '💼';
+                  }
+                  // E. 로드맵
+                  else if (text.includes('로드맵') || text.includes('실행') || text.includes('🗓️') || text.includes('일')) {
+                    bgColor = 'bg-gradient-to-br from-indigo-50 to-violet-50';
+                    borderColor = 'border-indigo-300';
+                    iconBg = 'bg-indigo-100';
+                    icon = '🗓️';
                   }
                   
                   return (
