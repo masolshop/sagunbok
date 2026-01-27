@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import ExtractedFieldsTable from "../components/ExtractedFieldsTable";
+import ReactMarkdown from "react-markdown";
 
 /**
  * CretopReportPage.tsx
@@ -401,8 +402,8 @@ export default function CretopReportPage() {
   };
 
   const handleGenerate = async () => {
-    if (!companyName || !statementDate) {
-      alert("회사명과 결산일은 필수입니다.");
+    if (!extractedFieldsData) {
+      alert("먼저 재무제표 PDF를 업로드하고 분석해주세요.");
       return;
     }
 
@@ -419,27 +420,44 @@ export default function CretopReportPage() {
     setReport(null);
 
     try {
-      const r = await fetch(`${API_BASE_URL}/api/ai/run`, {
+      // 추출된 재무 데이터를 사근복 스냅샷 분석 형식으로 변환
+      const getFieldValue = (field: any) => {
+        if (!field) return "";
+        return field.value || field.original_text || "";
+      };
+
+      // 재무상태표 데이터
+      const balanceSheetData = {
+        "이익잉여금": getFieldValue(extractedFieldsData.retained_earnings),
+        "가지급금": getFieldValue(extractedFieldsData.loans_to_officers),
+      };
+
+      // 손익계산서 데이터
+      const incomeStatementData = {
+        "매출액": getFieldValue(extractedFieldsData.revenue),
+        "복리후생비": getFieldValue(extractedFieldsData.welfare_expenses),
+      };
+
+      const snapshotPayload = {
+        company_name: getFieldValue(extractedFieldsData.company_name),
+        industry: getFieldValue(extractedFieldsData.industry) || "미입력",
+        year: getFieldValue(extractedFieldsData.statement_year),
+        employee_count: employeeCount || "미입력",
+        unit: "원",
+        balance_sheet: balanceSheetData,
+        income_statement: incomeStatementData,
+        cash_flow: {},
+        model_type: selectedModel.startsWith('gemini') ? 'gemini' : 'gpt',
+      };
+
+      // 재무제표 스냅샷 분석 API 호출
+      const r = await fetch(`${API_BASE_URL}/api/ai/analyze-financial-snapshot`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          module: MODULE,
-          action: ACTION,
-          modelType: selectedModel,
-          calcResult: {
-            company_name: companyName,
-            statement_date: statementDate,
-            balance_sheet_json: balanceSheet || "{}",
-            income_statement_json: incomeStatement || "{}",
-            cashflow_json: cashflow || "{}",
-            ceo_name: ceoName,
-            employee_count: employeeCount,
-            industry_name: industryName,
-          },
-        }),
+        body: JSON.stringify(snapshotPayload),
       });
 
       const j = await r.json();
@@ -447,8 +465,58 @@ export default function CretopReportPage() {
         throw new Error(j.error || "리포트 생성 실패");
       }
 
-      if (j.report) {
-        setReport(j.report);
+      if (j.analysis) {
+        // 분석 결과를 Markdown으로 표시하기 위해 간단한 report 객체로 변환
+        setReport({
+          report_meta: {
+            company_name: snapshotPayload.company_name,
+            statement_period: snapshotPayload.year,
+            currency_unit: "원",
+            generated_at: new Date().toISOString(),
+            data_sources: ["PDF 추출 데이터"],
+            confidence: {
+              overall: 0.85,
+              missing_critical_data: [],
+            },
+          },
+          summary_one_page: {
+            headline: j.analysis,
+            key_findings: [],
+            top_risks: [],
+            top_opportunities: [],
+          },
+          executive_overview: {
+            overall_grade: "",
+            diagnosis_lines: [],
+            improvement_points: [],
+          },
+          issue_check: {
+            table: [],
+            flags: [],
+          },
+          lifecycle: {
+            stage: "",
+            basis: [],
+            stage_tasks: [],
+          },
+          financial_summary: {},
+          ratio_analysis: {},
+          sagunbok_consulting: {},
+          gongunbok_applicability: {},
+          roadmap: {
+            days_30_60_90: [],
+            month_6: [],
+            month_12: [],
+          },
+          additional_data_request: {
+            priority_1: [],
+            priority_2: [],
+            priority_3: [],
+          },
+          disclaimer: {
+            lines: [],
+          },
+        } as any);
       } else {
         throw new Error("리포트 JSON 파싱 실패");
       }
@@ -718,50 +786,43 @@ export default function CretopReportPage() {
         />
       )}
 
-      {/* Financial Statements Input */}
-      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-[48px] border-4 border-amber-100 p-10 lg:p-14 space-y-10 shadow-xl">
-        <h3 className="flex items-center gap-4 text-amber-700 font-black text-3xl lg:text-4xl">
-          <span>💰</span> 재무제표 데이터 (선택)
-        </h3>
-        <p className="text-xl text-amber-600 font-bold">
-          💡 PDF 업로드로 자동 입력되거나, 직접 JSON 형식으로 입력하세요. 비어있어도 리포트는 생성됩니다.
-        </p>
-
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <label className="text-xl font-black text-amber-700 block">재무상태표 (Balance Sheet)</label>
-            <textarea
-              value={balanceSheet}
-              onChange={(e) => setBalanceSheet(e.target.value)}
-              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
-              rows={6}
-              placeholder='{"자산총계": 5000000000, "부채총계": 2000000000, "자본총계": 3000000000}'
-            />
+      {/* 재무제표 스냅샷 분석 안내 */}
+      {extractedFieldsData && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[48px] border-4 border-blue-100 p-10 lg:p-14 space-y-6 shadow-xl">
+          <div className="flex items-center gap-4">
+            <span className="text-5xl">📊</span>
+            <div>
+              <h3 className="text-blue-700 font-black text-3xl lg:text-4xl">
+                재무제표 데이터 추출 완료
+              </h3>
+              <p className="text-xl text-blue-600 font-bold mt-2">
+                💡 추출된 재무 데이터를 기반으로 사근복 관점의 심층 분석 리포트를 생성합니다.
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <label className="text-xl font-black text-amber-700 block">손익계산서 (Income Statement)</label>
-            <textarea
-              value={incomeStatement}
-              onChange={(e) => setIncomeStatement(e.target.value)}
-              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
-              rows={6}
-              placeholder='{"매출액": 10000000000, "영업이익": 1000000000, "당기순이익": 800000000}'
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl font-black text-amber-700 block">현금흐름표 (Cash Flow)</label>
-            <textarea
-              value={cashflow}
-              onChange={(e) => setCashflow(e.target.value)}
-              className="w-full bg-white border-4 border-transparent focus:border-amber-500 rounded-[24px] p-6 text-base font-mono outline-none shadow-inner"
-              rows={6}
-              placeholder='{"영업활동현금흐름": 900000000, "투자활동현금흐름": -200000000}'
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div className="bg-white rounded-3xl p-6 border-2 border-blue-200">
+              <div className="text-blue-600 font-black text-lg mb-2">🏢 기업정보</div>
+              <div className="text-gray-700 font-bold">
+                {extractedFieldsData.company_name?.value || "-"}
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl p-6 border-2 border-green-200">
+              <div className="text-green-600 font-black text-lg mb-2">💰 매출액</div>
+              <div className="text-gray-700 font-bold">
+                {extractedFieldsData.revenue?.value ? `${Number(extractedFieldsData.revenue.value).toLocaleString()}원` : "-"}
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl p-6 border-2 border-purple-200">
+              <div className="text-purple-600 font-black text-lg mb-2">📅 기준연도</div>
+              <div className="text-gray-700 font-bold">
+                {extractedFieldsData.statement_year?.value || "-"}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Generate Button */}
       <button
@@ -801,6 +862,54 @@ export default function CretopReportPage() {
 }
 
 function ReportDisplay({ report }: { report: CretopReport }) {
+  // If the report contains markdown text in headline, display it
+  if (typeof report.summary_one_page.headline === 'string' && report.summary_one_page.headline.includes('#')) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-[32px] border-4 border-blue-100 p-10 shadow-xl">
+          <h3 className="text-3xl font-black text-blue-700 mb-6">📊 사근복 관점 재무 스냅샷 분석</h3>
+          <div className="prose prose-lg max-w-none">
+            <ReactMarkdown
+              components={{
+                h1: ({ node, ...props }) => <h1 className="text-3xl font-black text-blue-700 mt-8 mb-4" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-2xl font-black text-slate-700 mt-6 mb-3" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-xl font-bold text-slate-600 mt-4 mb-2" {...props} />,
+                p: ({ node, ...props }) => <p className="text-base text-slate-600 my-2 leading-relaxed" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 my-3" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-1 my-3" {...props} />,
+                li: ({ node, ...props }) => <li className="text-slate-600" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-black text-slate-800" {...props} />,
+                em: ({ node, ...props }) => <em className="italic text-blue-600" {...props} />,
+                table: ({ node, ...props }) => (
+                  <div className="overflow-x-auto my-4">
+                    <table className="min-w-full border-collapse border-2 border-slate-200" {...props} />
+                  </div>
+                ),
+                thead: ({ node, ...props }) => <thead className="bg-slate-100" {...props} />,
+                tbody: ({ node, ...props }) => <tbody {...props} />,
+                tr: ({ node, ...props }) => <tr className="border-b border-slate-200" {...props} />,
+                th: ({ node, ...props }) => <th className="px-4 py-3 text-left font-black text-slate-700 border border-slate-300" {...props} />,
+                td: ({ node, ...props }) => <td className="px-4 py-3 text-slate-600 border border-slate-300" {...props} />,
+                code: ({ node, inline, ...props }: any) => 
+                  inline ? (
+                    <code className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-blue-600" {...props} />
+                  ) : (
+                    <code className="block bg-slate-100 p-4 rounded-lg text-sm font-mono overflow-x-auto" {...props} />
+                  ),
+                blockquote: ({ node, ...props }) => (
+                  <blockquote className="border-l-4 border-blue-500 pl-4 italic text-slate-600 my-4" {...props} />
+                ),
+              }}
+            >
+              {report.summary_one_page.headline}
+            </ReactMarkdown>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original display format for structured reports
   return (
     <div className="space-y-8">
       {/* Summary */}
