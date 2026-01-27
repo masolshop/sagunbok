@@ -3,49 +3,101 @@ import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// GPT 모델 우선순위 (2026년 기준)
-const GPT_PAID_CANDIDATES = [
-  'gpt-5.2',
-  'gpt-5-mini',
-  'gpt-4.1',
-  'gpt-4o',
-  'gpt-4o-mini',
-  'gpt-5-nano'
-];
+// 🎯 Task Type 정의 (OpenAI 자동 모델 선택용)
+const TASK_TYPES = {
+  CHAT_LIGHT: 'CHAT_LIGHT',                       // 간단 상담/요약
+  CONSULTING_STANDARD: 'CONSULTING_STANDARD',     // 복지제도 추천/리포트
+  FIN_STATEMENT_ANALYSIS: 'FIN_STATEMENT_ANALYSIS', // 재무제표 분석 (Reasoning 우선)
+  CODE_GEN: 'CODE_GEN'                            // 코드 생성
+};
 
-const GPT_FREE_CANDIDATES = [
-  'gpt-5-nano',
-  'gpt-4o-mini',
-  'gpt-4o',
-  'gpt-4.1',
-  'gpt-5-mini',
-  'gpt-5.2'
-];
+// 💰 GPT 모델 카테고리 (2026년 기준)
+const GPT_MODELS = {
+  // Reasoning 계열 (복잡한 추론/분석/계산)
+  REASONING_STRONG: ['o3', 'o3-pro'],
+  REASONING_FAST: ['o4-mini', 'o3-mini'],
+  
+  // GPT 계열 (범용/코딩/문서)
+  QUALITY_GPT: ['gpt-5.2', 'gpt-4.1', 'gpt-4o'],
+  BALANCED_GPT: ['gpt-5-mini', 'gpt-4.1-mini', 'gpt-4o'],
+  CHEAP_GPT: ['gpt-5-nano', 'gpt-4.1-nano', 'gpt-4o-mini'],
+  
+  // 코딩 특화
+  CODING_GPT: ['gpt-5.2-codex', 'gpt-5.2', 'gpt-4.1', 'gpt-4o']
+};
 
-// GPT 모델 자동 선택 (키로 사용 가능한 모델 중 최적 선택)
-async function pickBestGPTModel(apiKey, plan = 'free') {
+// 🔍 모델 선택 함수 (Task Type + Plan + Cost Mode)
+function selectGPTModel(availableModels, taskType, userPlan = 'free', costMode = 'balanced') {
+  const available = new Set(availableModels);
+  
+  // Helper: 후보 목록에서 첫 번째 사용 가능한 모델 선택
+  const pickFirst = (candidates) => candidates.find(m => available.has(m));
+  
+  // 📊 재무제표 분석 → Reasoning 우선
+  if (taskType === TASK_TYPES.FIN_STATEMENT_ANALYSIS) {
+    const reasoningCandidates = userPlan === 'paid' 
+      ? GPT_MODELS.REASONING_STRONG 
+      : GPT_MODELS.REASONING_FAST;
+    
+    const model = pickFirst(reasoningCandidates)
+      || pickFirst(GPT_MODELS.QUALITY_GPT)
+      || pickFirst(GPT_MODELS.BALANCED_GPT)
+      || pickFirst(GPT_MODELS.CHEAP_GPT);
+    
+    if (!model) throw new Error('No suitable model for FIN_STATEMENT_ANALYSIS');
+    
+    console.log(`[Model Select] Task: FIN_STATEMENT_ANALYSIS, Plan: ${userPlan} → ${model}`);
+    return { model, reason: 'financial analysis => reasoning-first fallback' };
+  }
+  
+  // 💻 코드 생성 → 코딩 강한 모델 우선
+  if (taskType === TASK_TYPES.CODE_GEN) {
+    const model = pickFirst(GPT_MODELS.CODING_GPT)
+      || pickFirst(GPT_MODELS.BALANCED_GPT)
+      || pickFirst(GPT_MODELS.CHEAP_GPT);
+    
+    if (!model) throw new Error('No suitable model for CODE_GEN');
+    
+    console.log(`[Model Select] Task: CODE_GEN → ${model}`);
+    return { model, reason: 'code generation => coding-strong models' };
+  }
+  
+  // 📝 일반 상담/컨설팅 → Cost Mode 기반
+  const baseCandidates = costMode === 'cheap' 
+    ? GPT_MODELS.CHEAP_GPT 
+    : costMode === 'quality' 
+      ? GPT_MODELS.QUALITY_GPT 
+      : GPT_MODELS.BALANCED_GPT;
+  
+  // 무료 사용자는 한 단계 더 저렴하게
+  const finalCandidates = userPlan === 'free' 
+    ? [...GPT_MODELS.CHEAP_GPT, ...baseCandidates]
+    : baseCandidates;
+  
+  const model = pickFirst(finalCandidates)
+    || pickFirst(GPT_MODELS.QUALITY_GPT)
+    || pickFirst(GPT_MODELS.CHEAP_GPT);
+  
+  if (!model) throw new Error('No suitable GPT model available');
+  
+  console.log(`[Model Select] Task: ${taskType}, Plan: ${userPlan}, Cost: ${costMode} → ${model}`);
+  return { model, reason: `task=${taskType}, plan=${userPlan}, costMode=${costMode}` };
+}
+
+// GPT 모델 자동 선택 (레거시 호환성 유지)
+async function pickBestGPTModel(apiKey, plan = 'free', taskType = TASK_TYPES.CONSULTING_STANDARD) {
   try {
     const client = new OpenAI({ apiKey });
     const list = await client.models.list();
-    const available = new Set(list.data.map(m => m.id));
+    const availableModels = list.data.map(m => m.id);
     
-    const candidates = plan === 'paid' ? GPT_PAID_CANDIDATES : GPT_FREE_CANDIDATES;
+    console.log(`[GPT Auto] 사용 가능한 모델: ${availableModels.length}개`);
     
-    for (const modelId of candidates) {
-      if (available.has(modelId)) {
-        console.log(`[GPT Auto] 선택된 모델: ${modelId} (plan: ${plan})`);
-        return modelId;
-      }
-    }
+    // Task Type 기반 선택
+    const { model, reason } = selectGPTModel(availableModels, taskType, plan);
     
-    // 최후 폴백: 첫 번째 사용 가능한 모델
-    if (list.data?.length > 0) {
-      const fallback = list.data[0].id;
-      console.log(`[GPT Auto] 폴백 모델: ${fallback}`);
-      return fallback;
-    }
-    
-    throw new Error('이 API 키로 사용 가능한 GPT 모델이 없습니다.');
+    console.log(`[GPT Auto] ✅ 선택된 모델: ${model} (이유: ${reason})`);
+    return model;
   } catch (error) {
     if (error.status === 401) {
       throw new Error('GPT API 키가 유효하지 않습니다. 키를 확인해주세요.');
@@ -107,9 +159,10 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
     
     const client = new OpenAI({ apiKey });
     
-    // 2. 모델 자동 선택 (수동 지정 시 스킵)
-    const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free');
-    console.log(`[GPT PDF] 사용 모델: ${model}`);
+    // 2. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
+    const taskType = TASK_TYPES.FIN_STATEMENT_ANALYSIS;
+    const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free', taskType);
+    console.log(`[GPT PDF] 사용 모델: ${model} (Task: ${taskType})`);
     
     // 3. Base64 인코딩 및 data URL 생성
     const base64 = pdfBuffer.toString('base64');
@@ -136,7 +189,7 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       }],
     });
     
-    console.log(`[GPT PDF] 추출 완료 (모델: ${model})`);
+    console.log(`[GPT PDF] 추출 완료 (모델: ${model}, Task: ${taskType})`);
     
     return response.output_text;
     
