@@ -757,21 +757,52 @@ export const analyzeFinancialStatement = async (req, res) => {
     }
 
     console.log(`[ANALYZE] 모델 응답 받음 (길이: ${responseText.length}자)`);
+    console.log(`[ANALYZE] 응답 미리보기 (처음 500자):`, responseText.substring(0, 500));
 
-    // JSON 파싱 시도 (마크다운 코드 블록 제거)
+    // JSON 파싱 시도 (여러 방법으로 JSON 추출)
     let rawAnalysis;
     try {
-      const cleanedText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      // GPT의 response_format: json_object는 이미 순수 JSON 반환
+      // 하지만 Claude/Gemini는 마크다운 코드 블록으로 감쌀 수 있음
+      
+      let cleanedText = responseText.trim();
+      
+      // 1. 마크다운 코드 블록 제거 (Claude/Gemini 대응)
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      }
+      
+      // 2. JSON 블록 찾기 (중괄호 기준)
+      const jsonStart = cleanedText.indexOf('{');
+      const jsonEnd = cleanedText.lastIndexOf('}');
+      
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+        throw new Error('JSON 블록을 찾을 수 없습니다. 응답에 { } 구조가 없습니다.');
+      }
+      
+      cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
+      
+      // 3. JSON 파싱 시도
       rawAnalysis = JSON.parse(cleanedText);
       console.log(`[ANALYZE] JSON 파싱 성공`);
-      console.log(`[ANALYZE] 추출 결과 (raw):`, JSON.stringify(rawAnalysis, null, 2));
+      console.log(`[ANALYZE] 추출 결과 키:`, Object.keys(rawAnalysis));
+      
+      // 4. 필수 필드 검증
+      if (!rawAnalysis.company_name && !rawAnalysis.revenue && !rawAnalysis.items) {
+        console.warn(`[ANALYZE] 필수 필드 누락: company_name, revenue, items 모두 없음`);
+      }
+      
     } catch (parseError) {
       console.error(`[ANALYZE] JSON 파싱 실패:`, parseError.message);
-      console.error(`[ANALYZE] 원본 응답:`, responseText);
+      console.error(`[ANALYZE] 원본 응답 (처음 1000자):`, responseText.substring(0, 1000));
+      console.error(`[ANALYZE] 원본 응답 (마지막 500자):`, responseText.substring(Math.max(0, responseText.length - 500)));
       return res.status(500).json({ 
         ok: false, 
         error: "JSON_PARSE_FAILED", 
-        rawResponse: responseText 
+        message: `AI 응답을 JSON으로 파싱할 수 없습니다: ${parseError.message}`,
+        rawResponse: responseText.substring(0, 2000), // 처음 2000자만 반환 (너무 길면 문제)
+        parseError: parseError.message,
+        modelType
       });
     }
 
