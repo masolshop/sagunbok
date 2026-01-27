@@ -160,15 +160,15 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
   try {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
-    // 모델 매핑: UI에서 온 값 → Gemini API 모델명
+    // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 기준)
     const modelMap = {
-      'gemini-pro': 'gemini-3-pro',
-      'gemini-flash': 'gemini-3-flash',
-      'gemini-preview': 'gemini-3-pro-preview',
-      'gemini': 'gemini-3-flash' // 기본값 (하위 호환)
+      'gemini-pro': 'gemini-1.5-pro-latest',
+      'gemini-flash': 'gemini-1.5-flash-latest',
+      'gemini-preview': 'gemini-2.0-flash-exp',
+      'gemini': 'gemini-1.5-flash-latest' // 기본값 (하위 호환)
     };
     
-    const actualModel = modelMap[modelType] || 'gemini-3-flash';
+    const actualModel = modelMap[modelType] || 'gemini-1.5-flash-latest';
     console.log(`[GEMINI PDF] 모델: ${modelType} → ${actualModel}`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -321,15 +321,15 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {
 
 // Gemini API 호출 (동적 모델 선택)
 async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash') {
-  // 모델 매핑: UI에서 온 값 → Gemini API 모델명
+  // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 기준)
   const modelMap = {
-    'gemini-pro': 'gemini-3-pro',
-    'gemini-flash': 'gemini-3-flash',
-    'gemini-preview': 'gemini-3-pro-preview',
-    'gemini': 'gemini-3-flash' // 기본값 (하위 호환)
+    'gemini-pro': 'gemini-1.5-pro-latest',
+    'gemini-flash': 'gemini-1.5-flash-latest',
+    'gemini-preview': 'gemini-2.0-flash-exp',
+    'gemini': 'gemini-1.5-flash-latest' // 기본값 (하위 호환)
   };
   
-  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-3-flash";
+  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey}`;
 
   const payload = {

@@ -519,7 +519,7 @@ export default function ConsultantZonePage() {
                 {detectedModel.type === 'gemini' && (
                   <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
                     <p className="text-sm font-bold text-gray-600">추천 모델</p>
-                    <p className="text-lg font-black text-blue-700">Gemini 3 Flash (무료 추천)</p>
+                    <p className="text-lg font-black text-blue-700">Gemini 1.5 Flash (무료 추천)</p>
                   </div>
                 )}
                 
