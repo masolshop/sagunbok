@@ -177,6 +177,15 @@ export default function CretopReportPage() {
         const j = (await r.json()) as ApiKeyStatus;
         if (j.ok && j.keys) {
           setApiKeys(j.keys);
+          
+          // 🎯 등록된 키에 따라 자동으로 모델 선택
+          if (j.keys.gpt) {
+            setSelectedModel('gpt');
+          } else if (j.keys.gemini) {
+            setSelectedModel('gemini-flash');
+          } else if (j.keys.claude) {
+            setSelectedModel('claude');
+          }
         }
       } catch {}
     })();
@@ -567,6 +576,57 @@ export default function CretopReportPage() {
           </ul>
         </div>
       </div>
+
+      {/* 🤖 AI 모델 선택 */}
+      {(apiKeys.gpt || apiKeys.gemini || apiKeys.claude) && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-5 space-y-4 shadow-md">
+          <h3 className="flex items-center gap-3 text-blue-700 font-black text-2xl lg:text-3xl">
+            <span className="text-3xl lg:text-4xl">🤖</span> AI 모델 선택
+          </h3>
+          <p className="text-base text-blue-600 font-medium">
+            재무제표 분석에 사용할 AI 모델을 선택하세요.
+          </p>
+          
+          <div className="flex flex-wrap gap-3">
+            {apiKeys.gpt && (
+              <button
+                onClick={() => setSelectedModel('gpt')}
+                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
+                  selectedModel === 'gpt'
+                    ? 'bg-green-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-green-500'
+                }`}
+              >
+                ✅ GPT-5.2 {selectedModel === 'gpt' && '(선택됨)'}
+              </button>
+            )}
+            {apiKeys.gemini && (
+              <button
+                onClick={() => setSelectedModel('gemini-flash')}
+                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
+                  selectedModel === 'gemini-flash'
+                    ? 'bg-blue-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500'
+                }`}
+              >
+                ✅ Gemini 2.5 Flash {selectedModel === 'gemini-flash' && '(선택됨)'}
+              </button>
+            )}
+            {apiKeys.claude && (
+              <button
+                onClick={() => setSelectedModel('claude')}
+                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
+                  selectedModel === 'claude'
+                    ? 'bg-purple-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-500'
+                }`}
+              >
+                ✅ Claude 3.5 Sonnet {selectedModel === 'claude' && '(선택됨)'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PDF Upload Section - Compact */}
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-5 space-y-4 shadow-md">
