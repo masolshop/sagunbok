@@ -548,12 +548,12 @@ export const analyzeFinancialStatement = async (req, res) => {
     console.log(`[ANALYZE] 모델 응답 받음 (길이: ${responseText.length}자)`);
 
     // JSON 파싱 시도 (마크다운 코드 블록 제거)
-    let analysis;
+    let rawAnalysis;
     try {
       const cleanedText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      analysis = JSON.parse(cleanedText);
+      rawAnalysis = JSON.parse(cleanedText);
       console.log(`[ANALYZE] JSON 파싱 성공`);
-      console.log(`[ANALYZE] 추출 결과:`, JSON.stringify(analysis, null, 2));
+      console.log(`[ANALYZE] 추출 결과 (raw):`, JSON.stringify(rawAnalysis, null, 2));
     } catch (parseError) {
       console.error(`[ANALYZE] JSON 파싱 실패:`, parseError.message);
       console.error(`[ANALYZE] 원본 응답:`, responseText);
@@ -563,6 +563,44 @@ export const analyzeFinancialStatement = async (req, res) => {
         rawResponse: responseText 
       });
     }
+
+    // 🔄 프론트엔드 호환성을 위해 { value, evidence } 구조로 변환
+    const analysis = {
+      company_name: {
+        value: rawAnalysis.company_name || '',
+        evidence: { page: 1, quote: rawAnalysis.company_name || '' }
+      },
+      ceo_name: {
+        value: rawAnalysis.ceo_name || '',
+        evidence: { page: 1, quote: rawAnalysis.ceo_name || '' }
+      },
+      business_number: {
+        value: rawAnalysis.business_number || '',
+        evidence: { page: 1, quote: rawAnalysis.business_number || '' }
+      },
+      industry: {
+        value: rawAnalysis.industry || '',
+        evidence: { page: 1, quote: rawAnalysis.industry || '' }
+      },
+      statement_year: {
+        value: rawAnalysis.statement_year || '',
+        evidence: { page: 1, quote: rawAnalysis.statement_year || '' }
+      },
+      revenue: {
+        value: rawAnalysis.revenue || 0,
+        evidence: { page: 1, quote: String(rawAnalysis.revenue || 0) }
+      },
+      retained_earnings: {
+        value: rawAnalysis.retained_earnings || 0,
+        evidence: { page: 1, quote: String(rawAnalysis.retained_earnings || 0) }
+      },
+      loans_to_officers: {
+        value: rawAnalysis.loans_to_officers || 0,
+        evidence: { page: 1, quote: String(rawAnalysis.loans_to_officers || 0) }
+      }
+    };
+
+    console.log(`[ANALYZE] 변환 완료 (프론트엔드 호환 구조)`);
 
     res.json({
       ok: true,
