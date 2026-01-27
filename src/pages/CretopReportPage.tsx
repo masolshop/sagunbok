@@ -100,6 +100,11 @@ export default function CretopReportPage() {
   // API Key 입력 관련
   const [apiKeyDraft, setApiKeyDraft] = useState("");
   const [apiKeyMsg, setApiKeyMsg] = useState("");
+  const [detecting, setDetecting] = useState(false);
+  const [detectedModel, setDetectedModel] = useState<{
+    type: string;
+    info: string;
+  } | null>(null);
 
   // 파일 업로드
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -150,6 +155,57 @@ export default function CretopReportPage() {
       } catch {}
     })();
   }, []);
+
+  const detectApiKey = () => {
+    const key = apiKeyDraft.trim();
+    if (!key) {
+      setApiKeyMsg("❌ API 키를 입력해주세요.");
+      return;
+    }
+
+    setDetecting(true);
+    setApiKeyMsg("");
+    setDetectedModel(null);
+
+    try {
+      // 1. Claude 키 감지
+      if (key.startsWith('sk-ant-')) {
+        setDetectedModel({
+          type: 'claude',
+          info: 'Claude 3.5 Sonnet'
+        });
+        setSelectedModel('claude');
+        setApiKeyMsg("✅ Claude API 키 감지됨!");
+        return;
+      }
+
+      // 2. GPT 키 감지
+      if (key.startsWith('sk-') && !key.startsWith('sk-ant-')) {
+        setDetectedModel({
+          type: 'gpt',
+          info: 'GPT-5.2'
+        });
+        setSelectedModel('gpt');
+        setApiKeyMsg("✅ GPT API 키 감지됨!");
+        return;
+      }
+
+      // 3. Gemini 키 감지
+      if (key.startsWith('AIzaSy')) {
+        setDetectedModel({
+          type: 'gemini',
+          info: 'Gemini 1.5 Flash (추천)'
+        });
+        setSelectedModel('gemini-flash');
+        setApiKeyMsg("✅ Gemini API 키 감지됨!");
+        return;
+      }
+
+      setApiKeyMsg("❌ API 키 형식을 확인할 수 없습니다.");
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const saveApiKey = async () => {
     if (!apiKeyDraft.trim()) {
@@ -337,79 +393,93 @@ export default function CretopReportPage() {
         </p>
       </header>
 
-      {/* AI Model Selection - Compact */}
-      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-6 shadow-lg space-y-4">
+      {/* AI Model Selection - New Auto-Detect Layout */}
+      <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-8 shadow-lg space-y-6">
         <h3 className="flex items-center gap-3 text-blue-700 font-black text-3xl lg:text-4xl">
           <span>🤖</span> AI API KEY 등록
         </h3>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left: Model Selection & Status */}
-          <div className="space-y-3">
-            <label className="text-lg font-bold text-blue-700">사용할 AI 모델</label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-bold text-xl bg-white shadow-sm"
+        {/* 3-Column Layout: 왼쪽(키 입력) - 중앙(감지 모델) - 오른쪽(저장) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+          {/* 왼쪽: API 키 입력 (5칸) */}
+          <div className="lg:col-span-5 space-y-2">
+            <label className="text-lg font-bold text-blue-700">API Key 입력</label>
+            <input
+              type="password"
+              value={apiKeyDraft}
+              onChange={(e) => {
+                setApiKeyDraft(e.target.value);
+                setDetectedModel(null);
+                setApiKeyMsg("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  detectApiKey();
+                }
+              }}
+              placeholder="sk-ant-api03-... 또는 sk-... 또는 AIzaSy..."
+              className="w-full px-5 py-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-lg bg-white shadow-sm"
+            />
+            <button
+              onClick={detectApiKey}
+              disabled={detecting || !apiKeyDraft.trim()}
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="gpt">GPT-5.2</option>
-              <option value="gemini-pro">Gemini 1.5 Pro (최고 성능)</option>
-              <option value="gemini-flash">Gemini 1.5 Flash (빠른 속도, 무료 추천)</option>
-              <option value="gemini-preview">Gemini 2.0 Flash Exp (실험 버전)</option>
-              <option value="claude">Claude 3.5 Sonnet</option>
-            </select>
-            
-            {/* Status Badge */}
-            <div
-              className={`px-5 py-3 rounded-xl font-bold text-lg text-center ${
-                apiKeys[selectedModel] ? "bg-green-100 text-green-700 ring-2 ring-green-300" : "bg-red-100 text-red-700 ring-2 ring-red-300"
-              }`}
-            >
-              {apiKeys[selectedModel] ? "✓ 등록됨" : "⚠ 미등록"}
-            </div>
+              {detecting ? "🔍 확인 중..." : "🔍 자동 감지"}
+            </button>
           </div>
 
-          {/* Right: API Key Input */}
-          <div className="space-y-3">
-            <label className="text-lg font-bold text-blue-700">API Key 입력</label>
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={apiKeyDraft}
-                onChange={(e) => setApiKeyDraft(e.target.value)}
-                placeholder={
-                  selectedModel === "claude" ? "sk-ant-api03-..." : selectedModel === "gpt" ? "sk-..." : "AIzaSy..."
-                }
-                className="flex-1 px-5 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-lg bg-white shadow-sm"
-              />
-              <button
-                onClick={saveApiKey}
-                className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 transition-all shadow-md whitespace-nowrap"
-              >
-                저장
-              </button>
-            </div>
+          {/* 중앙: 감지된 모델 표시 (5칸) */}
+          <div className="lg:col-span-5 space-y-2">
+            <label className="text-lg font-bold text-blue-700">감지된 모델</label>
+            {detectedModel ? (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-200 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✅</span>
+                  <span className="text-xl font-black text-green-700">{detectedModel.type.toUpperCase()}</span>
+                </div>
+                <p className="text-lg font-bold text-green-600">{detectedModel.info}</p>
+              </div>
+            ) : (
+              <div className="bg-gray-50 p-5 rounded-xl border-2 border-gray-200 h-[100px] flex items-center justify-center">
+                <p className="text-gray-400 font-bold">키 입력 후 자동 감지 버튼을 클릭하세요</p>
+              </div>
+            )}
+          </div>
+
+          {/* 오른쪽: 저장 버튼 (2칸) */}
+          <div className="lg:col-span-2 space-y-2">
+            <label className="text-lg font-bold text-blue-700 opacity-0">저장</label>
+            <button
+              onClick={saveApiKey}
+              disabled={!detectedModel || !apiKeyDraft.trim()}
+              className="w-full h-[100px] px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black text-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+            >
+              💾<br/>저장
+            </button>
           </div>
         </div>
-        
-        {/* Messages */}
+
+        {/* 메시지 표시 */}
         {apiKeyMsg && (
-          <div
-            className={`p-4 rounded-xl font-semibold text-lg ${
-              apiKeyMsg.includes("✅") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
-            }`}
-          >
+          <div className={`p-4 rounded-xl font-bold text-lg ${
+            apiKeyMsg.includes('✅') ? 'bg-green-50 text-green-700 border-2 border-green-200' : 
+            apiKeyMsg.includes('🔍') ? 'bg-blue-50 text-blue-700 border-2 border-blue-200' : 
+            'bg-red-50 text-red-700 border-2 border-red-200'
+          }`}>
             {apiKeyMsg}
           </div>
         )}
-        
-        {!apiKeys[selectedModel] && !apiKeyMsg && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-lg text-amber-700 font-semibold">
-              💡 위에서 선택한 모델의 API Key를 입력하고 저장해주세요.
-            </p>
-          </div>
-        )}
+
+        {/* 도움말 */}
+        <div className="bg-white rounded-xl p-5 border-2 border-blue-100">
+          <p className="font-black mb-2 text-blue-700">📌 API Key 발급 사이트:</p>
+          <ul className="space-y-1 ml-4 text-blue-600 font-bold">
+            <li>• Claude: <a href="https://console.anthropic.com" target="_blank" className="underline hover:text-blue-800">console.anthropic.com</a></li>
+            <li>• GPT: <a href="https://platform.openai.com" target="_blank" className="underline hover:text-blue-800">platform.openai.com</a></li>
+            <li>• Gemini: <a href="https://aistudio.google.com" target="_blank" className="underline hover:text-blue-800">aistudio.google.com</a></li>
+          </ul>
+        </div>
       </div>
 
       {/* 기업 정보 카드 - PDF 분석 시 자동 표시 */}
