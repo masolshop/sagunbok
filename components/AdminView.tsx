@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 interface Member {
-  type: 'company' | 'manager' | 'consultant';
+  userType: 'company' | 'manager' | 'consultant';
   name: string;
   phone: string;
   email: string;
   companyName?: string;
   referrer?: string;
-  status: string;
+  approvalStatus: string;
   registeredAt: string;
 }
 
@@ -18,7 +18,7 @@ interface AdminViewProps {
 const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'company' | 'manager' | 'consultant'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'company' | 'manager' | 'consultant'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
 
   // 전체 관리자 여부 확인
@@ -30,8 +30,8 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     fetchMembers();
   }, []);
 
-  // Apps Script Web App URL (v6.2.8 - I열 승인여부 통일)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyULZORS2SzTBYYTK_r_5Kd5Q-I3nELI4RbDim1THqGIX8IT0PiAL-BL2oqomf16ate/exec';
+  // Apps Script Web App URL (v7.1.2 - 비밀번호 버그 수정)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyvAhqMLf0vAuNi2GtOHyGUIPiIGdIFTo6e6zSwtonR4puobC4ZnFZFsO3j0Y9vFdvuCg/exec';
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -95,12 +95,74 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
     }
   };
 
-  const updateMemberStatus = async (phone: string, type: 'company' | 'manager' | 'consultant', newStatus: string) => {
+  const approveMember = async (phone: string, userType: 'company' | 'manager' | 'consultant') => {
+    if (!confirm('이 회원을 승인하시겠습니까? 승인 이메일이 자동으로 발송됩니다.')) return;
+    
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        action: 'approveMember',
+        phone,
+        userType
+      });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ 승인이 완료되었습니다! 이메일이 발송되었습니다.');
+        fetchMembers();
+      } else {
+        alert('❌ 승인 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to approve member:', error);
+      alert('❌ 승인 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rejectMember = async (phone: string, userType: 'company' | 'manager' | 'consultant') => {
+    const reason = prompt('반려 사유를 입력하세요:');
+    if (!reason) return;
+    
+    if (!confirm('이 회원을 반려하시겠습니까? 반려 이메일이 자동으로 발송됩니다.')) return;
+    
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        action: 'rejectMember',
+        phone,
+        userType,
+        reason
+      });
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET'
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ 반려 처리되었습니다! 이메일이 발송되었습니다.');
+        fetchMembers();
+      } else {
+        alert('❌ 반려 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Failed to reject member:', error);
+      alert('❌ 반려 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateMemberStatus = async (phone: string, userType: 'company' | 'manager' | 'consultant', newStatus: string) => {
     try {
       const params = new URLSearchParams({
         action: 'updateMemberStatus',
         phone,
-        type,
+        type: userType,
         status: newStatus
       });
       const response = await fetch(`${API_URL}?${params.toString()}`, {
@@ -122,19 +184,20 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
   // 필터링 로직
   const filteredMembers = members.filter(m => {
-    // 컨설턴트는 자신이 추천한 회원만 볼 수 있음
-    if (isConsultant && !isSuperAdmin) {
-      if (m.type === 'company' && m.referrer !== consultantName) {
-        return false;
-      }
-      // 컨설턴트는 다른 컨설턴트를 볼 수 없음
-      if (m.type === 'consultant') {
-        return false;
-      }
+    // 슈퍼관리자가 아니면 권한 제한
+    if (!isSuperAdmin) {
+      return false; // 슈퍼관리자만 승인 가능
     }
 
+    // 승인 상태 필터
+    if (filter === 'pending' && m.approvalStatus !== 'pending') return false;
+    if (filter === 'approved' && m.approvalStatus !== 'approved') return false;
+    if (filter === 'rejected' && m.approvalStatus !== 'rejected') return false;
+
     // 타입 필터
-    if (filter !== 'all' && m.type !== filter) return false;
+    if (filter === 'company' && m.userType !== 'company') return false;
+    if (filter === 'manager' && m.userType !== 'manager') return false;
+    if (filter === 'consultant' && m.userType !== 'consultant') return false;
 
     // 검색어 필터
     if (searchTerm) {
@@ -154,12 +217,12 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
   // 통계
   const stats = {
     total: filteredMembers.length,
-    pending: filteredMembers.filter(m => m.status === '승인대기').length,
-    approved: filteredMembers.filter(m => m.status === '승인완료').length,
-    rejected: filteredMembers.filter(m => m.status === '승인거부').length,
-    companies: filteredMembers.filter(m => m.type === 'company').length,
-    managers: filteredMembers.filter(m => m.type === 'manager').length,
-    consultants: filteredMembers.filter(m => m.type === 'consultant').length
+    pending: members.filter(m => m.approvalStatus === 'pending').length,
+    approved: members.filter(m => m.approvalStatus === 'approved').length,
+    rejected: members.filter(m => m.approvalStatus === 'rejected').length,
+    companies: members.filter(m => m.userType === 'company').length,
+    managers: members.filter(m => m.userType === 'manager').length,
+    consultants: members.filter(m => m.userType === 'consultant').length
   };
 
   return (
@@ -290,60 +353,99 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-6 py-3 rounded-xl font-black transition-all ${
-                filter === 'all' 
-                  ? 'bg-slate-900 text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              전체
-            </button>
-            <button
-              onClick={() => setFilter('company')}
-              className={`px-6 py-3 rounded-xl font-black transition-all ${
-                filter === 'company' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              🏢 기업회원
-            </button>
-            {isSuperAdmin && (
-              <>
-                <button
-                  onClick={() => setFilter('manager')}
-                  className={`px-6 py-3 rounded-xl font-black transition-all ${
-                    filter === 'manager' 
-                      ? 'bg-indigo-600 text-white' 
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  👨‍💼 매니저
-                </button>
-                <button
-                  onClick={() => setFilter('consultant')}
-                  className={`px-6 py-3 rounded-xl font-black transition-all ${
-                    filter === 'consultant' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  👔 컨설턴트
-                </button>
-              </>
-            )}
-          </div>
+      <div className="bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-sm space-y-4">
+        {/* 회원 타입 필터 */}
+        <div className="flex flex-wrap gap-2">
+          <div className="text-sm font-black text-slate-400 uppercase tracking-widest w-full mb-2">회원 타입</div>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-6 py-3 rounded-xl font-black transition-all ${
+              filter === 'all' 
+                ? 'bg-slate-900 text-white shadow-lg' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            전체
+          </button>
+          <button
+            onClick={() => setFilter('company')}
+            className={`px-6 py-3 rounded-xl font-black transition-all ${
+              filter === 'company' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            🏢 기업회원
+          </button>
+          {isSuperAdmin && (
+            <>
+              <button
+                onClick={() => setFilter('manager')}
+                className={`px-6 py-3 rounded-xl font-black transition-all ${
+                  filter === 'manager' 
+                    ? 'bg-indigo-600 text-white shadow-lg' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                👨‍💼 매니저
+              </button>
+              <button
+                onClick={() => setFilter('consultant')}
+                className={`px-6 py-3 rounded-xl font-black transition-all ${
+                  filter === 'consultant' 
+                    ? 'bg-purple-600 text-white shadow-lg' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                👔 컨설턴트
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* 승인 상태 필터 */}
+        <div className="flex flex-wrap gap-2">
+          <div className="text-sm font-black text-slate-400 uppercase tracking-widest w-full mb-2">승인 상태</div>
+          <button
+            onClick={() => setFilter('pending')}
+            className={`px-6 py-3 rounded-xl font-black transition-all ${
+              filter === 'pending' 
+                ? 'bg-yellow-600 text-white shadow-lg' 
+                : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-2 border-yellow-200'
+            }`}
+          >
+            ⏳ 승인대기
+          </button>
+          <button
+            onClick={() => setFilter('approved')}
+            className={`px-6 py-3 rounded-xl font-black transition-all ${
+              filter === 'approved' 
+                ? 'bg-green-600 text-white shadow-lg' 
+                : 'bg-green-50 text-green-700 hover:bg-green-100 border-2 border-green-200'
+            }`}
+          >
+            ✅ 승인완료
+          </button>
+          <button
+            onClick={() => setFilter('rejected')}
+            className={`px-6 py-3 rounded-xl font-black transition-all ${
+              filter === 'rejected' 
+                ? 'bg-red-600 text-white shadow-lg' 
+                : 'bg-red-50 text-red-700 hover:bg-red-100 border-2 border-red-200'
+            }`}
+          >
+            ❌ 승인거부
+          </button>
+        </div>
+
+        {/* 검색 */}
+        <div>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="이름, 전화번호, 이메일, 회사명 검색..."
-            className="flex-1 px-6 py-3 border-2 border-slate-200 rounded-xl font-bold focus:border-blue-500 outline-none"
+            placeholder="🔍 이름, 전화번호, 이메일, 회사명, 추천인 검색..."
+            className="w-full px-6 py-3 border-2 border-slate-200 rounded-xl font-bold focus:border-blue-500 outline-none"
           />
         </div>
       </div>
@@ -385,11 +487,13 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black ${
-                        member.type === 'company' 
+                        member.userType === 'company' 
                           ? 'bg-blue-100 text-blue-700' 
+                          : member.userType === 'manager'
+                          ? 'bg-indigo-100 text-indigo-700'
                           : 'bg-purple-100 text-purple-700'
                       }`}>
-                        {member.type === 'company' ? '🏢 기업' : '👔 컨설턴트'}
+                        {member.userType === 'company' ? '🏢 기업' : member.userType === 'manager' ? '👨‍💼 매니저' : '👔 컨설턴트'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-black text-slate-900">{member.name}</td>
@@ -402,32 +506,34 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-3 py-1 rounded-full text-xs font-black ${
-                        member.status === '승인완료' 
+                        member.approvalStatus === '승인완료' || member.approvalStatus === '승인'
                           ? 'bg-green-100 text-green-700' 
-                          : member.status === '승인대기'
+                          : member.approvalStatus === '승인대기' || member.approvalStatus === '승인 대기'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
                       }`}>
-                        {member.status}
+                        {member.approvalStatus}
                       </span>
                     </td>
                     {isSuperAdmin && (
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          {member.status !== '승인완료' && (
+                          {member.approvalStatus !== '승인완료' && member.approvalStatus !== '승인' && (
                             <button
-                              onClick={() => updateMemberStatus(member.phone, member.type, '승인완료')}
-                              className="px-3 py-1 bg-green-600 text-white text-xs font-black rounded-lg hover:bg-green-700 transition-all"
+                              onClick={() => approveMember(member.phone, member.userType)}
+                              disabled={loading}
+                              className="px-3 py-1 bg-green-600 text-white text-xs font-black rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
                             >
-                              승인
+                              ✅ 승인
                             </button>
                           )}
-                          {member.status !== '승인거부' && (
+                          {member.approvalStatus !== '승인거부' && member.approvalStatus !== '거부' && (
                             <button
-                              onClick={() => updateMemberStatus(member.phone, member.type, '승인거부')}
-                              className="px-3 py-1 bg-red-600 text-white text-xs font-black rounded-lg hover:bg-red-700 transition-all"
+                              onClick={() => rejectMember(member.phone, member.userType)}
+                              disabled={loading}
+                              className="px-3 py-1 bg-red-600 text-white text-xs font-black rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
                             >
-                              거부
+                              ❌ 반려
                             </button>
                           )}
                         </div>

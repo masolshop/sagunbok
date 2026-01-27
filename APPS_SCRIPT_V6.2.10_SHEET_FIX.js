@@ -15,7 +15,10 @@
 
 const CONFIG = {
   SPREADSHEET_ID: '1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc',
-  DEFAULT_PASSWORD: '12345'
+  DEFAULT_PASSWORD: '12345',
+  ADMIN_EMAIL: 'tysagunbok@gmail.com', // 관리자 이메일
+  COMPANY_NAME: 'TY사근복헬스케어사업단',
+  COMPANY_URL: 'http://3.34.186.174/'
 };
 
 // ========================================
@@ -82,6 +85,238 @@ function writeLog(action, category, target, details, result) {
     // 로그 기록 실패 시 무시 (메인 기능에 영향 없도록)
     Logger.log('로그 기록 실패: ' + error.toString());
   }
+}
+
+/**
+ * 이메일 발송 함수
+ */
+function sendEmail(to, subject, htmlBody) {
+  try {
+    if (!to) {
+      Logger.log('이메일 주소가 없습니다.');
+      return false;
+    }
+    
+    MailApp.sendEmail({
+      to: to,
+      subject: subject,
+      htmlBody: htmlBody,
+      name: CONFIG.COMPANY_NAME
+    });
+    
+    Logger.log('이메일 발송 성공: ' + to);
+    writeLog('이메일', '발송', to, subject, '성공');
+    return true;
+    
+  } catch (error) {
+    Logger.log('이메일 발송 실패: ' + error);
+    writeLog('이메일', '발송', to, subject, '실패: ' + error);
+    return false;
+  }
+}
+
+/**
+ * 회원가입 알림 이메일 (관리자에게)
+ */
+function sendSignupNotificationToAdmin(memberType, name, phone, email, companyName, referrer) {
+  const typeLabel = memberType === 'company' ? '기업회원' : 
+                    memberType === 'manager' ? '매니저' : '컨설턴트';
+  
+  const subject = `[사근복] 새로운 ${typeLabel} 가입 신청`;
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1e40af;">🔔 새로운 회원가입 신청</h2>
+      <p>새로운 ${typeLabel} 가입 신청이 있습니다.</p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">회원 정보</h3>
+        <p><strong>구분:</strong> ${typeLabel}</p>
+        ${companyName ? `<p><strong>회사명:</strong> ${companyName}</p>` : ''}
+        <p><strong>이름:</strong> ${name}</p>
+        <p><strong>전화번호:</strong> ${phone}</p>
+        <p><strong>이메일:</strong> ${email}</p>
+        ${referrer ? `<p><strong>추천인:</strong> ${referrer}</p>` : ''}
+      </div>
+      
+      <p>
+        <a href="${CONFIG.COMPANY_URL}" 
+           style="display: inline-block; background-color: #1e40af; color: white; 
+                  padding: 12px 24px; text-decoration: none; border-radius: 6px; 
+                  font-weight: bold;">
+          관리자 대시보드에서 승인하기
+        </a>
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        ${CONFIG.COMPANY_NAME}<br>
+        ${CONFIG.COMPANY_URL}
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(CONFIG.ADMIN_EMAIL, subject, htmlBody);
+}
+
+/**
+ * 회원가입 완료 알림 (회원에게)
+ */
+function sendSignupConfirmationToMember(memberType, name, email, phone) {
+  const typeLabel = memberType === 'company' ? '기업회원' : 
+                    memberType === 'manager' ? '매니저' : '컨설턴트';
+  
+  const subject = `[사근복] ${typeLabel} 가입 신청이 완료되었습니다`;
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1e40af;">✅ 가입 신청이 완료되었습니다</h2>
+      <p>${name}님, 환영합니다!</p>
+      
+      <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1e40af;">
+        <h3 style="margin-top: 0; color: #1e40af;">가입 신청 완료</h3>
+        <p>${CONFIG.COMPANY_NAME} ${typeLabel} 가입 신청이 완료되었습니다.</p>
+        <p><strong>관리자 승인 후 로그인 가능</strong>합니다.</p>
+      </div>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">로그인 정보</h3>
+        <p><strong>ID (전화번호):</strong> ${phone}</p>
+        <p><strong>초기 비밀번호:</strong> ${CONFIG.DEFAULT_PASSWORD}</p>
+        <p style="color: #f59e0b; font-size: 14px;">
+          ⏳ 관리자 승인 후 로그인이 가능합니다.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        ${CONFIG.COMPANY_NAME}<br>
+        ${CONFIG.COMPANY_URL}<br>
+        문의: ${CONFIG.ADMIN_EMAIL}
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(email, subject, htmlBody);
+}
+
+/**
+ * 추천인에게 가입 알림 (컨설턴트/매니저에게)
+ */
+function sendSignupNotificationToReferrer(referrerName, referrerEmail, companyName, memberName) {
+  const subject = `[사근복] ${referrerName}님이 추천한 기업회원 가입 신청`;
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #10b981;">🎉 추천 회원 가입 신청</h2>
+      <p>${referrerName}님이 추천한 기업회원이 가입 신청했습니다.</p>
+      
+      <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+        <h3 style="margin-top: 0; color: #10b981;">가입 정보</h3>
+        <p><strong>회사명:</strong> ${companyName}</p>
+        <p><strong>담당자:</strong> ${memberName}</p>
+        <p><strong>추천인:</strong> ${referrerName}</p>
+      </div>
+      
+      <p style="color: #6b7280;">
+        관리자 승인 후 해당 회원이 서비스를 이용할 수 있습니다.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        ${CONFIG.COMPANY_NAME}<br>
+        ${CONFIG.COMPANY_URL}
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(referrerEmail, subject, htmlBody);
+}
+
+/**
+ * 승인 완료 이메일 (회원에게)
+ */
+function sendApprovalEmail(memberType, name, email, phone) {
+  const typeLabel = memberType === 'company' ? '기업회원' : 
+                    memberType === 'manager' ? '매니저' : '컨설턴트';
+  
+  const subject = `[사근복] ${typeLabel} 승인 완료`;
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #10b981;">✅ 회원 승인이 완료되었습니다!</h2>
+      <p>${name}님, 환영합니다!</p>
+      
+      <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+        <h3 style="margin-top: 0; color: #10b981;">승인 완료</h3>
+        <p>사근복 AI 스튜디오 ${typeLabel} 승인이 완료되었습니다.</p>
+        <p>이제 모든 서비스를 이용하실 수 있습니다.</p>
+      </div>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">로그인 정보</h3>
+        <p><strong>ID (전화번호):</strong> ${phone}</p>
+        <p><strong>초기 비밀번호:</strong> ${CONFIG.DEFAULT_PASSWORD}</p>
+        <p style="color: #ef4444; font-size: 14px;">
+          ⚠️ 보안을 위해 로그인 후 비밀번호를 변경해 주세요.
+        </p>
+      </div>
+      
+      <p>
+        <a href="${CONFIG.COMPANY_URL}" 
+           style="display: inline-block; background-color: #1e40af; color: white; 
+                  padding: 12px 24px; text-decoration: none; border-radius: 6px; 
+                  font-weight: bold;">
+          지금 로그인하기
+        </a>
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        ${CONFIG.COMPANY_NAME}<br>
+        ${CONFIG.COMPANY_URL}<br>
+        문의: ${CONFIG.ADMIN_EMAIL}
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(email, subject, htmlBody);
+}
+
+/**
+ * 승인 거부 이메일 (회원에게)
+ */
+function sendRejectionEmail(memberType, name, email) {
+  const typeLabel = memberType === 'company' ? '기업회원' : 
+                    memberType === 'manager' ? '매니저' : '컨설턴트';
+  
+  const subject = `[사근복] ${typeLabel} 가입 검토 결과`;
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #ef4444;">가입 승인 보류</h2>
+      <p>${name}님, 안녕하세요.</p>
+      
+      <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+        <p>죄송합니다. 현재 ${typeLabel} 가입 신청이 보류되었습니다.</p>
+        <p>자세한 사항은 관리자에게 문의해 주세요.</p>
+      </div>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">문의하기</h3>
+        <p><strong>이메일:</strong> ${CONFIG.ADMIN_EMAIL}</p>
+        <p>궁금하신 사항이 있으시면 언제든지 문의해 주세요.</p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        ${CONFIG.COMPANY_NAME}<br>
+        ${CONFIG.COMPANY_URL}
+      </p>
+    </div>
+  `;
+  
+  return sendEmail(email, subject, htmlBody);
 }
 
 // ========================================
@@ -406,6 +641,59 @@ function registerCompany(data) {
       };
     }
     
+    // 추천인 검증 (매니저 또는 컨설턴트 이름 매칭)
+    if (data.referrer) {
+      let referrerFound = false;
+      let referrerEmail = '';
+      
+      // 매니저 시트 확인
+      const managerSheet = ss.getSheetByName('사근복컨설턴트(매니저)');
+      if (managerSheet) {
+        const managerData = managerSheet.getDataRange().getValues();
+        for (let i = 1; i < managerData.length; i++) {
+          if (managerData[i][0] === data.referrer) { // A열: 이름
+            referrerFound = true;
+            referrerEmail = managerData[i][2]; // C열: 이메일
+            break;
+          }
+        }
+      }
+      
+      // 컨설턴트 시트 확인 (매니저에서 못 찾았으면)
+      if (!referrerFound) {
+        const consultantSheet = ss.getSheetByName('사근복컨설턴트');
+        if (consultantSheet) {
+          const consultantData = consultantSheet.getDataRange().getValues();
+          for (let i = 1; i < consultantData.length; i++) {
+            if (consultantData[i][0] === data.referrer) { // A열: 이름
+              referrerFound = true;
+              referrerEmail = consultantData[i][2]; // C열: 이메일
+              break;
+            }
+          }
+        }
+      }
+      
+      // 추천인을 찾지 못한 경우
+      if (!referrerFound) {
+        writeLog('회원가입', '기업회원', data.phone, '추천인 없음: ' + data.referrer, '실패');
+        return {
+          success: false,
+          error: '등록되지 않은 추천인입니다. 사근복 매니저 또는 컨설턴트 이름을 정확히 입력해 주세요.'
+        };
+      }
+      
+      // 추천인 정보 저장 (이메일 발송용)
+      data.referrerEmail = referrerEmail;
+    } else {
+      // 추천인이 없는 경우
+      writeLog('회원가입', '기업회원', data.phone, '추천인 미입력', '실패');
+      return {
+        success: false,
+        error: '추천인(사근복 매니저 또는 컨설턴트 이름)을 입력해 주세요.'
+      };
+    }
+    
     // 중복 확인
     const existingData = sheet.getDataRange().getValues();
     const normalizedPhone = normalizePhoneNumber(data.phone);
@@ -432,24 +720,40 @@ function registerCompany(data) {
       data.email || '',             // F: 이메일
       data.password || CONFIG.DEFAULT_PASSWORD,  // G: 비밀번호
       timestamp,                    // H: 가입일
-      '승인'                        // I: 승인상태
+      '승인 대기'                   // I: 승인상태 (대기로 변경!)
     ];
     
     sheet.appendRow(newRow);
     
     writeLog('회원가입', '기업회원', data.phone, data.companyName, '성공');
     
+    // 이메일 발송: 회원, 추천인, 관리자
+    try {
+      // 1. 회원에게 가입 완료 알림
+      sendSignupConfirmationToMember('company', data.name, data.email, data.phone);
+      
+      // 2. 추천인에게 알림
+      if (data.referrerEmail) {
+        sendSignupNotificationToReferrer(data.referrer, data.referrerEmail, data.companyName, data.name);
+      }
+      
+      // 3. 관리자에게 알림
+      sendSignupNotificationToAdmin('company', data.name, data.phone, data.email, data.companyName, data.referrer);
+    } catch (emailError) {
+      Logger.log('이메일 발송 실패: ' + emailError);
+      // 이메일 실패해도 회원가입은 성공으로 처리
+    }
+    
     // 자동 JSON 동기화
     try {
       syncJsonFiles();
     } catch (syncError) {
       Logger.log('JSON 자동 동기화 실패: ' + syncError);
-      // 회원가입은 성공했으므로 계속 진행
     }
     
     return {
       success: true,
-      message: '회원가입이 완료되었습니다.'
+      message: '회원가입이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.'
     };
   } catch (error) {
     writeLog('회원가입', '기업회원', data.phone, error.toString(), '오류');
@@ -502,12 +806,23 @@ function registerConsultant(data) {
       data.branch || '',        // F: 소속 지사
       '',                       // G: ?
       timestamp,                // H: 가입일
-      '승인'                    // I: 승인상태
+      '승인 대기'               // I: 승인상태 (대기로 변경!)
     ];
     
     sheet.appendRow(newRow);
     
     writeLog('회원가입', '컨설턴트', data.phone, data.name, '성공');
+    
+    // 이메일 발송: 회원, 관리자
+    try {
+      // 1. 회원에게 가입 완료 알림
+      sendSignupConfirmationToMember('consultant', data.name, data.email, data.phone);
+      
+      // 2. 관리자에게 알림
+      sendSignupNotificationToAdmin('consultant', data.name, data.phone, data.email, null, null);
+    } catch (emailError) {
+      Logger.log('이메일 발송 실패: ' + emailError);
+    }
     
     // 자동 JSON 동기화
     try {
@@ -518,7 +833,7 @@ function registerConsultant(data) {
     
     return {
       success: true,
-      message: '컨설턴트 등록이 완료되었습니다.'
+      message: '컨설턴트 등록이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.'
     };
   } catch (error) {
     writeLog('회원가입', '컨설턴트', data.phone, error.toString(), '오류');
@@ -571,12 +886,23 @@ function registerManager(data) {
       data.branch || '',        // F: 소속 지사
       '',                       // G: ?
       timestamp,                // H: 가입일
-      '승인'                    // I: 승인상태
+      '승인 대기'               // I: 승인상태 (대기로 변경!)
     ];
     
     sheet.appendRow(newRow);
     
     writeLog('회원가입', '매니저', data.phone, data.name, '성공');
+    
+    // 이메일 발송: 회원, 관리자
+    try {
+      // 1. 회원에게 가입 완료 알림
+      sendSignupConfirmationToMember('manager', data.name, data.email, data.phone);
+      
+      // 2. 관리자에게 알림
+      sendSignupNotificationToAdmin('manager', data.name, data.phone, data.email, null, null);
+    } catch (emailError) {
+      Logger.log('이메일 발송 실패: ' + emailError);
+    }
     
     // 자동 JSON 동기화
     try {
@@ -587,7 +913,7 @@ function registerManager(data) {
     
     return {
       success: true,
-      message: '매니저 등록이 완료되었습니다.'
+      message: '매니저 등록이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.'
     };
   } catch (error) {
     writeLog('회원가입', '매니저', data.phone, error.toString(), '오류');
@@ -835,10 +1161,32 @@ function updateMemberStatus(phone, type, status) {
     for (let i = 1; i < data.length; i++) {
       const rowPhone = normalizePhoneNumber(String(data[i][phoneColIndex]));
       if (rowPhone === normalizedPhone) {
+        // 회원 정보 가져오기 (이메일 발송용)
+        const row = data[i];
+        const memberName = (type === 'company') ? row[3] : row[0]; // 기업회원은 D열, 나머지는 A열
+        const memberEmail = (type === 'company') ? row[5] : row[2]; // 기업회원은 F열, 나머지는 C열
+        
         // I열(인덱스 8)에 상태 업데이트
         sheet.getRange(i + 1, 9).setValue(status);
         
         writeLog('상태변경', type, phone, status + '로 변경', '성공');
+        
+        // 승인 시 이메일 발송
+        if (status === '승인' || status === '승인완료') {
+          try {
+            sendApprovalEmail(type, memberName, memberEmail, phone);
+          } catch (emailError) {
+            Logger.log('승인 이메일 발송 실패: ' + emailError);
+          }
+        }
+        // 거부 시 이메일 발송
+        else if (status === '거부') {
+          try {
+            sendRejectionEmail(type, memberName, memberEmail);
+          } catch (emailError) {
+            Logger.log('거부 이메일 발송 실패: ' + emailError);
+          }
+        }
         
         // 자동 JSON 동기화
         try {

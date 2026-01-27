@@ -1,0 +1,61 @@
+{
+  "company_name": {
+    "value": "쏠라리버(주)",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "회사명: 쏠라리버(주) 대표이사: 김태양",
+    "method": "vision_api"
+  },
+  "ceo_name": {
+    "value": "김태양",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "대표이사: 김태양 사업자등록번호: 123-45-67890",
+    "method": "vision_api"
+  },
+  "business_number": {
+    "value": "123-45-67890",
+    "confidence": 0.98,
+    "page_number": 1,
+    "snippet": "사업자등록번호: 123-45-67890",
+    "method": "regex"
+  },
+  "industry": {
+    "value": "태양광 발전 및 에너지 저장 시스템",
+    "confidence": 0.9,
+    "page_number": 1,
+    "snippet": "업종: 태양광 발전 및 에너지 저장 시스템",
+    "method": "vision_api"
+  },
+  "statement_year": {
+    "value": "2024",
+    "confidence": 0.95,
+    "page_number": 1,
+    "snippet": "2024년 재무제표",
+    "method": "regex"
+  },
+  "revenue": {
+    "value": "5,432,100,000원",
+    "confidence": 0.92,
+    "page_number": 3,
+    "snippet": "매출액 5,432,100,000",
+    "method": "vision_api",
+    "unit": "원"
+  },
+  "retained_earnings": {
+    "value": "1,234,567,890원",
+    "confidence": 0.88,
+    "page_number": 4,
+    "snippet": "이익잉여금 1,234,567,890",
+    "method": "vision_api",
+    "unit": "원"
+  },
+  "loans_to_officers": {
+    "value": "50,000,000원",
+    "confidence": 0.85,
+    "page_number": 4,
+    "snippet": "가지급금 50,000,000",
+    "method": "vision_api",
+    "unit": "원"
+  }
+}
