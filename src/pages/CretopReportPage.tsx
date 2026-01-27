@@ -381,7 +381,7 @@ export default function CretopReportPage() {
         if (data.analysis.retained_earnings?.value) setRetainedEarnings(data.analysis.retained_earnings.value);
         if (data.analysis.loans_to_officers?.value) setLoansToOfficers(data.analysis.loans_to_officers.value);
         
-        alert('✅ 재무제표 분석 완료! 8개 항목이 자동 추출되었습니다.\n아래 표에서 결과를 확인하세요.');
+        alert('✅ 재무제표 분석 완료! 9개 항목이 자동 추출되었습니다.\n아래 표에서 결과를 확인하세요.');
       } else {
         throw new Error(data.error || '분석 실패');
       }

@@ -26,6 +26,7 @@ type ExtractedData = {
   revenue?: ExtractedField | null;
   retained_earnings?: ExtractedField | null;
   loans_to_officers?: ExtractedField | null;
+  welfare_expenses?: ExtractedField | null;
 };
 
 type Props = {
@@ -42,6 +43,7 @@ const FIELD_LABELS = {
   revenue: "매출액",
   retained_earnings: "이익잉여금",
   loans_to_officers: "가지급금(대여금)",
+  welfare_expenses: "복리후생비",
 };
 
 const FIELD_ICONS = {
@@ -53,6 +55,7 @@ const FIELD_ICONS = {
   revenue: "💰",
   retained_earnings: "📈",
   loans_to_officers: "💸",
+  welfare_expenses: "🎁",
 };
 
 export default function ExtractedFieldsTable({ data, onCopy }: Props) {
