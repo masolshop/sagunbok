@@ -854,21 +854,48 @@ export const analyzeFinancialStatement = async (req, res) => {
 
     // 2) 금액 파싱: "9,571,217,000원" / "95억 7,121만 7,000" / multiplier 처리
     const parseMoney = (v, autoMultiplier = null) => {
-      // 새 스키마 (object with original_text + multiplier)
-      if (v && typeof v === 'object' && 'original_text' in v) {
-        const numStr = String(v.original_text).replace(/[^\d.-]/g, '');
-        const num = Number(numStr);
-        if (!isNaN(num) && Number.isFinite(num)) {
-          const multiplier = v.multiplier_to_won || autoMultiplier || 1;
-          return Math.floor(num * multiplier);
+      // 🔥 최우선: 현재 GPT 응답 형식 처리 { value: "1,229,518,853", unit: "천원", ... }
+      if (v && typeof v === 'object') {
+        let numValue = null;
+        let multiplier = autoMultiplier || 1;
+        
+        // unit 필드로 multiplier 결정
+        if (v.unit) {
+          const unitStr = String(v.unit).trim();
+          if (unitStr === '천원') multiplier = 1000;
+          else if (unitStr === '백만원') multiplier = 1000000;
+          else if (unitStr === '억원') multiplier = 100000000;
+          else if (unitStr === '원') multiplier = 1;
         }
+        
+        // value 필드에서 숫자 추출
+        if (v.value != null) {
+          const numStr = String(v.value).replace(/[^\d.-]/g, '');
+          numValue = Number(numStr);
+        } else if (v.original_text != null) {
+          const numStr = String(v.original_text).replace(/[^\d.-]/g, '');
+          numValue = Number(numStr);
+        }
+        
+        // multiplier_to_won이 명시되어 있으면 우선 사용
+        if (v.multiplier_to_won != null) {
+          multiplier = v.multiplier_to_won;
+        }
+        
         // value_won이 이미 계산되어 있으면 사용
         if (v.value_won != null && Number.isFinite(v.value_won)) {
           return v.value_won;
         }
+        
+        // 계산
+        if (numValue != null && !isNaN(numValue) && Number.isFinite(numValue)) {
+          const result = Math.floor(numValue * multiplier);
+          console.log(`[parseMoney] ${numValue} × ${multiplier} = ${result}원`);
+          return result;
+        }
       }
       
-      // 기존 로직
+      // 기존 로직 (문자열/숫자 처리)
       v = unwrap(v);
       if (v == null) return 0;
       if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
@@ -899,10 +926,6 @@ export const analyzeFinancialStatement = async (req, res) => {
 
       // 남은 숫자(원 단위) 더하기
       const tail = rest.replace(/[^\d.-]/g, '');
-      if (/^-?\d+(\.\d+)?$/.test(tail)) total += Number(tail);
-
-      return Number.isFinite(total) ? total : 0;
-    };
       if (/^-?\d+(\.\d+)?$/.test(tail)) total += Number(tail);
 
       return Number.isFinite(total) ? total : 0;
