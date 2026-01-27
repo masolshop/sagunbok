@@ -330,7 +330,10 @@ export default function CretopReportPage() {
       return;
     }
 
-    if (!apiKeys[selectedModel]) {
+    // Gemini 모델들은 'gemini' 키로 체크
+    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    
+    if (!apiKeys[keyType]) {
       alert(`${selectedModel.toUpperCase()} API 키가 등록되지 않았습니다.\n컨설턴트존에서 등록해주세요.`);
       return;
     }
