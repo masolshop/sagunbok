@@ -364,8 +364,12 @@ export default function CretopReportPage() {
       }
 
       const data = await res.json();
+      console.log('[Frontend] API Response:', JSON.stringify(data, null, 2)); // 🔍 전체 응답 로깅
+      
       if (data.ok && data.analysis) {
-        // 새로운 구조화된 응답 처리 (8개 필드)
+        console.log('[Frontend] Analysis structure:', Object.keys(data.analysis)); // 🔍 키 확인
+        
+        // 새로운 구조화된 응답 처리 (9개 필드)
         setExtractedFieldsData(data.analysis);
         
         // 기존 UI 필드 업데이트 (하위 호환성)
@@ -380,6 +384,9 @@ export default function CretopReportPage() {
         if (data.analysis.revenue?.value) setRevenue(data.analysis.revenue.value);
         if (data.analysis.retained_earnings?.value) setRetainedEarnings(data.analysis.retained_earnings.value);
         if (data.analysis.loans_to_officers?.value) setLoansToOfficers(data.analysis.loans_to_officers.value);
+        if (data.analysis.welfare_expenses?.value) {
+          console.log('[Frontend] Welfare expenses extracted:', data.analysis.welfare_expenses.value);
+        }
         
         alert('✅ 재무제표 분석 완료! 9개 항목이 자동 추출되었습니다.\n아래 표에서 결과를 확인하세요.');
       } else {

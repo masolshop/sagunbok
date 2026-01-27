@@ -71,6 +71,21 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
     setExpandedRows(newExpanded);
   };
 
+  // ✅ 안전한 렌더링 헬퍼 (React Error #31 방지)
+  const safeRenderValue = (field: any): string => {
+    if (field == null) return "-";
+    if (typeof field === "object") {
+      // { value, confidence, evidence, ... } 구조
+      if ("value" in field) {
+        const val = field.value;
+        return val != null ? String(val) : "-";
+      }
+      // 혹시 객체가 직접 온 경우
+      return JSON.stringify(field);
+    }
+    return String(field);
+  };
+
   const renderConfidenceBar = (confidence: number) => {
     const percentage = Math.round(confidence * 100);
     const barColor =
@@ -102,7 +117,7 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
       const field = data[key as keyof ExtractedData];
       if (field) {
         const confidenceBar = "■".repeat(Math.round(field.confidence * 10));
-        text += `${label.padEnd(15, " ")} : ${field.value}\n`;
+        text += `${label.padEnd(15, " ")} : ${safeRenderValue(field)}\n`;
         text += `${"".padEnd(15, " ")}   신뢰도: ${confidenceBar} ${Math.round(
           field.confidence * 100
         )}%\n`;
@@ -177,7 +192,7 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
                     </td>
                     <td className="px-4 py-3 text-gray-800">
                       {field ? (
-                        <span className="font-semibold">{field.value}</span>
+                        <span className="font-semibold">{safeRenderValue(field)}</span>
                       ) : (
                         <span className="text-gray-400 italic">추출 실패</span>
                       )}
