@@ -872,12 +872,78 @@ function ReportDisplay({ report }: { report: CretopReport }) {
             <ReactMarkdown
               components={{
                 h1: ({ node, ...props }) => <h1 className="text-4xl font-black text-blue-700 mt-10 mb-5" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-3xl font-black text-slate-800 mt-8 mb-4" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-2xl font-bold text-slate-700 mt-6 mb-3" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-3xl font-black text-slate-800 mt-8 mb-4 pb-3 border-b-4 border-blue-200" {...props} />,
+                h3: ({ node, children, ...props }) => {
+                  // Special styling for 4대 지표 cards
+                  const text = String(children);
+                  let bgColor = 'bg-gradient-to-br from-blue-50 to-indigo-50';
+                  let borderColor = 'border-blue-300';
+                  let iconBg = 'bg-blue-100';
+                  let icon = '📊';
+                  
+                  if (text.includes('매출액') || text.includes('💰')) {
+                    bgColor = 'bg-gradient-to-br from-green-50 to-emerald-50';
+                    borderColor = 'border-green-300';
+                    iconBg = 'bg-green-100';
+                    icon = '💰';
+                  } else if (text.includes('이익잉여금') || text.includes('📊')) {
+                    bgColor = 'bg-gradient-to-br from-blue-50 to-cyan-50';
+                    borderColor = 'border-blue-300';
+                    iconBg = 'bg-blue-100';
+                    icon = '📊';
+                  } else if (text.includes('가지급금') || text.includes('⚠️')) {
+                    bgColor = 'bg-gradient-to-br from-orange-50 to-amber-50';
+                    borderColor = 'border-orange-300';
+                    iconBg = 'bg-orange-100';
+                    icon = '⚠️';
+                  } else if (text.includes('복리후생비') || text.includes('🎁')) {
+                    bgColor = 'bg-gradient-to-br from-purple-50 to-pink-50';
+                    borderColor = 'border-purple-300';
+                    iconBg = 'bg-purple-100';
+                    icon = '🎁';
+                  }
+                  
+                  return (
+                    <div className={`${bgColor} ${borderColor} border-4 rounded-3xl p-6 mt-6 mb-4 shadow-lg`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`${iconBg} rounded-full w-12 h-12 flex items-center justify-center text-2xl`}>
+                          {icon}
+                        </span>
+                        <h3 className="text-2xl font-black text-slate-800 m-0" {...props}>{children}</h3>
+                      </div>
+                    </div>
+                  );
+                },
                 p: ({ node, ...props }) => <p className="text-lg text-slate-700 my-3 leading-relaxed" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-2 my-4 text-lg" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-none space-y-3 my-4 text-lg ml-4" {...props} />,
                 ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-2 my-4 text-lg" {...props} />,
-                li: ({ node, ...props }) => <li className="text-slate-700 leading-relaxed" {...props} />,
+                li: ({ node, children, ...props }) => {
+                  const text = String(children);
+                  let icon = '•';
+                  let textColor = 'text-slate-700';
+                  let fontWeight = 'font-medium';
+                  
+                  if (text.includes('값:') || text.includes('금액')) {
+                    icon = '💵';
+                    textColor = 'text-slate-800';
+                    fontWeight = 'font-black';
+                  } else if (text.includes('의미:')) {
+                    icon = '💡';
+                    textColor = 'text-blue-700';
+                    fontWeight = 'font-bold';
+                  } else if (text.includes('컨설팅 포인트:') || text.includes('포인트:')) {
+                    icon = '🎯';
+                    textColor = 'text-green-700';
+                    fontWeight = 'font-bold';
+                  }
+                  
+                  return (
+                    <li className={`${textColor} ${fontWeight} leading-relaxed flex items-start gap-2`} {...props}>
+                      <span className="text-xl flex-shrink-0">{icon}</span>
+                      <span className="flex-1">{children}</span>
+                    </li>
+                  );
+                },
                 strong: ({ node, ...props }) => <strong className="font-black text-slate-900" {...props} />,
                 em: ({ node, ...props }) => <em className="italic text-blue-700" {...props} />,
                 table: ({ node, ...props }) => (
