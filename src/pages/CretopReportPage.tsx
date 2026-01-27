@@ -90,7 +90,7 @@ function getAuthHeaders() {
 }
 
 export default function CretopReportPage() {
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini">("claude");
+  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-preview">("gemini-flash");
   const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
     claude: false,
     gpt: false,
@@ -225,8 +225,11 @@ export default function CretopReportPage() {
 
       const j = await r.json();
       if (j.ok) {
-        setApiKeys((prev) => ({ ...prev, [selectedModel]: true }));
+        // Gemini 모델들은 모두 'gemini' 키로 저장
+        const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+        setApiKeys((prev) => ({ ...prev, [keyType]: true }));
         setApiKeyDraft("");
+        setDetectedModel(null);
         setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
         setTimeout(() => setApiKeyMsg(""), 3000);
       } else {
