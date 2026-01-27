@@ -335,7 +335,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert(`${selectedModel.toUpperCase()} API 키를 먼저 등록해주세요.\n위의 'AI API KEY 등록' 섹션에서 등록할 수 있습니다.`);
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
       return;
     }
 
@@ -411,7 +411,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert(`${selectedModel.toUpperCase()} API 키가 등록되지 않았습니다.\n컨설턴트존에서 등록해주세요.`);
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
       return;
     }
 
@@ -635,7 +635,7 @@ export default function CretopReportPage() {
             <button
               onClick={saveApiKey}
               disabled={!detectedModel || !apiKeyDraft.trim()}
-              className="w-full h-[100px] px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black text-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+              className="w-full h-[100px] px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-black text-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
             >
               💾<br/>저장
             </button>
