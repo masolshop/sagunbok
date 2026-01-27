@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 
 // 🎯 Task Type 정의 (OpenAI 자동 모델 선택용)
 const TASK_TYPES = {
@@ -160,11 +160,13 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       throw new Error(`업로드된 파일이 PDF가 아닙니다. 헤더=${JSON.stringify(header)} (처음 4바이트). 실제 타입을 확인하세요.`);
     }
     
-    // 2. PDF를 텍스트로 변환
+    // 2. PDF를 텍스트로 변환 (pdf-parse v2 API)
     console.log(`[GPT PDF] PDF 텍스트 추출 시작...`);
-    const pdfData = await pdfParse(pdfBuffer);
+    const parser = new PDFParse({ buffer: pdfBuffer });
+    const pdfData = await parser.getText();
     const pdfText = pdfData.text;
-    console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${pdfData.numpages}페이지, ${pdfText.length}자)`);
+    const numPages = pdfData.totalPages || 0;
+    console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자)`);
     
     if (!pdfText || pdfText.trim().length === 0) {
       throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 보호된 PDF일 수 있습니다.');
