@@ -250,8 +250,8 @@ export default function ConsultantZonePage() {
       if (key.startsWith('AIzaSy')) {
         setDetectedModel({
           type: 'gemini',
-          info: 'Gemini 1.5 Flash (추천)',
-          recommended: { free: 'gemini-1.5-flash' }
+          info: 'Gemini 2.5 Flash (고속, 가성비)',
+          recommended: { free: 'gemini-2.5-flash' }
         });
         setSelectedModel('gemini-flash');
         setApiKeyMsg("✅ Gemini API 키 감지됨!");
@@ -519,7 +519,7 @@ export default function ConsultantZonePage() {
                 {detectedModel.type === 'gemini' && (
                   <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
                     <p className="text-sm font-bold text-gray-600">추천 모델</p>
-                    <p className="text-lg font-black text-blue-700">Gemini 1.5 Flash (무료 추천)</p>
+                    <p className="text-lg font-black text-blue-700">Gemini 2.5 Flash (고속, 가성비)</p>
                   </div>
                 )}
                 

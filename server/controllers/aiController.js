@@ -160,15 +160,16 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
   try {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
-    // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 기준)
+    // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
     const modelMap = {
-      'gemini-pro': 'gemini-1.5-pro-latest',
-      'gemini-flash': 'gemini-1.5-flash-latest',
-      'gemini-preview': 'gemini-2.0-flash-exp',
-      'gemini': 'gemini-1.5-flash-latest' // 기본값 (하위 호환)
+      'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
+      'gemini-flash': 'gemini-2.5-flash',       // 고속, 가성비
+      'gemini-lite': 'gemini-2.5-flash-lite',   // 경량
+      'gemini-preview': 'gemini-3-pro-preview', // 차세대 실험
+      'gemini': 'gemini-2.5-flash'              // 기본값
     };
     
-    const actualModel = modelMap[modelType] || 'gemini-1.5-flash-latest';
+    const actualModel = modelMap[modelType] || 'gemini-2.5-flash';
     console.log(`[GEMINI PDF] 모델: ${modelType} → ${actualModel}`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -321,15 +322,16 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {
 
 // Gemini API 호출 (동적 모델 선택)
 async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash') {
-  // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 기준)
+  // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
   const modelMap = {
-    'gemini-pro': 'gemini-1.5-pro-latest',
-    'gemini-flash': 'gemini-1.5-flash-latest',
-    'gemini-preview': 'gemini-2.0-flash-exp',
-    'gemini': 'gemini-1.5-flash-latest' // 기본값 (하위 호환)
+    'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
+    'gemini-flash': 'gemini-2.5-flash',       // 고속, 가성비
+    'gemini-lite': 'gemini-2.5-flash-lite',   // 경량
+    'gemini-preview': 'gemini-3-pro-preview', // 차세대 실험
+    'gemini': 'gemini-2.5-flash'              // 기본값
   };
   
-  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
+  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey}`;
 
   const payload = {
@@ -385,12 +387,12 @@ export const analyzeFinancialStatement = async (req, res) => {
 
     // modelType과 plan 파라미터
     const { modelType, plan = 'free', gptModel } = req.body || {};
-    // Gemini 3가지 모델 모두 허용
-    const allowedModels = ["claude", "gpt", "gemini", "gemini-pro", "gemini-flash", "gemini-preview"];
+    // Gemini 4가지 모델 모두 허용
+    const allowedModels = ["claude", "gpt", "gemini", "gemini-pro", "gemini-flash", "gemini-lite", "gemini-preview"];
     if (!modelType || !allowedModels.includes(modelType)) {
       return res.status(400).json({ 
         ok: false, 
-        error: "INVALID_MODEL_TYPE. Please provide modelType (claude, gpt, gemini-pro, gemini-flash, or gemini-preview)" 
+        error: "INVALID_MODEL_TYPE. Please provide modelType (claude, gpt, gemini-pro, gemini-flash, gemini-lite, or gemini-preview)" 
       });
     }
     

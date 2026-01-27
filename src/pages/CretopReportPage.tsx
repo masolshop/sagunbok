@@ -90,7 +90,7 @@ function getAuthHeaders() {
 }
 
 export default function CretopReportPage() {
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-preview">("gemini-flash");
+  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-lite" | "gemini-preview">("gemini-flash");
   const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
     claude: false,
     gpt: false,
@@ -194,7 +194,7 @@ export default function CretopReportPage() {
       if (key.startsWith('AIzaSy')) {
         setDetectedModel({
           type: 'gemini',
-          info: 'Gemini 1.5 Flash (추천)'
+          info: 'Gemini 2.5 Flash (고속, 가성비 추천)'
         });
         setSelectedModel('gemini-flash');
         setApiKeyMsg("✅ Gemini API 키 감지됨!");
