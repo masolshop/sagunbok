@@ -214,19 +214,23 @@ export default function CretopReportPage() {
     }
 
     try {
+      // Gemini 모델들은 'gemini'로 통합하여 저장
+      const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+      
+      console.log(`[Frontend] Saving API key for modelType: "${keyType}" (original: "${selectedModel}")`);
+      
       const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ apiKey: apiKeyDraft.trim(), modelType: selectedModel }),
+        body: JSON.stringify({ apiKey: apiKeyDraft.trim(), modelType: keyType }),
       });
 
       const j = await r.json();
       if (j.ok) {
         // Gemini 모델들은 모두 'gemini' 키로 저장
-        const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
         setApiKeys((prev) => ({ ...prev, [keyType]: true }));
         setApiKeyDraft("");
         setDetectedModel(null);
