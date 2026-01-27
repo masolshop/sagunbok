@@ -811,8 +811,23 @@ export const analyzeFinancialStatement = async (req, res) => {
       if (data.items && Array.isArray(data.items)) {
         // 새 스키마: items 배열을 객체로 변환
         const result = {};
+        
+        // meta 정보에서 기본 필드 추출
+        if (data.meta) {
+          result.company_name = data.meta.company_name || '';
+          result.ceo_name = data.meta.ceo_name || '';
+          result.business_number = data.meta.business_registration_number || data.meta.business_number || '';
+          result.industry = data.meta.industry || '';
+          result.statement_year = data.meta.asof_date || data.meta.statement_year || '';
+        }
+        
+        // items 배열 처리
         data.items.forEach(item => {
-          result[item.key] = {
+          const key = item.key;
+          // key 매핑 (GPT가 다른 이름을 사용할 수 있음)
+          const mappedKey = key === 'undistributed_retained_earnings' ? 'unappropriated_retained_earnings' : key;
+          
+          result[mappedKey] = {
             original_text: item.original_text,
             unit: item.unit,
             multiplier_to_won: item.multiplier_to_won || 1,
@@ -822,11 +837,21 @@ export const analyzeFinancialStatement = async (req, res) => {
             evidence: item.evidence || {}
           };
         });
+        
         result._anomalies = data.anomalies || [];
         result._meta = data.meta || {};
+        
+        console.log('[ANALYZE] 새 스키마 변환 완료:', {
+          company_name: result.company_name,
+          revenue: result.revenue?.value_won,
+          has_meta: !!data.meta,
+          items_count: data.items.length
+        });
+        
         return result;
       }
       // 구 스키마: 그대로 반환
+      console.log('[ANALYZE] 구 스키마 사용');
       return data;
     };
 
@@ -964,69 +989,69 @@ export const analyzeFinancialStatement = async (req, res) => {
     
     const analysis = {
       company_name: {
-        value: String(unwrap(rawAnalysis.company_name) ?? ''),
+        value: String(unwrap(parsedData.company_name) ?? ''),
         confidence: 0.95,
         page_number: 1,
-        snippet: String(unwrap(rawAnalysis.company_name) ?? ''),
+        snippet: String(unwrap(parsedData.company_name) ?? ''),
         method: 'ai_extraction'
       },
       ceo_name: {
-        value: String(unwrap(rawAnalysis.ceo_name) ?? ''),
+        value: String(unwrap(parsedData.ceo_name) ?? ''),
         confidence: 0.90,
         page_number: 1,
-        snippet: String(unwrap(rawAnalysis.ceo_name) ?? ''),
+        snippet: String(unwrap(parsedData.ceo_name) ?? ''),
         method: 'ai_extraction'
       },
       business_number: {
-        value: String(unwrap(rawAnalysis.business_number) ?? ''),
+        value: String(unwrap(parsedData.business_number) ?? ''),
         confidence: 0.92,
         page_number: 1,
-        snippet: String(unwrap(rawAnalysis.business_number) ?? ''),
+        snippet: String(unwrap(parsedData.business_number) ?? ''),
         method: 'ai_extraction'
       },
       industry: {
-        value: String(unwrap(rawAnalysis.industry) ?? ''),
+        value: String(unwrap(parsedData.industry) ?? ''),
         confidence: 0.88,
         page_number: 1,
-        snippet: String(unwrap(rawAnalysis.industry) ?? ''),
+        snippet: String(unwrap(parsedData.industry) ?? ''),
         method: 'ai_extraction'
       },
       statement_year: {
-        value: String(unwrap(rawAnalysis.statement_year) ?? ''),
+        value: String(unwrap(parsedData.statement_year) ?? ''),
         confidence: 0.95,
         page_number: 1,
-        snippet: String(unwrap(rawAnalysis.statement_year) ?? ''),
+        snippet: String(unwrap(parsedData.statement_year) ?? ''),
         method: 'ai_extraction'
       },
       revenue: {
-        value: String(parseMoney(rawAnalysis.revenue)),
+        value: String(parseMoney(parsedData.revenue)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `매출액: ${parseMoney(rawAnalysis.revenue).toLocaleString()}원`,
+        snippet: `매출액: ${parseMoney(parsedData.revenue).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       retained_earnings: {
-        value: String(parseMoney(rawAnalysis.retained_earnings)),
+        value: String(parseMoney(parsedData.retained_earnings)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `이익잉여금: ${parseMoney(rawAnalysis.retained_earnings).toLocaleString()}원`,
+        snippet: `이익잉여금: ${parseMoney(parsedData.retained_earnings).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       loans_to_officers: {
-        value: String(parseMoney(rawAnalysis.loans_to_officers)),
+        value: String(parseMoney(parsedData.loans_to_officers)),
         confidence: 0.80,
         page_number: 1,
-        snippet: `가지급금: ${parseMoney(rawAnalysis.loans_to_officers).toLocaleString()}원`,
+        snippet: `가지급금: ${parseMoney(parsedData.loans_to_officers).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       welfare_expenses: {
-        value: String(parseMoney(rawAnalysis.welfare_expenses)),
+        value: String(parseMoney(parsedData.welfare_expenses)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `복리후생비: ${parseMoney(rawAnalysis.welfare_expenses).toLocaleString()}원`,
+        snippet: `복리후생비: ${parseMoney(parsedData.welfare_expenses).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       }
