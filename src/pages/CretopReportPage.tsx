@@ -273,7 +273,10 @@ export default function CretopReportPage() {
   };
 
   const analyzeFinancialStatement = async (file: File) => {
-    if (!apiKeys[selectedModel]) {
+    // Gemini 모델들은 'gemini' 키로 체크
+    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    
+    if (!apiKeys[keyType]) {
       alert(`${selectedModel.toUpperCase()} API 키를 먼저 등록해주세요.\n위의 'AI API KEY 등록' 섹션에서 등록할 수 있습니다.`);
       return;
     }
@@ -283,6 +286,8 @@ export default function CretopReportPage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('modelType', selectedModel);
+      
+      console.log(`[Frontend] Sending modelType: "${selectedModel}"`); // 🔍 디버깅 로그
 
       const res = await fetch(`${API_BASE_URL}/api/ai/analyze-financial-statement`, {
         method: 'POST',

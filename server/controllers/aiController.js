@@ -387,6 +387,11 @@ export const analyzeFinancialStatement = async (req, res) => {
 
     // modelType과 plan 파라미터
     const { modelType, plan = 'free', gptModel } = req.body || {};
+    
+    // 🔍 디버깅 로그 추가
+    console.log(`[AUTH] 요청된 모델 타입: "${modelType}" (타입: ${typeof modelType})`);
+    console.log(`[AUTH] allowedModels:`, allowedModels);
+    
     // Gemini 4가지 모델 모두 허용
     const allowedModels = ["claude", "gpt", "gemini", "gemini-pro", "gemini-flash", "gemini-lite", "gemini-preview"];
     if (!modelType || !allowedModels.includes(modelType)) {
