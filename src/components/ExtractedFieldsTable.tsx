@@ -11,20 +11,24 @@ import React, { useState } from "react";
 
 // 숫자를 한글로 변환하는 유틸리티
 const numberToKorean = (num: number): string => {
-  const units = ['', '만', '억', '조'];
+  if (num === 0) return '0';
+  
+  const units = ['', '만', '억', '조', '경'];
   const numStr = Math.abs(num).toString();
   const parts: string[] = [];
   
   // 4자리씩 끊어서 처리
+  let unitIndex = 0;
   for (let i = numStr.length; i > 0; i -= 4) {
     const start = Math.max(0, i - 4);
     const part = parseInt(numStr.substring(start, i));
     if (part > 0) {
-      parts.push(part + units[Math.floor((numStr.length - i) / 4)]);
+      parts.unshift(part.toLocaleString() + units[unitIndex]);
     }
+    unitIndex++;
   }
   
-  const result = parts.reverse().join(' ');
+  const result = parts.join(' ');
   return num < 0 ? '-' + result : result;
 };
 
