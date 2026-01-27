@@ -2,7 +2,9 @@ import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PR
 import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import pdfParse from 'pdf-parse';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 // 🎯 Task Type 정의 (OpenAI 자동 모델 선택용)
 const TASK_TYPES = {
