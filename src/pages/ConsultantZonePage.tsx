@@ -117,11 +117,13 @@ export default function ConsultantZonePage() {
   const [apiKeyDraft, setApiKeyDraft] = useState<string>("");
   const [apiKeyMsg, setApiKeyMsg] = useState<string>("");
   
-  // GPT 모델 자동/수동 선택
-  const [gptModelMode, setGptModelMode] = useState<"auto" | "manual">("auto");
-  const [gptModels, setGptModels] = useState<string[]>([]);
-  const [selectedGptModel, setSelectedGptModel] = useState<string>("");
-  const [gptPlan, setGptPlan] = useState<"free" | "paid">("free");
+  // 자동 감지된 모델 정보
+  const [detectedModel, setDetectedModel] = useState<{
+    type: "claude" | "gpt" | "gemini" | null;
+    info: string;
+    recommended?: { free?: string; paid?: string };
+  }>({ type: null, info: "" });
+  const [detecting, setDetecting] = useState(false);
 
   const [loadingAction, setLoadingAction] = useState<ActionKey | null>(null);
   const [outputs, setOutputs] = useState<
@@ -180,6 +182,91 @@ export default function ConsultantZonePage() {
     }
     return true;
   };
+  
+  // API 키 자동 감지
+  const detectApiKey = async () => {
+    const key = apiKeyDraft.trim();
+    if (!key) {
+      setApiKeyMsg("API 키를 먼저 입력해주세요.");
+      return;
+    }
+    
+    setDetecting(true);
+    setApiKeyMsg("🔍 API 키 확인 중...");
+    setDetectedModel({ type: null, info: "" });
+    
+    try {
+      // 1. Claude 키 감지 (sk-ant-로 시작)
+      if (key.startsWith('sk-ant-')) {
+        setDetectedModel({
+          type: 'claude',
+          info: 'Claude 3.5 Sonnet'
+        });
+        setSelectedModel('claude');
+        setApiKeyMsg("✅ Claude API 키 감지됨!");
+        return;
+      }
+      
+      // 2. GPT 키 감지 (sk-로 시작하지만 sk-ant-가 아님)
+      if (key.startsWith('sk-')) {
+        try {
+          const freeRes = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=free`, {
+            method: "GET",
+            headers: {
+              ...getAuthHeaders(),
+              'X-Temp-Key': key
+            },
+          });
+          const paidRes = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=paid`, {
+            method: "GET",
+            headers: {
+              ...getAuthHeaders(),
+              'X-Temp-Key': key
+            },
+          });
+          
+          const freeData = await freeRes.json();
+          const paidData = await paidRes.json();
+          
+          if (freeData.ok && paidData.ok) {
+            setDetectedModel({
+              type: 'gpt',
+              info: `${freeData.models.length}개 모델 사용 가능`,
+              recommended: {
+                free: freeData.recommended,
+                paid: paidData.recommended
+              }
+            });
+            setSelectedModel('gpt');
+            setApiKeyMsg(`✅ GPT API 키 감지됨! (${freeData.models.length}개 모델)`);
+            return;
+          }
+        } catch (e) {
+          // GPT 실패 시 다음으로
+        }
+      }
+      
+      // 3. Gemini 키 감지 (AIzaSy로 시작)
+      if (key.startsWith('AIzaSy')) {
+        setDetectedModel({
+          type: 'gemini',
+          info: 'Gemini 3 Flash (추천)',
+          recommended: { free: 'gemini-3-flash' }
+        });
+        setSelectedModel('gemini-flash');
+        setApiKeyMsg("✅ Gemini API 키 감지됨!");
+        return;
+      }
+      
+      // 4. 감지 실패
+      setApiKeyMsg("❌ API 키 형식을 확인할 수 없습니다.");
+      
+    } catch (e: any) {
+      setApiKeyMsg(`❌ 키 확인 실패: ${e.message}`);
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const saveApiKey = async () => {
     setApiKeyMsg("");
@@ -188,8 +275,14 @@ export default function ConsultantZonePage() {
       setApiKeyMsg("API 키를 입력해 주세요.");
       return;
     }
+    
+    if (!detectedModel.type) {
+      setApiKeyMsg("먼저 '자동 감지' 버튼을 클릭해주세요.");
+      return;
+    }
+    
     // Gemini 모델들은 모두 'gemini' 키로 통합
-    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    const keyType = detectedModel.type === 'gemini' ? 'gemini' : detectedModel.type;
     
     try {
       const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
@@ -207,34 +300,13 @@ export default function ConsultantZonePage() {
       }
       setApiKeys((prev) => ({ ...prev, [keyType]: true }));
       setApiKeyDraft("");
-      setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
-      
-      // GPT 키 저장 시 자동으로 모델 목록 불러오기
-      if (keyType === 'gpt') {
-        loadGPTModels();
-      }
+      setDetectedModel({ type: null, info: "" });
+      setApiKeyMsg(`✅ ${keyType.toUpperCase()} API 키 저장 완료!`);
     } catch (e: any) {
       setApiKeyMsg(`저장 실패: ${String(e?.message || e)}`);
     }
   };
   
-  // GPT 모델 목록 불러오기
-  const loadGPTModels = async () => {
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=${gptPlan}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-      const j = await r.json();
-      if (j.ok) {
-        setGptModels(j.models.map((m: any) => m.id));
-        setSelectedGptModel(j.recommended);
-        console.log(`[GPT] 추천 모델: ${j.recommended}`);
-      }
-    } catch (e: any) {
-      console.error('[GPT Models] 불러오기 실패:', e);
-    }
-  };
 
   const runAction = async (action: ActionKey) => {
     if (!validateInputs()) return;
@@ -399,147 +471,86 @@ export default function ConsultantZonePage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-blue-700 block">AI 모델 선택</label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as any)}
-              className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
-            >
-              <option value="gpt">GPT (Auto - 자동 선택)</option>
-              <option value="gemini-pro">Gemini 3 Pro (최고 성능)</option>
-              <option value="gemini-flash">Gemini 3 Flash (빠른 속도, 무료 추천)</option>
-              <option value="gemini-preview">Gemini 3 Pro Preview (실험 버전)</option>
-              <option value="claude">Claude 3.5 Sonnet</option>
-            </select>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-blue-700 block">API Key 입력</label>
+        <div className="space-y-6">
+          {/* 1단계: API 키 입력 */}
+          <div className="space-y-3">
+            <label className="text-xl lg:text-2xl font-black text-blue-700 block">1️⃣ API Key 입력</label>
             <div className="flex gap-3">
               <input
                 type="password"
                 value={apiKeyDraft}
                 onChange={(e) => setApiKeyDraft(e.target.value)}
-                placeholder={
-                  selectedModel === "claude"
-                    ? "sk-ant-api03-..."
-                    : selectedModel === "gpt"
-                    ? "sk-..."
-                    : "AIzaSy... (Gemini 공통 키)"
-                }
+                placeholder="sk-ant-api03-... 또는 sk-... 또는 AIzaSy..."
                 className="flex-1 px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-bold text-lg bg-white shadow-sm"
               />
               <button
-                onClick={saveApiKey}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                onClick={detectApiKey}
+                disabled={detecting}
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-black text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
               >
-                저장
+                {detecting ? "🔍 확인 중..." : "🔍 자동 감지"}
               </button>
             </div>
           </div>
+          
+          {/* 2단계: 감지된 모델 표시 */}
+          {detectedModel.type && (
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-3xl border-2 border-green-200 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h4 className="text-xl font-black text-green-700">✅ 감지된 모델</h4>
+              <div className="space-y-3">
+                <div className="bg-white p-4 rounded-xl border-2 border-green-200">
+                  <p className="text-sm font-bold text-gray-600">모델 타입</p>
+                  <p className="text-2xl font-black text-green-700">{detectedModel.type?.toUpperCase()}</p>
+                </div>
+                
+                {detectedModel.type === 'gpt' && detectedModel.recommended && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
+                      <p className="text-sm font-bold text-gray-600">⚡ 무료 플랜 추천</p>
+                      <p className="text-lg font-black text-blue-700">{detectedModel.recommended.free}</p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-xl border-2 border-purple-200">
+                      <p className="text-sm font-bold text-gray-600">💎 유료 플랜 추천</p>
+                      <p className="text-lg font-black text-purple-700">{detectedModel.recommended.paid}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {detectedModel.type === 'gemini' && (
+                  <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
+                    <p className="text-sm font-bold text-gray-600">추천 모델</p>
+                    <p className="text-lg font-black text-blue-700">Gemini 3 Flash (무료 추천)</p>
+                  </div>
+                )}
+                
+                {detectedModel.type === 'claude' && (
+                  <div className="bg-purple-50 p-4 rounded-xl border-2 border-purple-200">
+                    <p className="text-sm font-bold text-gray-600">사용 모델</p>
+                    <p className="text-lg font-black text-purple-700">Claude 3.5 Sonnet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* 3단계: 저장 버튼 */}
+          {detectedModel.type && (
+            <button
+              onClick={saveApiKey}
+              className="w-full py-5 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-2xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
+            >
+              💾 저장하기
+            </button>
+          )}
         </div>
 
         {apiKeyMsg && (
-          <div className={`p-4 rounded-xl font-bold text-lg ${apiKeyMsg.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          <div className={`p-4 rounded-xl font-bold text-lg ${
+            apiKeyMsg.includes('✅') ? 'bg-green-50 text-green-700' : 
+            apiKeyMsg.includes('🔍') ? 'bg-blue-50 text-blue-700' : 
+            'bg-red-50 text-red-700'
+          }`}>
             {apiKeyMsg}
-          </div>
-        )}
-        
-        {/* GPT 모델 자동/수동 선택 */}
-        {selectedModel === 'gpt' && apiKeys.gpt && (
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-3xl border-2 border-purple-200 space-y-4">
-            <h3 className="text-xl font-black text-purple-700">🤖 GPT 모델 설정</h3>
-            
-            {/* Plan 선택 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700">사용 플랜</label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setGptPlan('free'); loadGPTModels(); }}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
-                    gptPlan === 'free'
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  무료 플랜 (속도 우선)
-                </button>
-                <button
-                  onClick={() => { setGptPlan('paid'); loadGPTModels(); }}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
-                    gptPlan === 'paid'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  유료 플랜 (성능 우선)
-                </button>
-              </div>
-            </div>
-            
-            {/* 자동/수동 토글 */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700">모델 선택 방식</label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setGptModelMode('auto')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
-                    gptModelMode === 'auto'
-                      ? 'bg-green-600 text-white shadow-lg'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  ✨ Auto (자동 추천)
-                </button>
-                <button
-                  onClick={() => setGptModelMode('manual')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
-                    gptModelMode === 'manual'
-                      ? 'bg-orange-600 text-white shadow-lg'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  🎯 Manual (직접 선택)
-                </button>
-              </div>
-            </div>
-            
-            {/* 수동 모드: 모델 선택 드롭다운 */}
-            {gptModelMode === 'manual' && gptModels.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">GPT 모델</label>
-                <select
-                  value={selectedGptModel}
-                  onChange={(e) => setSelectedGptModel(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none font-bold bg-white"
-                >
-                  {gptModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            
-            {/* 현재 선택된 모델 표시 */}
-            {gptModelMode === 'auto' && selectedGptModel && (
-              <div className="bg-white p-4 rounded-xl border-2 border-green-200">
-                <p className="text-sm font-bold text-gray-600">추천 모델</p>
-                <p className="text-lg font-black text-green-700">{selectedGptModel}</p>
-              </div>
-            )}
-            
-            {!gptModels.length && (
-              <button
-                onClick={loadGPTModels}
-                className="w-full py-3 px-4 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all"
-              >
-                📋 사용 가능한 모델 불러오기
-              </button>
-            )}
           </div>
         )}
 
