@@ -105,6 +105,11 @@ export default function CretopReportPage() {
     type: string;
     info: string;
   } | null>(null);
+  const [savedModels, setSavedModels] = useState<{
+    claude?: string;
+    gpt?: string;
+    gemini?: string;
+  }>({});
 
   // 파일 업로드
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -232,9 +237,27 @@ export default function CretopReportPage() {
       if (j.ok) {
         // Gemini 모델들은 모두 'gemini' 키로 저장
         setApiKeys((prev) => ({ ...prev, [keyType]: true }));
+        
+        // 저장된 모델 정보 업데이트
+        const modelDisplayName = selectedModel === 'gpt' 
+          ? 'GPT-5.2' 
+          : selectedModel === 'claude'
+          ? 'Claude 3.5 Sonnet'
+          : selectedModel === 'gemini-pro'
+          ? 'Gemini 2.5 Pro'
+          : selectedModel === 'gemini-flash'
+          ? 'Gemini 2.5 Flash'
+          : selectedModel === 'gemini-lite'
+          ? 'Gemini 2.5 Flash Lite'
+          : selectedModel === 'gemini-preview'
+          ? 'Gemini 3 Pro Preview'
+          : selectedModel.toUpperCase();
+        
+        setSavedModels((prev) => ({ ...prev, [keyType]: modelDisplayName }));
+        
         setApiKeyDraft("");
         setDetectedModel(null);
-        setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
+        setApiKeyMsg(`✅ ${modelDisplayName} API 키 저장 완료!`);
         setTimeout(() => setApiKeyMsg(""), 3000);
       } else {
         throw new Error(j.error || "저장 실패");
@@ -413,6 +436,33 @@ export default function CretopReportPage() {
         <h3 className="flex items-center gap-3 text-blue-700 font-black text-3xl lg:text-4xl">
           <span>🤖</span> AI API KEY 등록
         </h3>
+
+        {/* 저장된 모델 상태 표시 */}
+        {(apiKeys.claude || apiKeys.gpt || apiKeys.gemini) && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-5">
+            <p className="text-sm font-bold text-green-600 mb-3">✅ 등록된 API 키</p>
+            <div className="flex flex-wrap gap-3">
+              {apiKeys.claude && savedModels.claude && (
+                <div className="bg-white px-4 py-2 rounded-xl border-2 border-purple-200 shadow-sm">
+                  <p className="text-xs font-bold text-gray-500">CLAUDE</p>
+                  <p className="text-sm font-black text-purple-700">{savedModels.claude}</p>
+                </div>
+              )}
+              {apiKeys.gpt && savedModels.gpt && (
+                <div className="bg-white px-4 py-2 rounded-xl border-2 border-blue-200 shadow-sm">
+                  <p className="text-xs font-bold text-gray-500">GPT</p>
+                  <p className="text-sm font-black text-blue-700">{savedModels.gpt}</p>
+                </div>
+              )}
+              {apiKeys.gemini && savedModels.gemini && (
+                <div className="bg-white px-4 py-2 rounded-xl border-2 border-green-200 shadow-sm">
+                  <p className="text-xs font-bold text-gray-500">GEMINI</p>
+                  <p className="text-sm font-black text-green-700">{savedModels.gemini}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 3-Column Layout: 왼쪽(키 입력) - 중앙(감지 모델) - 오른쪽(저장) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
