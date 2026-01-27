@@ -868,28 +868,28 @@ function ReportDisplay({ report }: { report: CretopReport }) {
       <div className="space-y-8">
         <div className="bg-white rounded-[32px] border-4 border-blue-100 p-10 shadow-xl">
           <h3 className="text-3xl font-black text-blue-700 mb-6">📊 사근복 관점 재무 스냅샷 분석</h3>
-          <div className="prose prose-lg max-w-none">
+          <div className="prose prose-xl max-w-none">
             <ReactMarkdown
               components={{
-                h1: ({ node, ...props }) => <h1 className="text-3xl font-black text-blue-700 mt-8 mb-4" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-2xl font-black text-slate-700 mt-6 mb-3" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-xl font-bold text-slate-600 mt-4 mb-2" {...props} />,
-                p: ({ node, ...props }) => <p className="text-base text-slate-600 my-2 leading-relaxed" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 my-3" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-1 my-3" {...props} />,
-                li: ({ node, ...props }) => <li className="text-slate-600" {...props} />,
-                strong: ({ node, ...props }) => <strong className="font-black text-slate-800" {...props} />,
-                em: ({ node, ...props }) => <em className="italic text-blue-600" {...props} />,
+                h1: ({ node, ...props }) => <h1 className="text-4xl font-black text-blue-700 mt-10 mb-5" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-3xl font-black text-slate-800 mt-8 mb-4" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-2xl font-bold text-slate-700 mt-6 mb-3" {...props} />,
+                p: ({ node, ...props }) => <p className="text-lg text-slate-700 my-3 leading-relaxed" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-2 my-4 text-lg" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-2 my-4 text-lg" {...props} />,
+                li: ({ node, ...props }) => <li className="text-slate-700 leading-relaxed" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-black text-slate-900" {...props} />,
+                em: ({ node, ...props }) => <em className="italic text-blue-700" {...props} />,
                 table: ({ node, ...props }) => (
-                  <div className="overflow-x-auto my-4">
-                    <table className="min-w-full border-collapse border-2 border-slate-200" {...props} />
+                  <div className="overflow-x-auto my-6">
+                    <table className="min-w-full border-collapse border-2 border-green-300 text-lg" {...props} />
                   </div>
                 ),
-                thead: ({ node, ...props }) => <thead className="bg-slate-100" {...props} />,
+                thead: ({ node, ...props }) => <thead className="bg-green-600" {...props} />,
                 tbody: ({ node, ...props }) => <tbody {...props} />,
-                tr: ({ node, ...props }) => <tr className="border-b border-slate-200" {...props} />,
-                th: ({ node, ...props }) => <th className="px-4 py-3 text-left font-black text-slate-700 border border-slate-300" {...props} />,
-                td: ({ node, ...props }) => <td className="px-4 py-3 text-slate-600 border border-slate-300" {...props} />,
+                tr: ({ node, ...props }) => <tr className="border-b border-green-200" {...props} />,
+                th: ({ node, ...props }) => <th className="px-6 py-4 text-left font-black text-white border border-green-400 text-lg" {...props} />,
+                td: ({ node, ...props }) => <td className="px-6 py-4 text-slate-800 border border-green-300 text-lg" {...props} />,
                 code: ({ node, inline, ...props }: any) => 
                   inline ? (
                     <code className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-blue-600" {...props} />
