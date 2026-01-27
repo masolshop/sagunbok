@@ -2,11 +2,36 @@ import React, { useState } from "react";
 
 /**
  * ExtractedFieldsTable.tsx
- * PDF에서 추출된 8개 필드를 테이블 형태로 표시
+ * PDF에서 추출된 9개 필드를 테이블 형태로 표시
  * - 신뢰도 점수 시각화
  * - 근거 보기 토글 기능
  * - 복사하기 버튼
+ * - 금액 필드에 천단위 쉼표 + 한글 표기
  */
+
+// 숫자를 한글로 변환하는 유틸리티
+const numberToKorean = (num: number): string => {
+  const units = ['', '만', '억', '조'];
+  const numStr = Math.abs(num).toString();
+  const parts: string[] = [];
+  
+  // 4자리씩 끊어서 처리
+  for (let i = numStr.length; i > 0; i -= 4) {
+    const start = Math.max(0, i - 4);
+    const part = parseInt(numStr.substring(start, i));
+    if (part > 0) {
+      parts.push(part + units[Math.floor((numStr.length - i) / 4)]);
+    }
+  }
+  
+  const result = parts.reverse().join(' ');
+  return num < 0 ? '-' + result : result;
+};
+
+// 금액 필드인지 확인
+const isMoneyField = (key: string): boolean => {
+  return ['revenue', 'retained_earnings', 'loans_to_officers', 'welfare_expenses'].includes(key);
+};
 
 type ExtractedField = {
   value: string;
@@ -71,14 +96,26 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
     setExpandedRows(newExpanded);
   };
 
-  // ✅ 안전한 렌더링 헬퍼 (React Error #31 방지)
-  const safeRenderValue = (field: any): string => {
+  // ✅ 안전한 렌더링 헬퍼 (React Error #31 방지 + 금액 포맷팅)
+  const safeRenderValue = (field: any, fieldKey: string): string => {
     if (field == null) return "-";
     if (typeof field === "object") {
       // { value, confidence, evidence, ... } 구조
       if ("value" in field) {
         const val = field.value;
-        return val != null ? String(val) : "-";
+        if (val == null) return "-";
+        
+        // 금액 필드인 경우 천단위 쉼표 + 한글 표기
+        if (isMoneyField(fieldKey)) {
+          const numVal = Number(String(val).replace(/,/g, ''));
+          if (!isNaN(numVal)) {
+            const formatted = numVal.toLocaleString('ko-KR');
+            const korean = numberToKorean(numVal);
+            return `${formatted}원 (${korean}원)`;
+          }
+        }
+        
+        return String(val);
       }
       // 혹시 객체가 직접 온 경우
       return JSON.stringify(field);
@@ -117,7 +154,7 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
       const field = data[key as keyof ExtractedData];
       if (field) {
         const confidenceBar = "■".repeat(Math.round(field.confidence * 10));
-        text += `${label.padEnd(15, " ")} : ${safeRenderValue(field)}\n`;
+        text += `${label.padEnd(15, " ")} : ${safeRenderValue(field, key)}\n`;
         text += `${"".padEnd(15, " ")}   신뢰도: ${confidenceBar} ${Math.round(
           field.confidence * 100
         )}%\n`;
@@ -192,7 +229,7 @@ export default function ExtractedFieldsTable({ data, onCopy }: Props) {
                     </td>
                     <td className="px-4 py-3 text-gray-800">
                       {field ? (
-                        <span className="font-semibold">{safeRenderValue(field)}</span>
+                        <span className="font-semibold">{safeRenderValue(field, key)}</span>
                       ) : (
                         <span className="text-gray-400 italic">추출 실패</span>
                       )}

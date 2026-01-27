@@ -718,69 +718,6 @@ export default function CretopReportPage() {
         />
       )}
 
-      {/* Basic Info Input */}
-      <div className="bg-white rounded-[60px] border-4 border-slate-50 p-12 lg:p-16 shadow-2xl space-y-10">
-        <h3 className="flex items-center gap-4 text-slate-700 font-black text-3xl lg:text-4xl">
-          <span>📝</span> 기본 정보 입력
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">회사명 *</label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
-              placeholder="예: 테스트주식회사"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">결산일 *</label>
-            <input
-              type="date"
-              value={statementDate}
-              onChange={(e) => setStatementDate(e.target.value)}
-              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">대표자명</label>
-            <input
-              type="text"
-              value={ceoName}
-              onChange={(e) => setCeoName(e.target.value)}
-              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
-              placeholder="예: 홍길동"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">임직원수</label>
-            <input
-              type="text"
-              value={employeeCount}
-              onChange={(e) => setEmployeeCount(e.target.value)}
-              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
-              placeholder="예: 50명"
-            />
-          </div>
-
-          <div className="md:col-span-2 space-y-4">
-            <label className="text-xl lg:text-2xl font-black text-slate-700 block">업종</label>
-            <input
-              type="text"
-              value={industryName}
-              onChange={(e) => setIndustryName(e.target.value)}
-              className="w-full bg-slate-50 border-4 border-transparent focus:border-blue-500 rounded-[32px] p-8 text-2xl font-bold outline-none shadow-inner"
-              placeholder="예: 제조업, IT서비스업 등"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Financial Statements Input */}
       <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-[48px] border-4 border-amber-100 p-10 lg:p-14 space-y-10 shadow-xl">
         <h3 className="flex items-center gap-4 text-amber-700 font-black text-3xl lg:text-4xl">
