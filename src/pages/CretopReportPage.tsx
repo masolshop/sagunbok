@@ -828,7 +828,7 @@ export default function CretopReportPage() {
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[48px] py-10 text-3xl lg:text-4xl font-black shadow-2xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[48px] py-10 text-3xl lg:text-4xl font-black shadow-2xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
       >
         {loading ? "⏳ 리포트 생성 중... (약 30초 소요)" : "🚀 CRETOP 기업분석 리포트 생성"}
       </button>
