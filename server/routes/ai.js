@@ -8,7 +8,8 @@ import {
   generateFinalIntegrated,
   analyzeJobsite,
   analyzeReviews,
-  getGPTModels
+  getGPTModels,
+  analyzeFinancialSnapshot
 } from "../controllers/aiController.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ const upload = multer({
 
 router.post("/run", authenticateConsultant, requireConsultant, runAi);
 router.post("/analyze-financial-statement", authenticateConsultant, requireConsultant, upload.single('file'), analyzeFinancialStatement);
+router.post("/analyze-financial-snapshot", authenticateConsultant, requireConsultant, analyzeFinancialSnapshot);
 router.post("/final-consulting", authenticateConsultant, requireConsultant, generateFinalConsulting);
 router.post("/final-integrated", authenticateConsultant, requireConsultant, generateFinalIntegrated);
 

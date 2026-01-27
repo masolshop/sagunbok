@@ -1,4 +1,4 @@
-import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PROMPT, PROMPT_VERSION } from "../prompts/catalog.js";
+import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PROMPT, FINANCIAL_SNAPSHOT_SYSTEM_PROMPT, PROMPT_VERSION } from "../prompts/catalog.js";
 import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -1426,5 +1426,127 @@ export const getGPTModels = async (req, res) => {
       ok: false,
       error: error.message || 'UNKNOWN_ERROR'
     });
+  }
+};
+
+// 재무제표 스냅샷 분석 (사근복 관점)
+export const analyzeFinancialSnapshot = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const {
+      company_name,
+      industry,
+      year,
+      employee_count,
+      unit,
+      balance_sheet,
+      income_statement,
+      cash_flow,
+      model_type
+    } = req.body;
+
+    console.log('[SNAPSHOT] 스냅샷 분석 시작:', { company_name, model_type });
+
+    if (!company_name || !balance_sheet || !income_statement) {
+      return res.status(400).json({ ok: false, error: "MISSING_DATA" });
+    }
+
+    // API 키 로드
+    let apiKey;
+    try {
+      apiKey = loadKey(consultantId, model_type || 'gpt');
+    } catch (keyError) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: keyError.message || `NO_SAVED_API_KEY_FOR_${(model_type || 'gpt').toUpperCase()}`
+      });
+    }
+
+    // 템플릿 변수 매핑
+    const userPrompt = PROMPTS.FINANCIAL_SNAPSHOT.SNAPSHOT_REPORT
+      .replace('{{company_name}}', company_name)
+      .replace('{{industry_name_or_code}}', industry || '미입력')
+      .replace('{{year}}', year || '2024')
+      .replace('{{employee_count_or_unknown}}', employee_count || '미입력')
+      .replace('{{unit}}', unit || '원')
+      .replace('{{revenue_value_won}}', income_statement.매출액 || income_statement.revenue || '0')
+      .replace('{{net_income_value_won}}', income_statement.당기순이익 || income_statement.net_income || '0')
+      .replace('{{retained_earnings_value_won}}', balance_sheet.이익잉여금 || balance_sheet.retained_earnings || '0')
+      .replace('{{unappropriated_retained_earnings_value_won}}', balance_sheet.미처분이익잉여금 || balance_sheet.unappropriated_retained_earnings || '0')
+      .replace('{{advances_to_officers_value_won}}', balance_sheet.가지급금 || balance_sheet.advances_to_officers || '0')
+      .replace('{{welfare_expense_value_won}}', income_statement.복리후생비 || income_statement.welfare_expense || '0')
+      .replace('{{trend_available_yes_no}}', 'unknown')
+      .replace('{{owner_issues_or_unknown}}', 'unknown');
+
+    console.log('[SNAPSHOT] 프롬프트 생성 완료');
+
+    // AI 호출
+    let analysis;
+    
+    if (model_type === 'gemini') {
+      // Gemini 호출
+      console.log('[SNAPSHOT] Gemini 호출 시작');
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      
+      const result = await model.generateContent([
+        { text: FINANCIAL_SNAPSHOT_SYSTEM_PROMPT },
+        { text: userPrompt }
+      ]);
+      
+      analysis = result.response.text();
+      console.log('[SNAPSHOT] Gemini 응답 완료');
+      
+    } else {
+      // GPT 호출 (Reasoning 모델 우선)
+      console.log('[SNAPSHOT] GPT 호출 시작');
+      const openai = new OpenAI({ apiKey });
+      
+      // 사용 가능한 모델 조회
+      const modelsList = await openai.models.list();
+      const availableModels = modelsList.data.map(m => m.id);
+      
+      // 재무 분석용 모델 선택
+      const selectedModel = selectGPTModel(
+        availableModels,
+        TASK_TYPES.FIN_STATEMENT_ANALYSIS,
+        'free',
+        'balanced'
+      );
+      
+      console.log('[SNAPSHOT] 선택된 모델:', selectedModel);
+      
+      // Temperature 파라미터 빌드 (Reasoning 모델은 제외)
+      const tempParams = buildTemperatureParam(selectedModel, 0.7);
+      
+      // Token 파라미터 빌드
+      const tokenParams = buildTokenParams(selectedModel, 4096);
+      
+      const completion = await openai.chat.completions.create({
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: FINANCIAL_SNAPSHOT_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt }
+        ],
+        ...tempParams,
+        ...tokenParams
+      });
+      
+      analysis = completion.choices[0].message.content;
+      console.log('[SNAPSHOT] GPT 응답 완료');
+    }
+
+    res.json({
+      ok: true,
+      analysis,
+      model_type: model_type || 'gpt',
+      createdAt: new Date().toISOString()
+    });
+
+  } catch (err) {
+    console.error('[SNAPSHOT] 오류:', err);
+    res.status(500).json({ ok: false, error: err.message });
   }
 };
