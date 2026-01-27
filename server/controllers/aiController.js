@@ -2,6 +2,7 @@ import { PROMPTS, SYSTEM_PROMPT, CONSULTANT_ZONE_SYSTEM_PROMPT, CRETOP_SYSTEM_PR
 import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import pdfParse from 'pdf-parse';
 
 // 🎯 Task Type 정의 (OpenAI 자동 모델 선택용)
 const TASK_TYPES = {
@@ -146,7 +147,7 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
-// OpenAI PDF 추출 (자동 모델 선택 + Chat Completions API)
+// OpenAI PDF 추출 (PDF → Text 변환 후 Chat Completions API)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
@@ -157,35 +158,39 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       throw new Error(`업로드된 파일이 PDF가 아닙니다. 헤더=${JSON.stringify(header)} (처음 4바이트). 실제 타입을 확인하세요.`);
     }
     
+    // 2. PDF를 텍스트로 변환
+    console.log(`[GPT PDF] PDF 텍스트 추출 시작...`);
+    const pdfData = await pdfParse(pdfBuffer);
+    const pdfText = pdfData.text;
+    console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${pdfData.numpages}페이지, ${pdfText.length}자)`);
+    
+    if (!pdfText || pdfText.trim().length === 0) {
+      throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 보호된 PDF일 수 있습니다.');
+    }
+    
     const client = new OpenAI({ apiKey });
     
-    // 2. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
+    // 3. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
     const taskType = TASK_TYPES.FIN_STATEMENT_ANALYSIS;
     const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free', taskType);
     console.log(`[GPT PDF] 사용 모델: ${model} (Task: ${taskType})`);
     
-    // 3. Base64 인코딩
-    const base64 = pdfBuffer.toString('base64');
-    console.log(`[GPT PDF] Base64 인코딩 완료 (${Math.round(base64.length / 1024)} KB)`);
-    
-    // 4. Chat Completions API로 PDF 분석 (Vision API 사용)
+    // 4. Chat Completions API로 텍스트 분석
     const response = await client.chat.completions.create({
       model,
       messages: [
         {
+          role: 'system',
+          content: '당신은 한국 기업 재무제표 전문 회계사입니다. 주어진 재무제표 텍스트에서 정확하게 데이터를 추출하여 JSON 형식으로 반환합니다.'
+        },
+        {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: PDF_EXTRACTION_PROMPT
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:application/pdf;base64,${base64}`
-              }
-            }
-          ]
+          content: `${PDF_EXTRACTION_PROMPT}
+
+=== 재무제표 텍스트 ===
+${pdfText.slice(0, 50000)}
+
+위 재무제표에서 8개 항목을 정확히 추출하여 JSON으로만 답변하세요.`
         }
       ],
       response_format: { type: 'json_object' },
