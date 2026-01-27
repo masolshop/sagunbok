@@ -92,13 +92,23 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
 }
 
 // Gemini PDF 추출 (inline bytes)
-async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename) {
+async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelType = 'gemini-flash') {
   try {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
+    // 모델 매핑: UI에서 온 값 → Gemini API 모델명
+    const modelMap = {
+      'gemini-pro': 'gemini-3-pro',
+      'gemini-flash': 'gemini-3-flash',
+      'gemini-preview': 'gemini-3-pro-preview',
+      'gemini': 'gemini-3-flash' // 기본값 (하위 호환)
+    };
+    
+    const actualModel = modelMap[modelType] || 'gemini-3-flash';
+    console.log(`[GEMINI PDF] 모델: ${modelType} → ${actualModel}`);
+    
     const genAI = new GoogleGenerativeAI(apiKey);
-    // 최신 모델: gemini-3-pro (PDF 완벽 지원, 2026년 stable)
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-pro' });
+    const model = genAI.getGenerativeModel({ model: actualModel });
     
     const result = await model.generateContent([
       {
@@ -232,11 +242,18 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   return j.choices?.[0]?.message?.content?.trim() || "";
 }
 
-// Gemini API 호출 (최신 모델)
-async function callGemini(apiKey, system, userPrompt) {
-  // 최신 모델: gemini-3-pro (2026년 stable)
-  const model = process.env.GEMINI_MODEL || "gemini-3-pro";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+// Gemini API 호출 (동적 모델 선택)
+async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash') {
+  // 모델 매핑: UI에서 온 값 → Gemini API 모델명
+  const modelMap = {
+    'gemini-pro': 'gemini-3-pro',
+    'gemini-flash': 'gemini-3-flash',
+    'gemini-preview': 'gemini-3-pro-preview',
+    'gemini': 'gemini-3-flash' // 기본값 (하위 호환)
+  };
+  
+  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-3-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey}`;
 
   const payload = {
     contents: [
@@ -269,11 +286,14 @@ async function callGemini(apiKey, system, userPrompt) {
 
 // AI 모델별 호출 라우터
 async function callAI(modelType, apiKey, system, userPrompt, maxTokens = 1600) {
+  // Gemini 모델들 처리
+  if (modelType.startsWith('gemini')) {
+    return await callGemini(apiKey, system, userPrompt, modelType);
+  }
+  
   switch (modelType) {
     case "gpt":
       return await callGPT(apiKey, system, userPrompt, maxTokens);
-    case "gemini":
-      return await callGemini(apiKey, system, userPrompt);
     case "claude":
     default:
       return await callClaude(apiKey, system, userPrompt, maxTokens);
@@ -288,21 +308,26 @@ export const analyzeFinancialStatement = async (req, res) => {
 
     // modelType은 필수로 받아야 함 (기본값 제거)
     const { modelType } = req.body || {};
-    if (!modelType || !["claude", "gpt", "gemini"].includes(modelType)) {
+    // Gemini 3가지 모델 모두 허용
+    const allowedModels = ["claude", "gpt", "gemini", "gemini-pro", "gemini-flash", "gemini-preview"];
+    if (!modelType || !allowedModels.includes(modelType)) {
       return res.status(400).json({ 
         ok: false, 
-        error: "INVALID_MODEL_TYPE. Please provide modelType (claude, gpt, or gemini)" 
+        error: "INVALID_MODEL_TYPE. Please provide modelType (claude, gpt, gemini-pro, gemini-flash, or gemini-preview)" 
       });
     }
+    
+    // Gemini 모델들은 모두 'gemini' 키 사용
+    const keyType = modelType.startsWith('gemini') ? 'gemini' : modelType;
     
     // API 키 로드 (에러 처리 추가)
     let apiKey;
     try {
-      apiKey = loadKey(consultantId, modelType);
+      apiKey = loadKey(consultantId, keyType);
     } catch (keyError) {
       return res.status(400).json({ 
         ok: false, 
-        error: keyError.message || `NO_SAVED_API_KEY_FOR_${modelType.toUpperCase()}`
+        error: keyError.message || `NO_SAVED_API_KEY_FOR_${keyType.toUpperCase()}`
       });
     }
 
@@ -327,9 +352,9 @@ export const analyzeFinancialStatement = async (req, res) => {
       if (modelType === 'gpt') {
         // OpenAI Responses API로 PDF 직접 처리
         responseText = await extractPdfWithOpenAI(apiKey, req.file.buffer, req.file.originalname);
-      } else if (modelType === 'gemini') {
-        // Gemini inline PDF로 직접 처리
-        responseText = await extractPdfWithGemini(apiKey, req.file.buffer, req.file.originalname);
+      } else if (modelType.startsWith('gemini')) {
+        // Gemini inline PDF로 직접 처리 (3가지 모델 지원)
+        responseText = await extractPdfWithGemini(apiKey, req.file.buffer, req.file.originalname, modelType);
       } else if (modelType === 'claude') {
         // Claude Vision API (기존 방식)
         responseText = await callClaudeWithDocument(
@@ -354,9 +379,9 @@ export const analyzeFinancialStatement = async (req, res) => {
           req.file.mimetype, 
           4000
         );
-      } else if (modelType === 'gemini') {
-        // Gemini 이미지 처리
-        responseText = await extractPdfWithGemini(apiKey, req.file.buffer, req.file.originalname);
+      } else if (modelType.startsWith('gemini')) {
+        // Gemini 이미지 처리 (3가지 모델 지원)
+        responseText = await extractPdfWithGemini(apiKey, req.file.buffer, req.file.originalname, modelType);
       } else {
         return res.status(400).json({ 
           ok: false, 

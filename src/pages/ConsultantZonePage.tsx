@@ -113,7 +113,7 @@ export default function ConsultantZonePage() {
     gpt: false,
     gemini: false,
   });
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini">("claude");
+  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-preview">("gemini-flash");
   const [apiKeyDraft, setApiKeyDraft] = useState<string>("");
   const [apiKeyMsg, setApiKeyMsg] = useState<string>("");
 
@@ -182,6 +182,9 @@ export default function ConsultantZonePage() {
       setApiKeyMsg("API 키를 입력해 주세요.");
       return;
     }
+    // Gemini 모델들은 모두 'gemini' 키로 통합
+    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    
     try {
       const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
         method: "POST",
@@ -189,14 +192,14 @@ export default function ConsultantZonePage() {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ apiKey: key, modelType: selectedModel }),
+        body: JSON.stringify({ apiKey: key, modelType: keyType }),
       });
       const j = await r.json();
       if (!j.ok) {
         setApiKeyMsg(`저장 실패: ${j.error || "UNKNOWN"}`);
         return;
       }
-      setApiKeys((prev) => ({ ...prev, [selectedModel]: true }));
+      setApiKeys((prev) => ({ ...prev, [keyType]: true }));
       setApiKeyDraft("");
       setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
     } catch (e: any) {
@@ -206,7 +209,9 @@ export default function ConsultantZonePage() {
 
   const runAction = async (action: ActionKey) => {
     if (!validateInputs()) return;
-    if (!apiKeys[selectedModel]) {
+    // Gemini 모델들은 'gemini' 키 체크
+    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    if (!apiKeys[keyType as keyof typeof apiKeys]) {
       alert(`${selectedModel.toUpperCase()} API 키 등록이 필요합니다.\n(상단의 API 키 등록 섹션)`);
       return;
     }
@@ -370,11 +375,13 @@ export default function ConsultantZonePage() {
             <label className="text-xl lg:text-2xl font-black text-blue-700 block">AI 모델 선택</label>
             <select
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as "claude" | "gpt" | "gemini")}
+              onChange={(e) => setSelectedModel(e.target.value as any)}
               className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
             >
               <option value="gpt">GPT-5.2</option>
-              <option value="gemini">Gemini 3 Pro</option>
+              <option value="gemini-pro">Gemini 3 Pro (최고 성능)</option>
+              <option value="gemini-flash">Gemini 3 Flash (빠른 속도, 무료 추천)</option>
+              <option value="gemini-preview">Gemini 3 Pro Preview (실험 버전)</option>
               <option value="claude">Claude 3.5 Sonnet</option>
             </select>
           </div>
@@ -391,7 +398,7 @@ export default function ConsultantZonePage() {
                     ? "sk-ant-api03-..."
                     : selectedModel === "gpt"
                     ? "sk-..."
-                    : "AIzaSy..."
+                    : "AIzaSy... (Gemini 공통 키)"
                 }
                 className="flex-1 px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-bold text-lg bg-white shadow-sm"
               />
