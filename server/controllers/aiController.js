@@ -146,7 +146,7 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
-// OpenAI PDF 추출 (자동 모델 선택 + Responses API)
+// OpenAI PDF 추출 (자동 모델 선택 + Chat Completions API)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
@@ -164,34 +164,38 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
     const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free', taskType);
     console.log(`[GPT PDF] 사용 모델: ${model} (Task: ${taskType})`);
     
-    // 3. Base64 인코딩 및 data URL 생성
+    // 3. Base64 인코딩
     const base64 = pdfBuffer.toString('base64');
-    const file_data = `data:application/pdf;base64,${base64}`;
-    
     console.log(`[GPT PDF] Base64 인코딩 완료 (${Math.round(base64.length / 1024)} KB)`);
     
-    // 4. Responses API로 PDF 직접 분석
-    const response = await client.responses.create({
+    // 4. Chat Completions API로 PDF 분석 (Vision API 사용)
+    const response = await client.chat.completions.create({
       model,
-      input: [{
-        role: 'user',
-        content: [
-          {
-            type: 'input_file',
-            filename: originalFilename || 'document.pdf',
-            file_data,
-          },
-          {
-            type: 'input_text',
-            text: PDF_EXTRACTION_PROMPT
-          }
-        ],
-      }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: PDF_EXTRACTION_PROMPT
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:application/pdf;base64,${base64}`
+              }
+            }
+          ]
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 4096,
+      temperature: 0.1
     });
     
     console.log(`[GPT PDF] 추출 완료 (모델: ${model}, Task: ${taskType})`);
     
-    return response.output_text;
+    return response.choices[0].message.content;
     
   } catch (error) {
     // 에러 타입별 처리
