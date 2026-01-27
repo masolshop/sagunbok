@@ -407,7 +407,7 @@ export default function ConsultantZonePage() {
               onChange={(e) => setSelectedModel(e.target.value as any)}
               className="w-full px-6 py-4 rounded-2xl border-4 border-transparent focus:border-blue-500 outline-none font-black text-xl bg-white shadow-sm appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_1.5rem_center]"
             >
-              <option value="gpt">GPT-5.2</option>
+              <option value="gpt">GPT (Auto - 자동 선택)</option>
               <option value="gemini-pro">Gemini 3 Pro (최고 성능)</option>
               <option value="gemini-flash">Gemini 3 Flash (빠른 속도, 무료 추천)</option>
               <option value="gemini-preview">Gemini 3 Pro Preview (실험 버전)</option>
