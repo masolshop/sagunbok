@@ -7,7 +7,8 @@ import {
   generateFinalConsulting,
   generateFinalIntegrated,
   analyzeJobsite,
-  analyzeReviews 
+  analyzeReviews,
+  getGPTModels
 } from "../controllers/aiController.js";
 
 const router = express.Router();
@@ -22,6 +23,9 @@ router.post("/run", authenticateConsultant, requireConsultant, runAi);
 router.post("/analyze-financial-statement", authenticateConsultant, requireConsultant, upload.single('file'), analyzeFinancialStatement);
 router.post("/final-consulting", authenticateConsultant, requireConsultant, generateFinalConsulting);
 router.post("/final-integrated", authenticateConsultant, requireConsultant, generateFinalIntegrated);
+
+// GPT 모델 목록 조회
+router.get("/gpt/models", authenticateConsultant, requireConsultant, getGPTModels);
 
 // 외부 데이터 인사이트 분석
 router.post("/insights/jobsite", authenticateConsultant, requireConsultant, analyzeJobsite);

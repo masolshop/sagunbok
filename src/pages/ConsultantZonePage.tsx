@@ -116,6 +116,12 @@ export default function ConsultantZonePage() {
   const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-preview">("gemini-flash");
   const [apiKeyDraft, setApiKeyDraft] = useState<string>("");
   const [apiKeyMsg, setApiKeyMsg] = useState<string>("");
+  
+  // GPT 모델 자동/수동 선택
+  const [gptModelMode, setGptModelMode] = useState<"auto" | "manual">("auto");
+  const [gptModels, setGptModels] = useState<string[]>([]);
+  const [selectedGptModel, setSelectedGptModel] = useState<string>("");
+  const [gptPlan, setGptPlan] = useState<"free" | "paid">("free");
 
   const [loadingAction, setLoadingAction] = useState<ActionKey | null>(null);
   const [outputs, setOutputs] = useState<
@@ -202,8 +208,31 @@ export default function ConsultantZonePage() {
       setApiKeys((prev) => ({ ...prev, [keyType]: true }));
       setApiKeyDraft("");
       setApiKeyMsg(`✅ ${selectedModel.toUpperCase()} API 키 저장 완료!`);
+      
+      // GPT 키 저장 시 자동으로 모델 목록 불러오기
+      if (keyType === 'gpt') {
+        loadGPTModels();
+      }
     } catch (e: any) {
       setApiKeyMsg(`저장 실패: ${String(e?.message || e)}`);
+    }
+  };
+  
+  // GPT 모델 목록 불러오기
+  const loadGPTModels = async () => {
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=${gptPlan}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        setGptModels(j.models.map((m: any) => m.id));
+        setSelectedGptModel(j.recommended);
+        console.log(`[GPT] 추천 모델: ${j.recommended}`);
+      }
+    } catch (e: any) {
+      console.error('[GPT Models] 불러오기 실패:', e);
     }
   };
 
@@ -415,6 +444,102 @@ export default function ConsultantZonePage() {
         {apiKeyMsg && (
           <div className={`p-4 rounded-xl font-bold text-lg ${apiKeyMsg.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
             {apiKeyMsg}
+          </div>
+        )}
+        
+        {/* GPT 모델 자동/수동 선택 */}
+        {selectedModel === 'gpt' && apiKeys.gpt && (
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-3xl border-2 border-purple-200 space-y-4">
+            <h3 className="text-xl font-black text-purple-700">🤖 GPT 모델 설정</h3>
+            
+            {/* Plan 선택 */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">사용 플랜</label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setGptPlan('free'); loadGPTModels(); }}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
+                    gptPlan === 'free'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  무료 플랜 (속도 우선)
+                </button>
+                <button
+                  onClick={() => { setGptPlan('paid'); loadGPTModels(); }}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
+                    gptPlan === 'paid'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  유료 플랜 (성능 우선)
+                </button>
+              </div>
+            </div>
+            
+            {/* 자동/수동 토글 */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">모델 선택 방식</label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGptModelMode('auto')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
+                    gptModelMode === 'auto'
+                      ? 'bg-green-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  ✨ Auto (자동 추천)
+                </button>
+                <button
+                  onClick={() => setGptModelMode('manual')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${
+                    gptModelMode === 'manual'
+                      ? 'bg-orange-600 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🎯 Manual (직접 선택)
+                </button>
+              </div>
+            </div>
+            
+            {/* 수동 모드: 모델 선택 드롭다운 */}
+            {gptModelMode === 'manual' && gptModels.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700">GPT 모델</label>
+                <select
+                  value={selectedGptModel}
+                  onChange={(e) => setSelectedGptModel(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none font-bold bg-white"
+                >
+                  {gptModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* 현재 선택된 모델 표시 */}
+            {gptModelMode === 'auto' && selectedGptModel && (
+              <div className="bg-white p-4 rounded-xl border-2 border-green-200">
+                <p className="text-sm font-bold text-gray-600">추천 모델</p>
+                <p className="text-lg font-black text-green-700">{selectedGptModel}</p>
+              </div>
+            )}
+            
+            {!gptModels.length && (
+              <button
+                onClick={loadGPTModels}
+                className="w-full py-3 px-4 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all"
+              >
+                📋 사용 가능한 모델 불러오기
+              </button>
+            )}
           </div>
         )}
 

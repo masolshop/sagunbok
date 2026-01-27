@@ -3,6 +3,57 @@ import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// GPT 모델 우선순위 (2026년 기준)
+const GPT_PAID_CANDIDATES = [
+  'gpt-5.2',
+  'gpt-5-mini',
+  'gpt-4.1',
+  'gpt-4o',
+  'gpt-4o-mini',
+  'gpt-5-nano'
+];
+
+const GPT_FREE_CANDIDATES = [
+  'gpt-5-nano',
+  'gpt-4o-mini',
+  'gpt-4o',
+  'gpt-4.1',
+  'gpt-5-mini',
+  'gpt-5.2'
+];
+
+// GPT 모델 자동 선택 (키로 사용 가능한 모델 중 최적 선택)
+async function pickBestGPTModel(apiKey, plan = 'free') {
+  try {
+    const client = new OpenAI({ apiKey });
+    const list = await client.models.list();
+    const available = new Set(list.data.map(m => m.id));
+    
+    const candidates = plan === 'paid' ? GPT_PAID_CANDIDATES : GPT_FREE_CANDIDATES;
+    
+    for (const modelId of candidates) {
+      if (available.has(modelId)) {
+        console.log(`[GPT Auto] 선택된 모델: ${modelId} (plan: ${plan})`);
+        return modelId;
+      }
+    }
+    
+    // 최후 폴백: 첫 번째 사용 가능한 모델
+    if (list.data?.length > 0) {
+      const fallback = list.data[0].id;
+      console.log(`[GPT Auto] 폴백 모델: ${fallback}`);
+      return fallback;
+    }
+    
+    throw new Error('이 API 키로 사용 가능한 GPT 모델이 없습니다.');
+  } catch (error) {
+    if (error.status === 401) {
+      throw new Error('GPT API 키가 유효하지 않습니다. 키를 확인해주세요.');
+    }
+    throw error;
+  }
+}
+
 function render(tpl, vars) {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => JSON.stringify(vars[k] ?? "", null, 2));
 }
@@ -43,8 +94,8 @@ const PDF_EXTRACTION_PROMPT = `
 ${JSON.stringify(EXTRACTION_SCHEMA, null, 2)}
 `;
 
-// OpenAI PDF 추출 (Responses API with base64 PDF - 권장 방식)
-async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
+// OpenAI PDF 추출 (자동 모델 선택 + Responses API)
+async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
@@ -56,22 +107,26 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
     
     const client = new OpenAI({ apiKey });
     
-    // 2. Base64 인코딩 및 data URL 생성
+    // 2. 모델 자동 선택 (수동 지정 시 스킵)
+    const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free');
+    console.log(`[GPT PDF] 사용 모델: ${model}`);
+    
+    // 3. Base64 인코딩 및 data URL 생성
     const base64 = pdfBuffer.toString('base64');
     const file_data = `data:application/pdf;base64,${base64}`;
     
     console.log(`[GPT PDF] Base64 인코딩 완료 (${Math.round(base64.length / 1024)} KB)`);
     
-    // 3. Responses API로 PDF 직접 분석 (Files API 없이)
+    // 4. Responses API로 PDF 직접 분석
     const response = await client.responses.create({
-      model: 'gpt-5.2', // 최신 모델
+      model,
       input: [{
         role: 'user',
         content: [
           {
             type: 'input_file',
             filename: originalFilename || 'document.pdf',
-            file_data, // base64 PDF 직접 전달
+            file_data,
           },
           {
             type: 'input_text',
@@ -81,11 +136,20 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename) {
       }],
     });
     
-    console.log(`[GPT PDF] 추출 완료`);
+    console.log(`[GPT PDF] 추출 완료 (모델: ${model})`);
     
     return response.output_text;
     
   } catch (error) {
+    // 에러 타입별 처리
+    if (error.status === 401) {
+      throw new Error('GPT API 키가 유효하지 않습니다.');
+    } else if (error.status === 403 || error.status === 404) {
+      throw new Error(`선택된 모델을 사용할 권한이 없습니다: ${error.message}`);
+    } else if (error.status === 429) {
+      throw new Error('API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    
     console.error(`[GPT PDF] 추출 실패:`, error.message);
     throw new Error(`GPT PDF extraction failed: ${error.message}`);
   }
@@ -211,11 +275,13 @@ async function callClaudeWithDocument(apiKey, system, userText, documentBuffer, 
   return parts.map((p) => p.text || "").join("\n").trim();
 }
 
-// GPT API 호출
-async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
+// GPT API 호출 (자동 모델 선택 지원)
+async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {}) {
+  // 모델 자동 선택 (수동 지정 시 스킵)
+  const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free');
+  console.log(`[GPT] 사용 모델: ${model}`);
+  
   const url = "https://api.openai.com/v1/chat/completions";
-  // 최신 모델: gpt-5.2
-  const model = process.env.OPENAI_MODEL || "gpt-5.2";
 
   const payload = {
     model,
@@ -236,7 +302,18 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600) {
   });
 
   const txt = await r.text();
-  if (!r.ok) throw new Error(`GPT_ERROR ${r.status}: ${txt}`);
+  
+  // 에러 타입별 처리
+  if (!r.ok) {
+    if (r.status === 401) {
+      throw new Error('GPT API 키가 유효하지 않습니다.');
+    } else if (r.status === 403 || r.status === 404) {
+      throw new Error(`선택된 모델을 사용할 권한이 없습니다: ${txt}`);
+    } else if (r.status === 429) {
+      throw new Error('API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    throw new Error(`GPT_ERROR ${r.status}: ${txt}`);
+  }
 
   const j = JSON.parse(txt);
   return j.choices?.[0]?.message?.content?.trim() || "";
@@ -306,8 +383,8 @@ export const analyzeFinancialStatement = async (req, res) => {
     const consultantId = req.user?.id;
     if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
 
-    // modelType은 필수로 받아야 함 (기본값 제거)
-    const { modelType } = req.body || {};
+    // modelType과 plan 파라미터
+    const { modelType, plan = 'free', gptModel } = req.body || {};
     // Gemini 3가지 모델 모두 허용
     const allowedModels = ["claude", "gpt", "gemini", "gemini-pro", "gemini-flash", "gemini-preview"];
     if (!modelType || !allowedModels.includes(modelType)) {
@@ -350,8 +427,11 @@ export const analyzeFinancialStatement = async (req, res) => {
       console.log(`[ANALYZE] PDF 직접 추출 모드 (모델: ${modelType})`);
       
       if (modelType === 'gpt') {
-        // OpenAI Responses API로 PDF 직접 처리
-        responseText = await extractPdfWithOpenAI(apiKey, req.file.buffer, req.file.originalname);
+        // OpenAI Responses API로 PDF 직접 처리 (자동 모델 선택)
+        responseText = await extractPdfWithOpenAI(apiKey, req.file.buffer, req.file.originalname, {
+          plan,
+          model: gptModel // 수동 지정 시 사용
+        });
       } else if (modelType.startsWith('gemini')) {
         // Gemini inline PDF로 직접 처리 (3가지 모델 지원)
         responseText = await extractPdfWithGemini(apiKey, req.file.buffer, req.file.originalname, modelType);
@@ -769,5 +849,74 @@ export const analyzeReviews = async (req, res) => {
     });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+};
+
+// GPT 사용 가능한 모델 목록 조회 엔드포인트
+export const getGPTModels = async (req, res) => {
+  try {
+    const consultantId = req.user?.id;
+    if (!consultantId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    // GPT API 키 로드
+    let apiKey;
+    try {
+      apiKey = loadKey(consultantId, 'gpt');
+    } catch (keyError) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'NO_GPT_API_KEY',
+        message: 'GPT API 키가 등록되지 않았습니다.'
+      });
+    }
+
+    // 모델 목록 조회
+    const client = new OpenAI({ apiKey });
+    const list = await client.models.list();
+    
+    const models = list.data
+      .filter(m => m.id.startsWith('gpt'))
+      .map(m => ({
+        id: m.id,
+        owned_by: m.owned_by,
+        created: m.created
+      }))
+      .sort((a, b) => {
+        // 우선순위 정렬
+        const priority = ['gpt-5.2', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1', 'gpt-4o', 'gpt-4o-mini'];
+        const aIndex = priority.indexOf(a.id);
+        const bIndex = priority.indexOf(b.id);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return a.id.localeCompare(b.id);
+      });
+
+    // 추천 모델 선택
+    const plan = req.query.plan || 'free';
+    const recommended = await pickBestGPTModel(apiKey, plan);
+
+    res.json({
+      ok: true,
+      models,
+      recommended,
+      plan
+    });
+
+  } catch (error) {
+    console.error('[GPT Models] 조회 실패:', error);
+    
+    if (error.status === 401) {
+      return res.status(401).json({
+        ok: false,
+        error: 'INVALID_API_KEY',
+        message: 'GPT API 키가 유효하지 않습니다.'
+      });
+    }
+    
+    res.status(500).json({
+      ok: false,
+      error: error.message || 'UNKNOWN_ERROR'
+    });
   }
 };
