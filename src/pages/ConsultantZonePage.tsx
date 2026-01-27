@@ -197,7 +197,7 @@ export default function ConsultantZonePage() {
     
     try {
       // 1. Claude 키 감지 (sk-ant-로 시작)
-      if (key.startsWith('sk-ant-')) {
+      if (key.startsWith('sk-ant-') && key.length > 20) {
         setDetectedModel({
           type: 'claude',
           info: 'Claude 3.5 Sonnet'
@@ -208,46 +208,23 @@ export default function ConsultantZonePage() {
       }
       
       // 2. GPT 키 감지 (sk-로 시작하지만 sk-ant-가 아님)
-      if (key.startsWith('sk-')) {
-        try {
-          const freeRes = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=free`, {
-            method: "GET",
-            headers: {
-              ...getAuthHeaders(),
-              'X-Temp-Key': key
-            },
-          });
-          const paidRes = await fetch(`${API_BASE_URL}/api/ai/gpt/models?plan=paid`, {
-            method: "GET",
-            headers: {
-              ...getAuthHeaders(),
-              'X-Temp-Key': key
-            },
-          });
-          
-          const freeData = await freeRes.json();
-          const paidData = await paidRes.json();
-          
-          if (freeData.ok && paidData.ok) {
-            setDetectedModel({
-              type: 'gpt',
-              info: `${freeData.models.length}개 모델 사용 가능`,
-              recommended: {
-                free: freeData.recommended,
-                paid: paidData.recommended
-              }
-            });
-            setSelectedModel('gpt');
-            setApiKeyMsg(`✅ GPT API 키 감지됨! (${freeData.models.length}개 모델)`);
-            return;
+      if (key.startsWith('sk-') && key.length > 20) {
+        // GPT 키 형식 확인 (실제 API 호출 없이 형식만 검증)
+        setDetectedModel({
+          type: 'gpt',
+          info: 'GPT-5.2',
+          recommended: {
+            free: 'gpt-5-nano',
+            paid: 'gpt-5.2'
           }
-        } catch (e) {
-          // GPT 실패 시 다음으로
-        }
+        });
+        setSelectedModel('gpt');
+        setApiKeyMsg("✅ GPT API 키 감지됨!");
+        return;
       }
       
       // 3. Gemini 키 감지 (AIzaSy로 시작)
-      if (key.startsWith('AIzaSy')) {
+      if (key.startsWith('AIzaSy') && key.length > 30) {
         setDetectedModel({
           type: 'gemini',
           info: 'Gemini 2.5 Flash (고속, 가성비)',
