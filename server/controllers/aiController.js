@@ -736,6 +736,13 @@ export const analyzeFinancialStatement = async (req, res) => {
 
     // 🔄 프론트엔드 호환성을 위해 ExtractedFieldsTable 구조로 변환
     // { value, confidence, page_number, snippet, method }
+    
+    // 안전한 숫자 포맷팅 헬퍼 (null/undefined 처리)
+    const safeNumberFormat = (val) => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+    
     const analysis = {
       company_name: {
         value: rawAnalysis.company_name || '',
@@ -773,40 +780,45 @@ export const analyzeFinancialStatement = async (req, res) => {
         method: 'ai_extraction'
       },
       revenue: {
-        value: String(rawAnalysis.revenue || 0),
+        value: String(safeNumberFormat(rawAnalysis.revenue)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `매출액: ${(rawAnalysis.revenue || 0).toLocaleString()}원`,
+        snippet: `매출액: ${safeNumberFormat(rawAnalysis.revenue).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       retained_earnings: {
-        value: String(rawAnalysis.retained_earnings || 0),
+        value: String(safeNumberFormat(rawAnalysis.retained_earnings)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `이익잉여금: ${(rawAnalysis.retained_earnings || 0).toLocaleString()}원`,
+        snippet: `이익잉여금: ${safeNumberFormat(rawAnalysis.retained_earnings).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       loans_to_officers: {
-        value: String(rawAnalysis.loans_to_officers || 0),
+        value: String(safeNumberFormat(rawAnalysis.loans_to_officers)),
         confidence: 0.80,
         page_number: 1,
-        snippet: `가지급금: ${(rawAnalysis.loans_to_officers || 0).toLocaleString()}원`,
+        snippet: `가지급금: ${safeNumberFormat(rawAnalysis.loans_to_officers).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
       welfare_expenses: {
-        value: String(rawAnalysis.welfare_expenses || 0),
+        value: String(safeNumberFormat(rawAnalysis.welfare_expenses)),
         confidence: 0.85,
         page_number: 1,
-        snippet: `복리후생비: ${(rawAnalysis.welfare_expenses || 0).toLocaleString()}원`,
+        snippet: `복리후생비: ${safeNumberFormat(rawAnalysis.welfare_expenses).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       }
     };
 
     console.log(`[ANALYZE] 변환 완료 (프론트엔드 호환 구조)`);
+    console.log(`[ANALYZE] 최종 응답 샘플:`, {
+      company_name: analysis.company_name?.value,
+      revenue: analysis.revenue?.value,
+      welfare_expenses: analysis.welfare_expenses?.value
+    });
 
     res.json({
       ok: true,
