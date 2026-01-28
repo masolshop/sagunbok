@@ -236,7 +236,7 @@ export default function CretopReportPage() {
       if (key.startsWith('AIzaSy')) {
         setDetectedModel({
           type: 'gemini',
-          info: 'Gemini 2.5 Flash (고속, 가성비 추천)'
+          info: 'Gemini 2.5 Flash'
         });
         setSelectedModel('gemini-flash');
         setApiKeyMsg("✅ Gemini API 키 감지됨!");
