@@ -866,7 +866,7 @@ export default function CretopReportPage() {
           ? "⏳ API 키 로딩 중..." 
           : loading 
           ? "⏳ 리포트 생성 중... (약 30초 소요)" 
-          : "🚀 CRETOP 기업분석 리포트 생성"}
+          : "재무제표 AI정밀 분석"}
       </button>
 
       {/* Error Message */}
