@@ -589,8 +589,8 @@ export default function CretopReportPage() {
 
         {/* 저장된 모델 상태 표시 */}
         {(apiKeys.claude || apiKeys.gpt || apiKeys.gemini) && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-5">
-            <p className="text-sm font-bold text-green-600 mb-3">✅ 등록된 API 키</p>
+          <div className="bg-white rounded-2xl border-2 border-blue-100 p-5 shadow-sm">
+            <p className="text-sm font-bold text-blue-600 mb-3">✅ 등록된 API 키</p>
             <div className="flex flex-wrap gap-3">
               {apiKeys.claude && savedModels.claude && (
                 <div className="bg-white px-4 py-2 rounded-xl border-2 border-purple-200 shadow-sm">
@@ -605,9 +605,9 @@ export default function CretopReportPage() {
                 </div>
               )}
               {apiKeys.gemini && savedModels.gemini && (
-                <div className="bg-white px-4 py-2 rounded-xl border-2 border-green-200 shadow-sm">
+                <div className="bg-white px-4 py-2 rounded-xl border-2 border-blue-200 shadow-sm">
                   <p className="text-xs font-bold text-gray-500">GEMINI</p>
-                  <p className="text-sm font-black text-green-700">{savedModels.gemini}</p>
+                  <p className="text-sm font-black text-blue-700">{savedModels.gemini}</p>
                 </div>
               )}
             </div>
@@ -686,15 +686,7 @@ export default function CretopReportPage() {
           </div>
         )}
 
-        {/* 도움말 */}
-        <div className="bg-white rounded-xl p-5 border-2 border-blue-100">
-          <p className="font-black mb-2 text-blue-700">📌 API Key 발급 사이트:</p>
-          <ul className="space-y-1 ml-4 text-blue-600 font-bold">
-            <li>• Claude: <a href="https://console.anthropic.com" target="_blank" className="underline hover:text-blue-800">console.anthropic.com</a></li>
-            <li>• GPT: <a href="https://platform.openai.com" target="_blank" className="underline hover:text-blue-800">platform.openai.com</a></li>
-            <li>• Gemini: <a href="https://aistudio.google.com" target="_blank" className="underline hover:text-blue-800">aistudio.google.com</a></li>
-          </ul>
-        </div>
+
       </div>
 
       {/* 🤖 AI 모델 선택 */}
