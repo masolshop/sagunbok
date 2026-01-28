@@ -1334,8 +1334,10 @@ export const analyzeFinancialStatement = async (req, res) => {
           advances: data.metrics.advances_won,
           welfare_expenses: data.metrics.welfare_expense_won,
           
-          // evidence와 anomalies 유지
+          // 🔄 호환성: evidence/anomalies 양방향 제공
+          evidence: data.evidence,
           _evidence: data.evidence,
+          anomalies: data.anomalies,
           _anomalies: data.anomalies
         };
         
@@ -1350,8 +1352,15 @@ export const analyzeFinancialStatement = async (req, res) => {
         return result;
       }
       
-      // 완전히 구 스키마: 그대로 반환
+      // 완전히 구 스키마: 그대로 반환 (단, evidence/anomalies 호환 추가)
       console.log('[ANALYZE] 구 스키마 사용 (metrics 없음)');
+      
+      // 🔄 호환성 보강: evidence/anomalies 양방향 제공
+      if (data._evidence && !data.evidence) data.evidence = data._evidence;
+      if (data.evidence && !data._evidence) data._evidence = data.evidence;
+      if (data._anomalies && !data.anomalies) data.anomalies = data._anomalies;
+      if (data.anomalies && !data._anomalies) data._anomalies = data.anomalies;
+      
       return data;
     };
 
