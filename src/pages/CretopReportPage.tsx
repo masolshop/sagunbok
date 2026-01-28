@@ -112,7 +112,7 @@ function getAuthHeaders() {
 }
 
 export default function CretopReportPage() {
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-lite" | "gemini-preview">("gemini-flash");
+  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-lite" | "gemini-preview">("claude");
   const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
     claude: false,
     gpt: false,
@@ -181,13 +181,13 @@ export default function CretopReportPage() {
         if (j.ok && j.keys) {
           setApiKeys(j.keys);
           
-          // 🎯 등록된 키에 따라 자동으로 모델 선택
-          if (j.keys.gpt) {
+          // 🎯 등록된 키에 따라 자동으로 모델 선택 (Claude 우선)
+          if (j.keys.claude) {
+            setSelectedModel('claude');
+          } else if (j.keys.gpt) {
             setSelectedModel('gpt');
           } else if (j.keys.gemini) {
             setSelectedModel('gemini-flash');
-          } else if (j.keys.claude) {
-            setSelectedModel('claude');
           }
         }
       } catch {
@@ -210,14 +210,14 @@ export default function CretopReportPage() {
     setDetectedModel(null);
 
     try {
-      // 1. Claude 키 감지
+      // 1. Claude 키 감지 (PDF 분석 권장)
       if (key.startsWith('sk-ant-')) {
         setDetectedModel({
           type: 'claude',
-          info: 'Claude 3.5 Sonnet'
+          info: 'Claude 3.5 Sonnet (PDF 분석 권장 ⭐)'
         });
         setSelectedModel('claude');
-        setApiKeyMsg("✅ Claude API 키 감지됨!");
+        setApiKeyMsg("✅ Claude API 키 감지됨! (PDF 분석에 최적화)");
         return;
       }
 
@@ -318,7 +318,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
       return;
     }
     
@@ -362,7 +362,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
       return;
     }
 
@@ -444,7 +444,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
       return;
     }
 
