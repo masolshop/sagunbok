@@ -648,12 +648,12 @@ export default function CretopReportPage() {
           <div className="lg:col-span-5 space-y-2">
             <label className="text-lg font-bold text-blue-700">감지된 모델</label>
             {detectedModel ? (
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-200 space-y-2">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border-2 border-blue-200 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
-                  <span className="text-xl font-black text-green-700">{detectedModel.type.toUpperCase()}</span>
+                  <span className="text-xl font-black text-blue-700">{detectedModel.type.toUpperCase()}</span>
                 </div>
-                <p className="text-lg font-bold text-green-600">{detectedModel.info}</p>
+                <p className="text-lg font-bold text-blue-600">{detectedModel.info}</p>
               </div>
             ) : (
               <div className="bg-gray-50 p-5 rounded-xl border-2 border-gray-200 h-[100px] flex items-center justify-center">

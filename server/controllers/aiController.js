@@ -354,13 +354,13 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
     // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
     const modelMap = {
       'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
-      'gemini-flash': 'gemini-2.5-flash',       // 고속, 가성비
-      'gemini-lite': 'gemini-2.5-flash-lite',   // 경량
-      'gemini-preview': 'gemini-3-pro-preview', // 차세대 실험
-      'gemini': 'gemini-2.5-flash'              // 기본값
+      'gemini-flash': 'gemini-1.5-flash',       // 안정 버전 (권장)
+      'gemini-lite': 'gemini-1.5-flash',        // 안정 버전
+      'gemini-preview': 'gemini-3-flash-preview', // 차세대 실험
+      'gemini': 'gemini-1.5-flash'              // 기본값
     };
     
-    const actualModel = modelMap[modelType] || 'gemini-2.5-flash';
+    const actualModel = modelMap[modelType] || 'gemini-1.5-flash';
     console.log(`[GEMINI PDF] 모델: ${modelType} → ${actualModel}`);
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -592,13 +592,13 @@ async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash'
   // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
   const modelMap = {
     'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
-    'gemini-flash': 'gemini-2.5-flash',       // 고속, 가성비
-    'gemini-lite': 'gemini-2.5-flash-lite',   // 경량
-    'gemini-preview': 'gemini-3-pro-preview', // 차세대 실험
-    'gemini': 'gemini-2.5-flash'              // 기본값
+    'gemini-flash': 'gemini-1.5-flash',       // 안정 버전 (권장)
+    'gemini-lite': 'gemini-1.5-flash',        // 안정 버전
+    'gemini-preview': 'gemini-3-flash-preview', // 차세대 실험
+    'gemini': 'gemini-1.5-flash'              // 기본값
   };
   
-  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey}`;
 
   const payload = {
