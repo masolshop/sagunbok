@@ -50,7 +50,7 @@ function selectGPTModel(availableModels, taskType, userPlan = 'free', costMode =
     if (!model) throw new Error('No suitable model for FIN_STATEMENT_ANALYSIS');
     
     console.log(`[Model Select] Task: FIN_STATEMENT_ANALYSIS, Plan: ${userPlan} → ${model}`);
-    return { model, reason: 'financial analysis => reasoning-first fallback' };
+    return model;  // ✅ 문자열만 반환
   }
   
   // 💻 코드 생성 → 코딩 강한 모델 우선
@@ -62,7 +62,7 @@ function selectGPTModel(availableModels, taskType, userPlan = 'free', costMode =
     if (!model) throw new Error('No suitable model for CODE_GEN');
     
     console.log(`[Model Select] Task: CODE_GEN → ${model}`);
-    return { model, reason: 'code generation => coding-strong models' };
+    return model;  // ✅ 문자열만 반환
   }
   
   // 📝 일반 상담/컨설팅 → Cost Mode 기반
@@ -84,7 +84,7 @@ function selectGPTModel(availableModels, taskType, userPlan = 'free', costMode =
   if (!model) throw new Error('No suitable GPT model available');
   
   console.log(`[Model Select] Task: ${taskType}, Plan: ${userPlan}, Cost: ${costMode} → ${model}`);
-  return { model, reason: `task=${taskType}, plan=${userPlan}, costMode=${costMode}` };
+  return model;  // ✅ 문자열만 반환
 }
 
 // GPT 모델 자동 선택 (레거시 호환성 유지)
@@ -97,9 +97,9 @@ async function pickBestGPTModel(apiKey, plan = 'free', taskType = TASK_TYPES.CON
     console.log(`[GPT Auto] 사용 가능한 모델: ${availableModels.length}개`);
     
     // Task Type 기반 선택
-    const { model, reason } = selectGPTModel(availableModels, taskType, plan);
+    const model = selectGPTModel(availableModels, taskType, plan);
     
-    console.log(`[GPT Auto] ✅ 선택된 모델: ${model} (이유: ${reason})`);
+    console.log(`[GPT Auto] ✅ 선택된 모델: ${model}`);
     return model;
   } catch (error) {
     if (error.status === 401) {
@@ -1586,7 +1586,7 @@ export const analyzeFinancialSnapshot = async (req, res) => {
       const availableModels = modelsList.data.map(m => m.id);
       
       // 재무 분석용 모델 선택
-      const { model: selectedModel } = selectGPTModel(
+      const selectedModel = selectGPTModel(
         availableModels,
         TASK_TYPES.FIN_STATEMENT_ANALYSIS,
         'free',
