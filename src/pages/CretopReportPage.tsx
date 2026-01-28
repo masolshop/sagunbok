@@ -118,6 +118,7 @@ export default function CretopReportPage() {
     gpt: false,
     gemini: false,
   });
+  const [apiKeysLoading, setApiKeysLoading] = useState(true); // 🔑 로딩 상태 추가
   
   // API Key 입력 관련
   const [apiKeyDraft, setApiKeyDraft] = useState("");
@@ -167,6 +168,7 @@ export default function CretopReportPage() {
 
   useEffect(() => {
     (async () => {
+      setApiKeysLoading(true); // 🔑 로딩 시작
       try {
         const r = await fetch(`${API_BASE_URL}/api/consultant/api-key/status`, {
           method: "GET",
@@ -188,7 +190,11 @@ export default function CretopReportPage() {
             setSelectedModel('claude');
           }
         }
-      } catch {}
+      } catch {
+        console.error('[CretopReport] Failed to load API keys');
+      } finally {
+        setApiKeysLoading(false); // 🔑 로딩 완료
+      }
     })();
   }, []);
 
@@ -331,6 +337,12 @@ export default function CretopReportPage() {
   };
 
   const analyzeFinancialStatement = async (file: File) => {
+    // 🔑 API 키 로딩 체크
+    if (apiKeysLoading) {
+      alert('⏳ API 키를 불러오는 중입니다...\n잠시 후 다시 시도해주세요.');
+      return;
+    }
+    
     // Gemini 모델들은 'gemini' 키로 체크
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
@@ -404,6 +416,12 @@ export default function CretopReportPage() {
   const handleGenerate = async () => {
     if (!extractedFieldsData) {
       alert("먼저 재무제표 PDF를 업로드하고 분석해주세요.");
+      return;
+    }
+
+    // 🔑 API 키 로딩 체크
+    if (apiKeysLoading) {
+      alert('⏳ API 키를 불러오는 중입니다...\n잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -728,9 +746,17 @@ export default function CretopReportPage() {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (apiKeysLoading) {
+              alert('⏳ API 키를 불러오는 중입니다...\n잠시 후 다시 시도해주세요.');
+              return;
+            }
+            fileInputRef.current?.click();
+          }}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-            isDragging
+            apiKeysLoading
+              ? "border-gray-300 bg-gray-100 cursor-wait"
+              : isDragging
               ? "border-purple-500 bg-purple-100"
               : uploadedFile
               ? "border-green-500 bg-green-50"
@@ -746,8 +772,14 @@ export default function CretopReportPage() {
               if (file) handleFileSelect(file);
             }}
             className="hidden"
+            disabled={apiKeysLoading}
           />
-          {isAnalyzing ? (
+          {apiKeysLoading ? (
+            <div className="space-y-3">
+              <div className="text-4xl animate-pulse">⏳</div>
+              <p className="text-base font-bold text-gray-600">API 키를 불러오는 중...</p>
+            </div>
+          ) : isAnalyzing ? (
             <div className="space-y-3">
               <div className="text-4xl animate-pulse">⏳</div>
               <p className="text-base font-bold text-purple-700">AI가 재무제표를 분석하고 있습니다...</p>
@@ -827,10 +859,14 @@ export default function CretopReportPage() {
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        disabled={loading}
+        disabled={loading || apiKeysLoading}
         className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[48px] py-10 text-3xl lg:text-4xl font-black shadow-2xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {loading ? "⏳ 리포트 생성 중... (약 30초 소요)" : "🚀 CRETOP 기업분석 리포트 생성"}
+        {apiKeysLoading 
+          ? "⏳ API 키 로딩 중..." 
+          : loading 
+          ? "⏳ 리포트 생성 중... (약 30초 소요)" 
+          : "🚀 CRETOP 기업분석 리포트 생성"}
       </button>
 
       {/* Error Message */}
