@@ -143,3 +143,51 @@ export const analyzeReviewSites = async (req, res) => {
     });
   }
 };
+
+/**
+ * 사업자번호로 회사명 조회
+ */
+import { lookupBusinessNumber, formatBusinessNumber } from '../utils/businessNumberLookup.js';
+
+export const lookupCompanyByBusinessNumber = async (req, res) => {
+  try {
+    const { businessNumber } = req.body;
+    
+    if (!businessNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'MISSING_BUSINESS_NUMBER',
+        message: '사업자번호를 입력해주세요.' 
+      });
+    }
+
+    console.log(`[Business Lookup] 조회 요청: ${businessNumber}`);
+
+    const result = await lookupBusinessNumber(businessNumber);
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        businessNumber: formatBusinessNumber(result.businessNumber),
+        companyName: result.companyName,
+        status: result.status,
+        message: '회사명 조회 성공'
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: result.error,
+        message: result.message,
+        businessNumber: formatBusinessNumber(businessNumber)
+      });
+    }
+
+  } catch (error) {
+    console.error('[Business Lookup] 에러:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'INTERNAL_ERROR',
+      message: error.message 
+    });
+  }
+};
