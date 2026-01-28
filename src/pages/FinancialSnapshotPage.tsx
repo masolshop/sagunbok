@@ -400,8 +400,8 @@ export default function FinancialSnapshotPage() {
             disabled={isAnalyzing || !hasApiKey}
             className={`px-12 py-5 rounded-2xl font-black text-xl shadow-lg transition-all transform hover:scale-105 ${
               isAnalyzing || !hasApiKey
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
             }`}
           >
             {isAnalyzing ? (
