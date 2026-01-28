@@ -26,12 +26,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [companyName, setCompanyName] = useState('');
   const [ceoName, setCeoName] = useState(''); // 대표자명
   const [companyType, setCompanyType] = useState('개인사업자'); // 추가: 기업회원분류
-  const [referrer, setReferrer] = useState(''); // 추가: 추천인
+  const [position, setPosition] = useState(''); // 직함 (대표/재무담당자/기타)
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState(''); // 복구
+  const [referrer, setReferrer] = useState(''); // 추가: 추천인
   const [lookupLoading, setLookupLoading] = useState(false); // 조회 로딩
   
   // 컨설턴트 가입 폼
@@ -144,7 +145,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   };
   
   const handleRegisterCompany = async () => {
-    if (!companyName || !companyType || !referrer || !name || !phone || !email || !password || !passwordConfirm) {
+    if (!companyName || !companyType || !position || !name || !phone || !email || !password || !passwordConfirm || !referrer) {
       alert('모든 필수 필드를 입력해주세요.');
       return;
     }
@@ -187,6 +188,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         companyName,
         ceoName, // 대표자명 추가
         companyType,
+        position, // 직함 추가
         referrer: normalizedReferrer,
         name,
         phone: normalizedPhone,
@@ -203,12 +205,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         setCompanyName('');
         setCeoName('');
         setCompanyType('개인사업자');
-        setReferrer('');
+        setPosition('');
         setName('');
         setPhone('');
         setEmail('');
         setPassword('');
         setPasswordConfirm('');
+        setReferrer('');
       } else {
         alert(result.error || '회원가입 실패');
       }
@@ -649,22 +652,14 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     </div>
                   </div>
                   
-                  {/* 추천인 전화번호 입력 */}
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      placeholder="📞 추천인 전화번호 (필수) *"
-                      value={referrer}
-                      onChange={(e) => setReferrer(e.target.value)}
-                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
-                    />
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4">
-                    <p className="text-xs text-blue-900 font-semibold flex items-center space-x-2">
-                      <span>ℹ️</span>
-                      <span>사근복매니저/사근복컨설턴트의 전화번호를 입력하세요</span>
-                    </p>
-                  </div>
+                  {/* 직함 입력 */}
+                  <input
+                    type="text"
+                    placeholder="👔 직함 (예: 대표이사, 재무담당자) *"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
+                  />
                   
                   <input
                     type="text"
@@ -701,6 +696,23 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
+                  
+                  {/* 추천인 전화번호 입력 */}
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      placeholder="📞 추천인 전화번호 (필수) *"
+                      value={referrer}
+                      onChange={(e) => setReferrer(e.target.value)}
+                      className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
+                    />
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4">
+                    <p className="text-xs text-blue-900 font-semibold flex items-center space-x-2">
+                      <span>ℹ️</span>
+                      <span>사근복매니저/사근복컨설턴트의 전화번호를 입력하세요</span>
+                    </p>
+                  </div>
                   <button
                     onClick={handleRegisterCompany}
                     disabled={loading}

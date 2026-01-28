@@ -1,6 +1,6 @@
 // 강제 캐시 클리어 스크립트
 (function() {
-  const CACHE_VERSION = 'v1.0.56'; // 버전을 올리면 캐시가 무효화됩니다
+  const CACHE_VERSION = 'v1.0.57'; // 버전을 올리면 캐시가 무효화됩니다
   
   // Service Worker 등록 해제
   if ('serviceWorker' in navigator) {
