@@ -351,12 +351,12 @@ async function extractPdfWithGemini(apiKey, pdfBuffer, originalFilename, modelTy
   try {
     console.log(`[GEMINI PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
-    // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
+    // 모델 매핑: UI에서 온 값 → Gemini API 모델명
     const modelMap = {
-      'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
+      'gemini-pro': 'gemini-1.5-pro',           // 고성능
       'gemini-flash': 'gemini-1.5-flash',       // 안정 버전 (권장)
       'gemini-lite': 'gemini-1.5-flash',        // 안정 버전
-      'gemini-preview': 'gemini-3-flash-preview', // 차세대 실험
+      'gemini-preview': 'gemini-1.5-flash',     // 기본값으로 폴백
       'gemini': 'gemini-1.5-flash'              // 기본값
     };
     
@@ -589,45 +589,39 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {
 
 // Gemini API 호출 (동적 모델 선택)
 async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash') {
-  // 모델 매핑: UI에서 온 값 → Gemini API 모델명 (2026년 1월 최신)
-  const modelMap = {
-    'gemini-pro': 'gemini-2.5-pro',           // 최고 성능
-    'gemini-flash': 'gemini-1.5-flash',       // 안정 버전 (권장)
-    'gemini-lite': 'gemini-1.5-flash',        // 안정 버전
-    'gemini-preview': 'gemini-3-flash-preview', // 차세대 실험
-    'gemini': 'gemini-1.5-flash'              // 기본값
-  };
-  
-  const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1/models/${actualModel}:generateContent?key=${apiKey}`;
-
-  const payload = {
-    contents: [
-      {
-        parts: [
-          { text: `${system}\n\n---\n\n${userPrompt}` }
-        ]
+  try {
+    // 모델 매핑: UI에서 온 값 → Gemini API 모델명
+    const modelMap = {
+      'gemini-pro': 'gemini-1.5-pro',           // 고성능 (1.5-pro로 변경)
+      'gemini-flash': 'gemini-1.5-flash',       // 안정 버전 (권장)
+      'gemini-lite': 'gemini-1.5-flash',        // 안정 버전
+      'gemini-preview': 'gemini-1.5-flash',     // 기본값으로 폴백
+      'gemini': 'gemini-1.5-flash'              // 기본값
+    };
+    
+    const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    console.log(`[GEMINI SDK] Using model: ${actualModel}`);
+    
+    // 🎯 SDK 사용 (REST API 대신)
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: actualModel,
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.7,
       }
-    ],
-    generationConfig: {
-      maxOutputTokens: 2048,
-      temperature: 0.7,
-    },
-  };
-
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const txt = await r.text();
-  if (!r.ok) throw new Error(`GEMINI_ERROR ${r.status}: ${txt}`);
-
-  const j = JSON.parse(txt);
-  return j.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    });
+    
+    const prompt = `${system}\n\n---\n\n${userPrompt}`;
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+    
+    return text.trim();
+  } catch (error) {
+    console.error(`[GEMINI SDK ERROR]`, error);
+    throw new Error(`GEMINI_ERROR: ${error.message}`);
+  }
 }
 
 // AI 모델별 호출 라우터
