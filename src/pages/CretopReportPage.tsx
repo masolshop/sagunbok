@@ -112,10 +112,10 @@ function getAuthHeaders() {
 }
 
 export default function CretopReportPage() {
-  // 🎯 Claude 전용으로 고정
-  const [selectedModel] = useState<"claude">("claude");
-  const [apiKeys, setApiKeys] = useState<{ claude: boolean }>({
-    claude: false,
+  // 🎯 GPT-5.2 전용으로 고정
+  const [selectedModel] = useState<"gpt">("gpt");
+  const [apiKeys, setApiKeys] = useState<{ gpt: boolean }>({
+    gpt: false,
   });
   const [apiKeysLoading, setApiKeysLoading] = useState(true); // 🔑 로딩 상태 추가
   
@@ -128,7 +128,7 @@ export default function CretopReportPage() {
     info: string;
   } | null>(null);
   const [savedModels, setSavedModels] = useState<{
-    claude?: string;
+    gpt?: string;
   }>({});
 
   // 파일 업로드
@@ -176,8 +176,8 @@ export default function CretopReportPage() {
         });
         const j = (await r.json()) as ApiKeyStatus;
         if (j.ok && j.keys) {
-          setApiKeys({ claude: j.keys.claude });
-          // 🎯 Claude 전용 - 키 확인만 수행
+          setApiKeys({ gpt: j.keys.gpt });
+          // 🎯 GPT-5.2 전용 - 키 확인만 수행
         }
       } catch {
         console.error('[CretopReport] Failed to load API keys');
@@ -199,17 +199,17 @@ export default function CretopReportPage() {
     setDetectedModel(null);
 
     try {
-      // Claude 키만 감지
-      if (key.startsWith('sk-ant-')) {
+      // GPT 키만 감지
+      if (key.startsWith('sk-') && !key.startsWith('sk-ant-')) {
         setDetectedModel({
-          type: 'claude',
-          info: 'Claude 3.5 Sonnet'
+          type: 'gpt',
+          info: 'GPT-5.2'
         });
-        setApiKeyMsg("✅ Claude API 키 감지됨! (재무제표 분석에 최적화)");
+        setApiKeyMsg("✅ GPT-5.2 API 키 감지됨! (재무제표 분석 최적화)");
         return;
       }
 
-      setApiKeyMsg("❌ Claude API 키만 사용 가능합니다. (sk-ant- 로 시작)\n\n📌 발급: https://console.anthropic.com/settings/keys");
+      setApiKeyMsg("❌ GPT API 키만 사용 가능합니다. (sk- 로 시작)\n\n📌 발급: https://platform.openai.com/api-keys");
     } finally {
       setDetecting(false);
     }
@@ -222,9 +222,9 @@ export default function CretopReportPage() {
     }
 
     try {
-      const keyType = 'claude'; // Claude 전용
+      const keyType = 'gpt'; // GPT 전용
       
-      console.log(`[Frontend] Saving Claude API key`);      
+      console.log(`[Frontend] Saving GPT API key`);      
       const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
         method: "POST",
         headers: {
@@ -236,29 +236,15 @@ export default function CretopReportPage() {
 
       const j = await r.json();
       if (j.ok) {
-        // Gemini 모델들은 모두 'gemini' 키로 저장
+        // GPT 전용
         setApiKeys((prev) => ({ ...prev, [keyType]: true }));
         
-        // 저장된 모델 정보 업데이트
-        const modelDisplayName = selectedModel === 'gpt' 
-          ? 'GPT-5.2' 
-          : selectedModel === 'claude'
-          ? 'Claude 3.5 Sonnet'
-          : selectedModel === 'gemini-pro'
-          ? 'Gemini 2.5 Pro'
-          : selectedModel === 'gemini-flash'
-          ? 'Gemini 2.5 Flash'
-          : selectedModel === 'gemini-lite'
-          ? 'Gemini 2.5 Flash Lite'
-          : selectedModel === 'gemini-preview'
-          ? 'Gemini 3 Pro Preview'
-          : selectedModel.toUpperCase();
-        
-        setSavedModels((prev) => ({ ...prev, [keyType]: modelDisplayName }));
+        // 저장된 모델 정보 업데이트 (GPT 전용)
+        setSavedModels((prev) => ({ ...prev, [keyType]: 'GPT-5.2' }));
         
         setApiKeyDraft("");
         setDetectedModel(null);
-        setApiKeyMsg(`✅ ${modelDisplayName} API 키 저장 완료!`);
+        setApiKeyMsg(`✅ GPT-5.2 API 키 저장 완료!`);
         setTimeout(() => setApiKeyMsg(""), 3000);
       } else {
         throw new Error(j.error || "저장 실패");
@@ -282,7 +268,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
+      alert('🔑 GPT-5.2 API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 GPT-5.2를 사용합니다.\n상단 "GPT API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://platform.openai.com/api-keys\n\n💰 비용: 건당 약 100원 (직접 결제)');
       return;
     }
     
@@ -326,7 +312,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
+      alert('🔑 GPT-5.2 API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 GPT-5.2를 사용합니다.\n상단 "GPT API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://platform.openai.com/api-keys\n\n💰 비용: 건당 약 100원 (직접 결제)');
       return;
     }
 
@@ -408,7 +394,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
+      alert('🔑 GPT-5.2 API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 GPT-5.2를 사용합니다.\n상단 "GPT API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://platform.openai.com/api-keys\n\n💰 비용: 건당 약 100원 (직접 결제)');
       return;
     }
 
@@ -548,19 +534,19 @@ export default function CretopReportPage() {
       {/* AI Model Selection - Claude Only */}
       <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-8 shadow-lg space-y-6">
         <h3 className="flex items-center gap-3 text-blue-700 font-black text-3xl lg:text-4xl">
-          <span>🤖</span> Claude API KEY 등록
+          <span>🤖</span> GPT API KEY 등록
         </h3>
         <p className="text-lg text-blue-600 font-bold">
           💡 재무제표 분석에 Claude 3.5 Sonnet을 사용합니다. (가장 정확하고 안정적)
         </p>
 
-        {/* 저장된 Claude 키 표시 */}
-        {apiKeys.claude && savedModels.claude && (
+        {/* 저장된 GPT 키 표시 */}
+        {apiKeys.gpt && savedModels.gpt && (
           <div className="bg-white rounded-2xl border-2 border-blue-100 p-5 shadow-sm">
-            <p className="text-sm font-bold text-blue-600 mb-3">✅ 등록된 Claude API 키</p>
-            <div className="bg-white px-4 py-2 rounded-xl border-2 border-purple-200 shadow-sm inline-block">
-              <p className="text-xs font-bold text-gray-500">CLAUDE 3.5 SONNET</p>
-              <p className="text-sm font-black text-purple-700">{savedModels.claude}</p>
+            <p className="text-sm font-bold text-blue-600 mb-3">✅ 등록된 GPT API 키</p>
+            <div className="bg-white px-4 py-2 rounded-xl border-2 border-blue-200 shadow-sm inline-block">
+              <p className="text-xs font-bold text-gray-500">GPT-5.2</p>
+              <p className="text-sm font-black text-blue-700">{savedModels.gpt}</p>
             </div>
           </div>
         )}
@@ -583,7 +569,7 @@ export default function CretopReportPage() {
                   detectApiKey();
                 }
               }}
-              placeholder="sk-ant-api03-... (Claude API 키를 입력하세요)"
+              placeholder="sk-... (GPT-5.2 API 키를 입력하세요)"
               className="w-full px-5 py-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-lg bg-white shadow-sm"
             />
             <button
