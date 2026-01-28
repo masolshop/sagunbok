@@ -1293,8 +1293,42 @@ export const analyzeFinancialStatement = async (req, res) => {
         
         return result;
       }
-      // 구 스키마: 그대로 반환
-      console.log('[ANALYZE] 구 스키마 사용');
+      // 구 스키마 OR metrics 구조: 프론트엔드 호환 구조로 변환
+      console.log('[ANALYZE] metrics 구조 감지 → 호환 구조로 변환');
+      
+      // metrics 구조가 있으면 변환
+      if (data.metrics && typeof data.metrics === 'object') {
+        const result = {
+          company_name: data.company_name,
+          ceo_name: data.ceo_name,
+          business_number: data.business_number,
+          industry: data.industry,
+          statement_year: data.statement_year,
+          
+          // metrics 필드를 직접 필드로 변환
+          revenue: data.metrics.revenue_won,
+          net_income: data.metrics.net_income_won,
+          retained_earnings: data.metrics.retained_earnings_won,
+          unappropriated_retained_earnings: data.metrics.unappropriated_retained_earnings_won,
+          advances: data.metrics.advances_won,
+          welfare_expenses: data.metrics.welfare_expense_won,
+          
+          // evidence와 anomalies 유지
+          _evidence: data.evidence,
+          _anomalies: data.anomalies
+        };
+        
+        console.log('[ANALYZE] metrics 변환 완료:', {
+          company_name: result.company_name,
+          revenue: result.revenue,
+          advances: result.advances
+        });
+        
+        return result;
+      }
+      
+      // 완전히 구 스키마: 그대로 반환
+      console.log('[ANALYZE] 구 스키마 사용 (metrics 없음)');
       return data;
     };
 
