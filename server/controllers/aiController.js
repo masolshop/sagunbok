@@ -243,7 +243,7 @@ function buildTemperatureParam(model, temperature) {
   return { temperature };
 }
 
-// 🛡️ 안전한 JSON 파서 (코드펜스/설명 제거)
+// 🛡️ 안전한 JSON 파서 (코드펜스/설명 제거 + BOM + 배열/객체 지원)
 function safeJsonParse(raw) {
   if (!raw || typeof raw !== "string") {
     throw new Error("Empty or invalid response");
@@ -251,17 +251,29 @@ function safeJsonParse(raw) {
 
   let s = raw.trim();
 
+  // ✅ BOM 제거 (﻿)
+  s = s.replace(/^\uFEFF/, "");
+
   // 1) 코드펜스 제거 (```json ... ``` 또는 ``` ... ```)
   s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
 
-  // 2) 문자열 안에 JSON이 섞여 있으면 첫 { ~ 마지막 }만 잘라내기
-  const first = s.indexOf("{");
-  const last = s.lastIndexOf("}");
-  if (first !== -1 && last !== -1 && last > first) {
-    s = s.slice(first, last + 1);
-  }
+  // 2) JSON 객체/배열 시작점 찾기
+  const objStart = s.indexOf("{");
+  const arrStart = s.indexOf("[");
+  let start = -1;
 
-  // 3) 파싱 시도
+  if (objStart !== -1 && arrStart !== -1) start = Math.min(objStart, arrStart);
+  else start = objStart !== -1 ? objStart : arrStart;
+
+  if (start !== -1) s = s.slice(start);
+
+  // 3) 끝도 객체/배열 기준으로 자르기
+  const lastObj = s.lastIndexOf("}");
+  const lastArr = s.lastIndexOf("]");
+  const end = Math.max(lastObj, lastArr);
+  if (end > 0) s = s.slice(0, end + 1);
+
+  // 4) 파싱 시도
   try {
     return JSON.parse(s);
   } catch (error) {
@@ -300,6 +312,42 @@ ${brokenText.slice(0, 8000)}`
   } catch (error) {
     console.error('[GPT JSON Repair] 복구 실패:', error.message);
     throw new Error(`JSON repair failed: ${error.message}`);
+  }
+}
+
+// 🛡️ 문자열 강제 변환
+function ensureString(x) {
+  if (typeof x === "string") return x;
+  if (x == null) return "";
+  try { return JSON.stringify(x); } catch { return String(x); }
+}
+
+// 🛡️ 완전 방어 JSON 파싱 (safe → repair 체인)
+async function parseOrRepairJson(client, model, rawContent) {
+  const raw = ensureString(rawContent);
+
+  // 원문이 아예 비었으면 즉시 실패
+  if (!raw.trim()) {
+    throw new Error("EMPTY_MODEL_OUTPUT");
+  }
+
+  try {
+    return safeJsonParse(raw); // ✅ 1차: 강건 파싱
+  } catch (e1) {
+    console.error("[JSON_PARSE_FAILED] safeJsonParse:", e1.message);
+    console.error("[JSON_PARSE_FAILED] raw preview:", raw.slice(0, 1200));
+    
+    // 🔥 원문 저장 (디버깅용)
+    try {
+      fs.writeFileSync("/tmp/last_gpt_raw.txt", raw, "utf8");
+      console.log("[JSON_PARSE_FAILED] 원문 저장: /tmp/last_gpt_raw.txt");
+    } catch (writeError) {
+      console.warn("[JSON_PARSE_FAILED] 원문 저장 실패:", writeError.message);
+    }
+
+    // ✅ 2차: LLM 복구(1회)
+    const repaired = await repairToJson(client, model, raw);
+    return repaired; // repairToJson 내부에서 safeJsonParse 수행
   }
 }
 
@@ -692,34 +740,16 @@ anomalies: 이상 항목 배열 (못 찾은 항목은 "NOT_FOUND:<field>" 추가
       throw new Error(`GPT 응답이 비어있습니다. finish_reason: ${finishReason}`);
     }
     
-    // 7. JSON 검증 (Structured Outputs는 거의 파싱 실패 없음)
+    // 7. ✅ JSON 검증 (완전 방어 파싱 체인: safeJsonParse → repairToJson)
+    console.log(`[GPT PDF] JSON 파싱 시작 (완전 방어 체인)...`);
     let parsedData;
     try {
-      // Structured Outputs는 스키마를 보장하므로 직접 파싱
-      parsedData = JSON.parse(rawContent);
-      console.log(`[GPT PDF] JSON 검증 성공 (Structured Outputs)`);
+      parsedData = await parseOrRepairJson(client, extractModel, rawContent);
+      console.log(`[GPT PDF] JSON 검증 성공 (Structured Outputs + 안전 파싱)`);
     } catch (parseError) {
-      console.error(`[GPT PDF] JSON 파싱 실패:`, parseError.message);
-      console.error(`[GPT PDF] 원본 응답 (처음 2000자):`, rawContent?.slice(0, 2000));
-      
-      // Structured Outputs 실패는 드물지만, safeJsonParse로 복구 시도
-      try {
-        console.log(`[GPT PDF] safeJsonParse 복구 시도...`);
-        parsedData = safeJsonParse(rawContent);
-        console.log(`[GPT PDF] safeJsonParse 복구 성공`);
-      } catch (safeError) {
-        console.error(`[GPT PDF] safeJsonParse 실패:`, safeError.message);
-        
-        // 최종 리트라이: repairToJson
-        try {
-          console.log(`[GPT PDF] repairToJson 최종 복구 시도...`);
-          parsedData = await repairToJson(client, extractModel, rawContent);
-          console.log(`[GPT PDF] repairToJson 복구 성공`);
-        } catch (repairError) {
-          console.error(`[GPT PDF] repairToJson 실패:`, repairError.message);
-          throw new Error(`GPT 응답이 유효한 JSON이 아닙니다. finish_reason: ${finishReason}, error: ${parseError.message}`);
-        }
-      }
+      console.error(`[GPT PDF] JSON 파싱 완전 실패:`, parseError.message);
+      console.error(`[GPT PDF] finish_reason: ${finishReason}`);
+      throw new Error(`GPT 응답이 유효한 JSON이 아닙니다. finish_reason: ${finishReason}, error: ${parseError.message}`);
     }
     
     // JSON 문자열로 반환 (기존 코드 호환)
@@ -938,7 +968,8 @@ async function callClaude(apiKey, system, userPrompt, maxTokens = 1600) {
   const txt = await r.text();
   if (!r.ok) throw new Error(`CLAUDE_ERROR ${r.status}: ${txt}`);
 
-  const j = JSON.parse(txt);
+  // ✅ 안전 파싱 (Claude API 응답 래퍼)
+  const j = await parseOrRepairJson(new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy' }), 'gpt-4o-mini', txt);
   const parts = j.content || [];
   return parts.map((p) => p.text || "").join("\n").trim();
 }
@@ -987,7 +1018,8 @@ async function callClaudeWithDocument(apiKey, system, userText, documentBuffer, 
   const txt = await r.text();
   if (!r.ok) throw new Error(`CLAUDE_VISION_ERROR ${r.status}: ${txt}`);
 
-  const j = JSON.parse(txt);
+  // ✅ 안전 파싱 (Claude Vision API 응답 래퍼)
+  const j = await parseOrRepairJson(new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy' }), 'gpt-4o-mini', txt);
   const parts = j.content || [];
   return parts.map((p) => p.text || "").join("\n").trim();
 }
@@ -1032,7 +1064,8 @@ async function callGPT(apiKey, system, userPrompt, maxTokens = 1600, options = {
     throw new Error(`GPT_ERROR ${r.status}: ${txt}`);
   }
 
-  const j = JSON.parse(txt);
+  // ✅ 안전 파싱 (GPT API 응답 래퍼)
+  const j = await parseOrRepairJson(new OpenAI({ apiKey }), 'gpt-4o-mini', txt);
   return j.choices?.[0]?.message?.content?.trim() || "";
 }
 
@@ -1202,50 +1235,38 @@ export const analyzeFinancialStatement = async (req, res) => {
     console.log(`[ANALYZE] 모델 응답 받음 (길이: ${responseText.length}자)`);
     console.log(`[ANALYZE] 응답 미리보기 (처음 500자):`, responseText.substring(0, 500));
 
-    // JSON 파싱 시도 (여러 방법으로 JSON 추출)
+    // ✅ JSON 파싱: 완전 방어 체인 (safeJsonParse → repairToJson)
+    console.log(`[ANALYZE] JSON 파싱 시작 (완전 방어 체인)...`);
     let rawAnalysis;
     try {
-      // GPT의 response_format: json_object는 이미 순수 JSON 반환
-      // 하지만 Claude/Gemini는 마크다운 코드 블록으로 감쌀 수 있음
+      // parseOrRepairJson은 내부에서 ensureString + safeJsonParse + repairToJson 체인 수행
+      // GPT는 JSON만, Claude/Gemini는 마크다운 제거까지 자동 처리
+      rawAnalysis = await parseOrRepairJson(
+        new OpenAI({ apiKey }), 
+        modelType === 'gpt' ? 'gpt-4o-mini' : 'gemini-1.5-flash', 
+        responseText
+      );
       
-      let cleanedText = responseText.trim();
-      
-      // 1. 마크다운 코드 블록 제거 (Claude/Gemini 대응)
-      if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      }
-      
-      // 2. JSON 블록 찾기 (중괄호 기준)
-      const jsonStart = cleanedText.indexOf('{');
-      const jsonEnd = cleanedText.lastIndexOf('}');
-      
-      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-        throw new Error('JSON 블록을 찾을 수 없습니다. 응답에 { } 구조가 없습니다.');
-      }
-      
-      cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
-      
-      // 3. JSON 파싱 시도
-      rawAnalysis = JSON.parse(cleanedText);
-      console.log(`[ANALYZE] JSON 파싱 성공`);
+      console.log(`[ANALYZE] JSON 파싱 성공 (안전 체인)`);
       console.log(`[ANALYZE] 추출 결과 키:`, Object.keys(rawAnalysis));
       
-      // 4. 필수 필드 검증
-      if (!rawAnalysis.company_name && !rawAnalysis.revenue && !rawAnalysis.items) {
-        console.warn(`[ANALYZE] 필수 필드 누락: company_name, revenue, items 모두 없음`);
+      // 필수 필드 검증
+      if (!rawAnalysis.company_name && !rawAnalysis.revenue && !rawAnalysis.items && !rawAnalysis.metrics) {
+        console.warn(`[ANALYZE] 필수 필드 누락: company_name, revenue, items, metrics 모두 없음`);
       }
       
     } catch (parseError) {
-      console.error(`[ANALYZE] JSON 파싱 실패:`, parseError.message);
+      console.error(`[ANALYZE] JSON 파싱 완전 실패:`, parseError.message);
       console.error(`[ANALYZE] 원본 응답 (처음 1000자):`, responseText.substring(0, 1000));
       console.error(`[ANALYZE] 원본 응답 (마지막 500자):`, responseText.substring(Math.max(0, responseText.length - 500)));
       return res.status(500).json({ 
         ok: false, 
         error: "JSON_PARSE_FAILED", 
-        message: `AI 응답을 JSON으로 파싱할 수 없습니다: ${parseError.message}`,
-        rawResponse: responseText.substring(0, 2000), // 처음 2000자만 반환 (너무 길면 문제)
+        message: `AI 응답을 JSON으로 파싱할 수 없습니다 (안전 체인 포함): ${parseError.message}`,
+        rawResponse: responseText.substring(0, 2000),
         parseError: parseError.message,
-        modelType
+        modelType,
+        hint: "원문 저장됨: /tmp/last_gpt_raw.txt (서버 로그 확인)"
       });
     }
 
@@ -1601,11 +1622,11 @@ export const generateCretopReport = async (req, res) => {
 
     const responseText = await callAI(modelType, apiKey, CRETOP_SYSTEM_PROMPT, prompt, 4000);
 
-    // JSON 응답 파싱
+    // ✅ JSON 응답 파싱 (완전 방어 체인)
     let report;
     try {
-      const cleanedText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      report = JSON.parse(cleanedText);
+      const client = new OpenAI({ apiKey }); // parseOrRepairJson에 필요
+      report = await parseOrRepairJson(client, 'gpt-4o-mini', responseText);
     } catch (parseError) {
       console.error("[CRETOP] JSON 파싱 실패:", parseError.message);
       return res.status(500).json({ 
@@ -1752,7 +1773,8 @@ export const runAi = async (req, res) => {
     let parsedReport = null;
     if (module === "CRETOP_REPORT") {
       try {
-        parsedReport = JSON.parse(text);
+        const client = new OpenAI({ apiKey });
+        parsedReport = await parseOrRepairJson(client, 'gpt-4o-mini', text);
       } catch (e) {
         console.error("[CRETOP] JSON 파싱 실패:", e.message);
       }
@@ -1789,8 +1811,8 @@ export const generateFinalIntegrated = async (req, res) => {
 
     let result = null;
     try {
-      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      result = JSON.parse(cleaned);
+      const client = new OpenAI({ apiKey });
+      result = await parseOrRepairJson(client, 'gpt-4o-mini', text);
     } catch (e) {
       console.error("[FINAL] JSON 파싱 실패:", e.message);
       return res.status(500).json({ ok: false, error: "JSON_PARSE_FAILED", rawText: text });
@@ -1852,8 +1874,8 @@ export const analyzeJobsite = async (req, res) => {
 
     let result = null;
     try {
-      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      result = JSON.parse(cleaned);
+      const client = new OpenAI({ apiKey });
+      result = await parseOrRepairJson(client, 'gpt-4o-mini', text);
     } catch (e) {
       console.error("[JOBSITE] JSON 파싱 실패:", e.message);
       return res.status(500).json({ ok: false, error: "JSON_PARSE_FAILED", rawText: text });
@@ -1892,8 +1914,8 @@ export const analyzeReviews = async (req, res) => {
 
     let result = null;
     try {
-      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      result = JSON.parse(cleaned);
+      const client = new OpenAI({ apiKey });
+      result = await parseOrRepairJson(client, 'gpt-4o-mini', text);
     } catch (e) {
       console.error("[REVIEWS] JSON 파싱 실패:", e.message);
       return res.status(500).json({ ok: false, error: "JSON_PARSE_FAILED", rawText: text });
