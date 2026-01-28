@@ -22,7 +22,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [loginPassword, setLoginPassword] = useState('');
   
   // 기업회원 가입 폼
+  const [businessNumber, setBusinessNumber] = useState(''); // 사업자번호
   const [companyName, setCompanyName] = useState('');
+  const [ceoName, setCeoName] = useState(''); // 대표자명
   const [companyType, setCompanyType] = useState('개인사업자'); // 추가: 기업회원분류
   const [referrer, setReferrer] = useState(''); // 추가: 추천인
   const [name, setName] = useState('');
@@ -30,6 +32,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState(''); // 복구
+  const [lookupLoading, setLookupLoading] = useState(false); // 조회 로딩
   
   // 컨설턴트 가입 폼
   const [consultantName, setConsultantName] = useState('');
@@ -106,6 +109,40 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     }
   };
   
+  // 사업자번호 조회
+  const handleLookupBusinessNumber = async () => {
+    if (!businessNumber) {
+      alert('사업자번호를 입력해주세요.');
+      return;
+    }
+    
+    setLookupLoading(true);
+    try {
+      const response = await fetch('/api/external-data/lookup-business-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ businessNumber }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setCompanyName(result.companyName || '');
+        setCeoName(result.ceoName || ''); // 대표자명 설정
+        alert(`✅ 조회 성공!\n\n회사명: ${result.companyName || '알 수 없음'}\n대표자명: ${result.ceoName || '알 수 없음'}`);
+      } else {
+        alert(result.message || '사업자번호 조회에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('사업자번호 조회 오류:', error);
+      alert('사업자번호 조회 중 오류가 발생했습니다.');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+  
   const handleRegisterCompany = async () => {
     if (!companyName || !companyType || !referrer || !name || !phone || !email || !password || !passwordConfirm) {
       alert('모든 필수 필드를 입력해주세요.');
@@ -146,7 +183,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     try {
       const result = await callAPI('registerCompany', {
+        businessNumber, // 사업자번호 추가
         companyName,
+        ceoName, // 대표자명 추가
         companyType,
         referrer: normalizedReferrer,
         name,
@@ -160,7 +199,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         setMode('login');
         setUserType('company');
         // 폼 초기화
+        setBusinessNumber('');
         setCompanyName('');
+        setCeoName('');
         setCompanyType('개인사업자');
         setReferrer('');
         setName('');
@@ -539,11 +580,54 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
               {/* 기업회원 가입 폼 - 모던 디자인 */}
               {userType === 'company' && (
                 <div className="space-y-4">
+                  {/* 사업자번호 조회 */}
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="🔍 사업자번호 (예: 123-45-67890)"
+                        value={businessNumber}
+                        onChange={(e) => setBusinessNumber(e.target.value)}
+                        maxLength={12}
+                        className="flex-1 px-4 py-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-blue-400 font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleLookupBusinessNumber}
+                        disabled={lookupLoading}
+                        className="px-6 py-4 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {lookupLoading ? (
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          '조회'
+                        )}
+                      </button>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-3">
+                      <p className="text-xs text-blue-900 font-semibold flex items-center space-x-2">
+                        <span>💡</span>
+                        <span>사업자번호를 입력하고 조회 버튼을 누르면 회사명과 대표자명이 자동으로 입력됩니다.</span>
+                      </p>
+                    </div>
+                  </div>
+                  
                   <input
                     type="text"
                     placeholder="🏢 회사명 *"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder="👤 대표자명 *"
+                    value={ceoName}
+                    onChange={(e) => setCeoName(e.target.value)}
                     className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   

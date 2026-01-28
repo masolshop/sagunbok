@@ -60,12 +60,16 @@ export async function lookupBusinessNumber(businessNumber) {
       // 회사명 추출
       const companyName = result.company || result.tax_type || '알 수 없음';
       
-      console.log(`[Business Lookup] 조회 성공: ${companyName}`);
+      // 대표자명 추출 (국세청 API 응답에 포함된 경우)
+      const ceoName = result.ceo_name || result.owner_name || result.representative || '';
+      
+      console.log(`[Business Lookup] 조회 성공: ${companyName}, 대표자: ${ceoName || '미제공'}`);
       
       return {
         success: true,
         businessNumber: cleaned,
         companyName,
+        ceoName, // 대표자명 추가
         status: result.b_stt,
         taxType: result.tax_type,
         raw: result
@@ -86,32 +90,33 @@ export async function lookupBusinessNumber(businessNumber) {
 }
 
 /**
- * Mock 회사명 데이터
+ * Mock 회사명 + 대표자명 데이터
  * (실제 API 사용 불가 시 대체)
  */
 function getMockCompanyName(businessNumber) {
   // 실제 알려진 사업자번호 매핑
   const knownCompanies = {
-    '1078611194': '삼성전자',
-    '2208162708': '에스텍시스템',
-    '1328620777': '한맥푸드',
-    '1208800661': '네이버',
-    '1208156983': '카카오',
-    '1068111081': 'LG전자',
-    '1208734454': '쿠팡',
-    '1068174197': '현대자동차',
-    '1208165206': '토스',
-    '2118163128': '배달의민족'
+    '1078611194': { companyName: '삼성전자', ceoName: '한종희' },
+    '2208162708': { companyName: '에스텍시스템', ceoName: '김철수' },
+    '1328620777': { companyName: '한맥푸드', ceoName: '이영희' },
+    '1208800661': { companyName: '네이버', ceoName: '최수연' },
+    '1208156983': { companyName: '카카오', ceoName: '정신아' },
+    '1068111081': { companyName: 'LG전자', ceoName: '조주완' },
+    '1208734454': { companyName: '쿠팡', ceoName: '김범석' },
+    '1068174197': { companyName: '현대자동차', ceoName: '장재훈' },
+    '1208165206': { companyName: '토스', ceoName: '이승건' },
+    '2118163128': { companyName: '배달의민족', ceoName: '김봉진' }
   };
 
-  const companyName = knownCompanies[businessNumber];
+  const company = knownCompanies[businessNumber];
   
-  if (companyName) {
-    console.log(`[Business Lookup] Mock 데이터 사용: ${companyName}`);
+  if (company) {
+    console.log(`[Business Lookup] Mock 데이터 사용: ${company.companyName}, 대표자: ${company.ceoName}`);
     return {
       success: true,
       businessNumber,
-      companyName,
+      companyName: company.companyName,
+      ceoName: company.ceoName,
       status: 'MOCK_DATA',
       message: '등록된 기업 정보 (Mock 데이터)'
     };
