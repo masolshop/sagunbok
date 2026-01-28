@@ -240,6 +240,66 @@ function buildTemperatureParam(model, temperature) {
   return { temperature };
 }
 
+// 🛡️ 안전한 JSON 파서 (코드펜스/설명 제거)
+function safeJsonParse(raw) {
+  if (!raw || typeof raw !== "string") {
+    throw new Error("Empty or invalid response");
+  }
+
+  let s = raw.trim();
+
+  // 1) 코드펜스 제거 (```json ... ``` 또는 ``` ... ```)
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  // 2) 문자열 안에 JSON이 섞여 있으면 첫 { ~ 마지막 }만 잘라내기
+  const first = s.indexOf("{");
+  const last = s.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) {
+    s = s.slice(first, last + 1);
+  }
+
+  // 3) 파싱 시도
+  try {
+    return JSON.parse(s);
+  } catch (error) {
+    // 원본 응답 일부를 에러에 포함
+    throw new Error(`JSON parsing failed: ${error.message}. Raw preview: ${s.slice(0, 200)}`);
+  }
+}
+
+// 🔧 JSON 복구 함수 (깨진 JSON을 모델에 재요청)
+async function repairToJson(client, model, brokenText) {
+  console.log('[GPT JSON Repair] 복구 시도 중...');
+  
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      messages: [{
+        role: "user",
+        content: `아래 텍스트에서 JSON만 추출/수정해서 유효한 JSON만 출력해.
+- 설명 금지, 코드펜스 금지
+- trailing comma 제거
+- 문자열 따옴표 누락 수정
+- 줄바꿈은 \\n으로 변환
+
+TEXT:
+${brokenText.slice(0, 8000)}`
+      }],
+      response_format: { type: 'json_object' },
+      ...buildTokenParams(model, 1200),
+      ...buildTemperatureParam(model, 0.1)
+    });
+    
+    const repairedText = response.choices[0].message.content;
+    console.log('[GPT JSON Repair] 복구 완료');
+    return safeJsonParse(repairedText);
+    
+  } catch (error) {
+    console.error('[GPT JSON Repair] 복구 실패:', error.message);
+    throw new Error(`JSON repair failed: ${error.message}`);
+  }
+}
+
 // 🎯 OpenAI PDF 추출 (Chat Completions + JSON 모드 강화)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
@@ -286,16 +346,18 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
 3. 문자열 값도 큰따옴표로 감싸야 함
 4. 주석이나 설명 금지
 5. JSON 이외의 텍스트 절대 금지
+6. ❗ 출력은 JSON '객체' 하나만. 문장/설명/코드펜스( ``` ) 절대 금지.
+7. ❗ JSON 안 문자열에는 줄바꿈 대신 \\n 을 사용하고, 숫자에는 콤마를 넣지 않는다.
 
 출력 스키마:
 {
-  "company_name": "회사명",
+  "company_name": "회사로",
   "ceo_name": "대표자명",
   "business_number": "사업자등록번호",
   "industry": "업종",
   "statement_year": "재무제표 연도",
   "revenue": {
-    "original_text": "9,571,217",
+    "original_text": "9571217",
     "unit": "천원",
     "multiplier_to_won": 1000,
     "value_won": 9571217000,
@@ -315,7 +377,7 @@ ${pdfText.slice(0, 50000)}
 - 회사명, 대표자명, 사업자등록번호, 업종, 재무제표 연도
 - 매출액, 이익잉여금, 가지급금 (후보: 가지급금/단기대여금/대여금/임원대여금), 복리후생비
 
-중요: { 로 시작해서 } 로 끝나는 유효한 JSON만 출력. 주석/설명 금지.`;
+❗ 중요: { 로 시작해서 } 로 끝나는 유효한 JSON만 출력. 코드펜스/주석/설명 절대 금지.`;
 
     const response = await client.chat.completions.create({
       model,
@@ -330,21 +392,32 @@ ${pdfText.slice(0, 50000)}
     
     console.log(`[GPT PDF] 추출 완료 (모델: ${model})`);
     
-    // 5. 응답 추출 및 JSON 검증
+    // 5. 응답 추출 및 JSON 검증 (safeJsonParse + repairToJson)
     const rawContent = response.choices[0].message.content;
     console.log(`[GPT PDF] 원본 응답 길이: ${rawContent?.length || 0}자`);
     
-    // JSON 검증
+    // JSON 검증 (safeJsonParse)
+    let parsedData;
     try {
-      JSON.parse(rawContent);  // 파싱 테스트
-      console.log(`[GPT PDF] JSON 검증 성공`);
+      parsedData = safeJsonParse(rawContent);
+      console.log(`[GPT PDF] JSON 검증 성공 (safeJsonParse)`);
     } catch (parseError) {
       console.error(`[GPT PDF] JSON 파싱 실패:`, parseError.message);
-      console.error(`[GPT PDF] 원본 응답 (처음 500자):`, rawContent?.slice(0, 500));
-      throw new Error(`GPT 응답이 유효한 JSON이 아닙니다: ${parseError.message}`);
+      console.error(`[GPT PDF] 원본 응답 (처음 1000자):`, rawContent?.slice(0, 1000));
+      
+      // 리트라이 1회: repairToJson
+      try {
+        console.log(`[GPT PDF] JSON 복구 시도 (repairToJson)...`);
+        parsedData = await repairToJson(client, model, rawContent);
+        console.log(`[GPT PDF] JSON 복구 성공`);
+      } catch (repairError) {
+        console.error(`[GPT PDF] JSON 복구 실패:`, repairError.message);
+        throw new Error(`GPT 응답이 유효한 JSON이 아닙니다: ${parseError.message}`);
+      }
     }
     
-    return rawContent
+    // JSON 문자열로 반환 (기존 코드 호환)
+    return JSON.stringify(parsedData)
     
   } catch (error) {
     // 에러 타입별 처리
