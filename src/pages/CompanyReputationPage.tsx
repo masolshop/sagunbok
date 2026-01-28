@@ -232,7 +232,7 @@ const CompanyReputationPage: React.FC = () => {
             <button
               onClick={handleSaraminAnalysis}
               disabled={loading || !companyName.trim()}
-              className="py-5 px-8 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 text-white text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="py-5 px-8 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-200 text-blue-800 text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3 border-2 border-blue-300"
             >
               <span className="text-3xl">💼</span>
               <span>사람인 분석</span>
@@ -241,7 +241,7 @@ const CompanyReputationPage: React.FC = () => {
             <button
               onClick={handleBlindAnalysis}
               disabled={loading || !companyName.trim()}
-              className="py-5 px-8 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="py-5 px-8 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-200 text-blue-800 text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3 border-2 border-blue-300"
             >
               <span className="text-3xl">💬</span>
               <span>블라인드 분석</span>
