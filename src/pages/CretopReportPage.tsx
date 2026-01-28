@@ -112,11 +112,10 @@ function getAuthHeaders() {
 }
 
 export default function CretopReportPage() {
-  const [selectedModel, setSelectedModel] = useState<"claude" | "gpt" | "gemini-pro" | "gemini-flash" | "gemini-lite" | "gemini-preview">("claude");
-  const [apiKeys, setApiKeys] = useState<{ claude: boolean; gpt: boolean; gemini: boolean }>({
+  // 🎯 Claude 전용으로 고정
+  const [selectedModel] = useState<"claude">("claude");
+  const [apiKeys, setApiKeys] = useState<{ claude: boolean }>({
     claude: false,
-    gpt: false,
-    gemini: false,
   });
   const [apiKeysLoading, setApiKeysLoading] = useState(true); // 🔑 로딩 상태 추가
   
@@ -130,8 +129,6 @@ export default function CretopReportPage() {
   } | null>(null);
   const [savedModels, setSavedModels] = useState<{
     claude?: string;
-    gpt?: string;
-    gemini?: string;
   }>({});
 
   // 파일 업로드
@@ -179,16 +176,8 @@ export default function CretopReportPage() {
         });
         const j = (await r.json()) as ApiKeyStatus;
         if (j.ok && j.keys) {
-          setApiKeys(j.keys);
-          
-          // 🎯 등록된 키에 따라 자동으로 모델 선택 (Claude 우선)
-          if (j.keys.claude) {
-            setSelectedModel('claude');
-          } else if (j.keys.gpt) {
-            setSelectedModel('gpt');
-          } else if (j.keys.gemini) {
-            setSelectedModel('gemini-flash');
-          }
+          setApiKeys({ claude: j.keys.claude });
+          // 🎯 Claude 전용 - 키 확인만 수행
         }
       } catch {
         console.error('[CretopReport] Failed to load API keys');
@@ -210,40 +199,17 @@ export default function CretopReportPage() {
     setDetectedModel(null);
 
     try {
-      // 1. Claude 키 감지 (PDF 분석 권장)
+      // Claude 키만 감지
       if (key.startsWith('sk-ant-')) {
         setDetectedModel({
           type: 'claude',
-          info: 'Claude 3.5 Sonnet (PDF 분석 권장 ⭐)'
+          info: 'Claude 3.5 Sonnet'
         });
-        setSelectedModel('claude');
-        setApiKeyMsg("✅ Claude API 키 감지됨! (PDF 분석에 최적화)");
+        setApiKeyMsg("✅ Claude API 키 감지됨! (재무제표 분석에 최적화)");
         return;
       }
 
-      // 2. GPT 키 감지
-      if (key.startsWith('sk-') && !key.startsWith('sk-ant-')) {
-        setDetectedModel({
-          type: 'gpt',
-          info: 'GPT-5.2'
-        });
-        setSelectedModel('gpt');
-        setApiKeyMsg("✅ GPT API 키 감지됨!");
-        return;
-      }
-
-      // 3. Gemini 키 감지
-      if (key.startsWith('AIzaSy')) {
-        setDetectedModel({
-          type: 'gemini',
-          info: 'Gemini 2.5 Flash'
-        });
-        setSelectedModel('gemini-flash');
-        setApiKeyMsg("✅ Gemini API 키 감지됨!");
-        return;
-      }
-
-      setApiKeyMsg("❌ API 키 형식을 확인할 수 없습니다.");
+      setApiKeyMsg("❌ Claude API 키만 사용 가능합니다. (sk-ant- 로 시작)\n\n📌 발급: https://console.anthropic.com/settings/keys");
     } finally {
       setDetecting(false);
     }
@@ -256,11 +222,9 @@ export default function CretopReportPage() {
     }
 
     try {
-      // Gemini 모델들은 'gemini'로 통합하여 저장
-      const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+      const keyType = 'claude'; // Claude 전용
       
-      console.log(`[Frontend] Saving API key for modelType: "${keyType}" (original: "${selectedModel}")`);
-      
+      console.log(`[Frontend] Saving Claude API key`);      
       const r = await fetch(`${API_BASE_URL}/api/consultant/api-key`, {
         method: "POST",
         headers: {
@@ -318,7 +282,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
       return;
     }
     
@@ -362,7 +326,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
       return;
     }
 
@@ -444,7 +408,7 @@ export default function CretopReportPage() {
     const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
     
     if (!apiKeys[keyType]) {
-      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 Claude API 키 권장 (PDF 분석 최적화)\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• Claude (권장): https://console.anthropic.com\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      alert('🔑 Claude API KEY를 먼저 등록해주세요!\n\n💡 재무제표 분석에는 Claude 3.5 Sonnet을 사용합니다.\n상단 "Claude API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• https://console.anthropic.com/settings/keys\n\n💰 비용: 건당 약 150원 (직접 결제)');
       return;
     }
 
@@ -581,35 +545,22 @@ export default function CretopReportPage() {
         </p>
       </header>
 
-      {/* AI Model Selection - New Auto-Detect Layout */}
+      {/* AI Model Selection - Claude Only */}
       <div className="bg-[#f1f7ff] rounded-3xl border-2 border-blue-100 p-8 shadow-lg space-y-6">
         <h3 className="flex items-center gap-3 text-blue-700 font-black text-3xl lg:text-4xl">
-          <span>🤖</span> AI API KEY 등록
+          <span>🤖</span> Claude API KEY 등록
         </h3>
+        <p className="text-lg text-blue-600 font-bold">
+          💡 재무제표 분석에 Claude 3.5 Sonnet을 사용합니다. (가장 정확하고 안정적)
+        </p>
 
-        {/* 저장된 모델 상태 표시 */}
-        {(apiKeys.claude || apiKeys.gpt || apiKeys.gemini) && (
+        {/* 저장된 Claude 키 표시 */}
+        {apiKeys.claude && savedModels.claude && (
           <div className="bg-white rounded-2xl border-2 border-blue-100 p-5 shadow-sm">
-            <p className="text-sm font-bold text-blue-600 mb-3">✅ 등록된 API 키</p>
-            <div className="flex flex-wrap gap-3">
-              {apiKeys.claude && savedModels.claude && (
-                <div className="bg-white px-4 py-2 rounded-xl border-2 border-purple-200 shadow-sm">
-                  <p className="text-xs font-bold text-gray-500">CLAUDE</p>
-                  <p className="text-sm font-black text-purple-700">{savedModels.claude}</p>
-                </div>
-              )}
-              {apiKeys.gpt && savedModels.gpt && (
-                <div className="bg-white px-4 py-2 rounded-xl border-2 border-blue-200 shadow-sm">
-                  <p className="text-xs font-bold text-gray-500">GPT</p>
-                  <p className="text-sm font-black text-blue-700">{savedModels.gpt}</p>
-                </div>
-              )}
-              {apiKeys.gemini && savedModels.gemini && (
-                <div className="bg-white px-4 py-2 rounded-xl border-2 border-blue-200 shadow-sm">
-                  <p className="text-xs font-bold text-gray-500">GEMINI</p>
-                  <p className="text-sm font-black text-blue-700">{savedModels.gemini}</p>
-                </div>
-              )}
+            <p className="text-sm font-bold text-blue-600 mb-3">✅ 등록된 Claude API 키</p>
+            <div className="bg-white px-4 py-2 rounded-xl border-2 border-purple-200 shadow-sm inline-block">
+              <p className="text-xs font-bold text-gray-500">CLAUDE 3.5 SONNET</p>
+              <p className="text-sm font-black text-purple-700">{savedModels.claude}</p>
             </div>
           </div>
         )}
@@ -632,7 +583,7 @@ export default function CretopReportPage() {
                   detectApiKey();
                 }
               }}
-              placeholder="sk-ant-api03-... 또는 sk-... 또는 AIzaSy..."
+              placeholder="sk-ant-api03-... (Claude API 키를 입력하세요)"
               className="w-full px-5 py-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 outline-none font-medium text-lg bg-white shadow-sm"
             />
             <button
@@ -689,56 +640,7 @@ export default function CretopReportPage() {
 
       </div>
 
-      {/* 🤖 AI 모델 선택 */}
-      {(apiKeys.gpt || apiKeys.gemini || apiKeys.claude) && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-5 space-y-4 shadow-md">
-          <h3 className="flex items-center gap-3 text-blue-700 font-black text-2xl lg:text-3xl">
-            <span className="text-3xl lg:text-4xl">🤖</span> AI 모델 선택
-          </h3>
-          <p className="text-base text-blue-600 font-medium">
-            재무제표 분석에 사용할 AI 모델을 선택하세요.
-          </p>
-          
-          <div className="flex flex-wrap gap-3">
-            {apiKeys.gpt && (
-              <button
-                onClick={() => setSelectedModel('gpt')}
-                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
-                  selectedModel === 'gpt'
-                    ? 'bg-green-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-green-500'
-                }`}
-              >
-                ✅ GPT-5.2 {selectedModel === 'gpt' && '(선택됨)'}
-              </button>
-            )}
-            {apiKeys.gemini && (
-              <button
-                onClick={() => setSelectedModel('gemini-flash')}
-                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
-                  selectedModel === 'gemini-flash'
-                    ? 'bg-blue-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500'
-                }`}
-              >
-                ✅ Gemini 2.5 Flash {selectedModel === 'gemini-flash' && '(선택됨)'}
-              </button>
-            )}
-            {apiKeys.claude && (
-              <button
-                onClick={() => setSelectedModel('claude')}
-                className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
-                  selectedModel === 'claude'
-                    ? 'bg-purple-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-500'
-                }`}
-              >
-                ✅ Claude 3.5 Sonnet {selectedModel === 'claude' && '(선택됨)'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Claude 고정 - 모델 선택 불필요 */}
 
       {/* PDF Upload Section - Compact */}
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-5 space-y-4 shadow-md">
