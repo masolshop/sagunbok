@@ -332,12 +332,13 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
     
     const client = new OpenAI({ apiKey });
     
-    // 3. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
-    const taskType = TASK_TYPES.FIN_STATEMENT_ANALYSIS;
-    const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free', taskType);
-    console.log(`[GPT PDF] 사용 모델: ${model} (Task: ${taskType})`);
+    // 3. 추출 전용 모델 고정 (Structured Outputs 지원)
+    // ✅ PDF 추출은 gpt-4o-mini로 고정 (안정성 + json_schema 지원)
+    // 컨설팅 해석 단계는 o3/gpt-5 등 자유롭게 사용
+    const extractModel = "gpt-4o-mini";
+    console.log(`[GPT PDF] 추출 전용 모델: ${extractModel} (Structured Outputs 지원)`);
     
-    // 4. Chat Completions API로 텍스트 분석 (JSON 모드 강화)
+    // 4. Structured Outputs용 프롬프트 (출력량 최소화)
     const systemPrompt = `너는 한국 재무제표 전문 회계사다. 아래 규칙에 따라 재무제표 PDF 텍스트에서 데이터를 추출해 **반드시 유효한 JSON만** 출력해야 한다.
 
 규칙:
@@ -348,71 +349,146 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
 5. JSON 이외의 텍스트 절대 금지
 6. ❗ 출력은 JSON '객체' 하나만. 문장/설명/코드펜스( ``` ) 절대 금지.
 7. ❗ JSON 안 문자열에는 줄바꿈 대신 \\n 을 사용하고, 숫자에는 콤마를 넣지 않는다.
+8. ✅ 반드시 아래 6개 지표만 출력한다(추가 항목 금지).
+9. ✅ 각 지표는 evidence 1개만 포함한다(페이지/섹션/원문 1줄).
+10. ✅ 출력은 단일 JSON 객체 1개만(설명/문장/코드펜스 금지).
 
-출력 스키마:
-{
-  "company_name": "회사로",
-  "ceo_name": "대표자명",
-  "business_number": "사업자등록번호",
-  "industry": "업종",
-  "statement_year": "재무제표 연도",
-  "revenue": {
-    "original_text": "9571217",
-    "unit": "천원",
-    "multiplier_to_won": 1000,
-    "value_won": 9571217000,
-    "pretty_krw": "95억 7천만원",
-    "evidence": "손익계산서 매출액 항목"
-  },
-  "retained_earnings": { "original_text": "", "unit": "", "multiplier_to_won": 1, "value_won": 0, "pretty_krw": "", "evidence": "" },
-  "loans_to_officers": { "original_text": "", "unit": "", "multiplier_to_won": 1, "value_won": 0, "pretty_krw": "", "evidence": "" },
-  "welfare_expenses": { "original_text": "", "unit": "", "multiplier_to_won": 1, "value_won": 0, "pretty_krw": "", "evidence": "" },
-  "anomalies": []
-}`;
+필수 6개 지표:
+- company_name: 회사명
+- ceo_name: 대표자명
+- business_number: 사업자등록번호
+- industry: 업종
+- statement_year: 재무제표 연도 (YYYY)
+- metrics: { revenue_won, net_income_won, retained_earnings_won, unappropriated_retained_earnings_won, advances_won, welfare_expense_won }
+- evidence: 각 지표별 근거 1줄
+- anomalies: 이상 항목 배열`;
 
     const userPrompt = `=== 재무제표 텍스트 ===
 ${pdfText.slice(0, 50000)}
 
-위 재무제표에서 아래 항목을 추출해 **유효한 JSON만** 출력:
-- 회사명, 대표자명, 사업자등록번호, 업종, 재무제표 연도
-- 매출액, 이익잉여금, 가지급금 (후보: 가지급금/단기대여금/대여금/임원대여금), 복리후생비
+위 재무제표에서 아래 **6개 지표만** 추출해 JSON만 출력:
 
-❗ 중요: { 로 시작해서 } 로 끝나는 유효한 JSON만 출력. 코드펜스/주석/설명 절대 금지.`;
+기본 정보: company_name, ceo_name, business_number, industry, statement_year
 
+재무 지표 (원 단위):
+- revenue_won: 매출액 (손익계산서)
+- net_income_won: 당기순이익 (손익계산서)
+- retained_earnings_won: 이익잉여금 (재무상태표)
+- unappropriated_retained_earnings_won: 미처분이익잉여금 (재무상태표)
+- advances_won: 가지급금 (후보: 가지급금/단기대여금/대여금/임원대여금)
+- welfare_expense_won: 복리후생비 (손익계산서)
+
+evidence: 각 지표별 근거 1줄 (페이지/섹션/원문)
+anomalies: 이상 항목 배열
+
+❗ 중요: 단위가 '천원'이면 1000 곱해서 원 단위로. evidence는 1줄만. 추가 항목 금지.`;
+
+    // ✅ Structured Outputs (json_schema) - 스키마 강제
     const response = await client.chat.completions.create({
-      model,
+      model: extractModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      response_format: { type: 'json_object' },  // ✅ JSON 모드 강제
-      ...buildTokenParams(model, 4096),
-      ...buildTemperatureParam(model, 0.1)
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "finance_extract",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["company_name", "ceo_name", "business_number", "industry", "statement_year", "metrics", "evidence", "anomalies"],
+            properties: {
+              company_name: { type: "string" },
+              ceo_name: { type: "string" },
+              business_number: { type: "string" },
+              industry: { type: "string" },
+              statement_year: { type: "string" },
+              metrics: {
+                type: "object",
+                additionalProperties: false,
+                required: ["revenue_won", "net_income_won", "retained_earnings_won", "unappropriated_retained_earnings_won", "advances_won", "welfare_expense_won"],
+                properties: {
+                  revenue_won: { type: ["number", "null"] },
+                  net_income_won: { type: ["number", "null"] },
+                  retained_earnings_won: { type: ["number", "null"] },
+                  unappropriated_retained_earnings_won: { type: ["number", "null"] },
+                  advances_won: { type: ["number", "null"] },
+                  welfare_expense_won: { type: ["number", "null"] }
+                }
+              },
+              evidence: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  revenue: { type: "string" },
+                  net_income: { type: "string" },
+                  retained_earnings: { type: "string" },
+                  unappropriated_retained_earnings: { type: "string" },
+                  advances: { type: "string" },
+                  welfare_expense: { type: "string" }
+                }
+              },
+              anomalies: {
+                type: "array",
+                items: { type: "string" }
+              }
+            }
+          }
+        }
+      },
+      ...buildTokenParams(extractModel, 2500),  // ✅ 출력량 제한 (잘림 방지)
+      ...buildTemperatureParam(extractModel, 0.1)
     });
     
-    console.log(`[GPT PDF] 추출 완료 (모델: ${model})`);
+    console.log(`[GPT PDF] 추출 완료 (모델: ${extractModel})`);
     
-    // 5. 응답 추출 및 JSON 검증 (safeJsonParse + repairToJson)
-    const rawContent = response.choices[0].message.content;
-    console.log(`[GPT PDF] 원본 응답 길이: ${rawContent?.length || 0}자`);
+    // 5. 응답 추출 및 잘림 확인 (finish_reason 체크)
+    const choice = response.choices?.[0];
+    const rawContent = choice?.message?.content;
+    const finishReason = choice?.finish_reason;
     
-    // JSON 검증 (safeJsonParse)
+    console.log(`[GPT PDF] finish_reason: ${finishReason}`);
+    console.log(`[GPT PDF] content_type: ${typeof rawContent}, len: ${rawContent?.length || 0}`);
+    
+    // ⚠️ 잘림 경고 (JSON 파싱 실패의 주요 원인)
+    if (finishReason === "length") {
+      console.warn(`[GPT PDF] ⚠️ 경고: JSON이 토큰 한도로 잘렸습니다! 출력량을 더 줄이거나 maxTokens를 늘리세요.`);
+    }
+    
+    // 빈 응답 체크
+    if (!rawContent) {
+      throw new Error(`GPT 응답이 비어있습니다. finish_reason: ${finishReason}`);
+    }
+    
+    // 6. JSON 검증 (Structured Outputs는 거의 파싱 실패 없음)
     let parsedData;
     try {
-      parsedData = safeJsonParse(rawContent);
-      console.log(`[GPT PDF] JSON 검증 성공 (safeJsonParse)`);
+      // Structured Outputs는 스키마를 보장하므로 직접 파싱
+      parsedData = JSON.parse(rawContent);
+      console.log(`[GPT PDF] JSON 검증 성공 (Structured Outputs)`);
     } catch (parseError) {
       console.error(`[GPT PDF] JSON 파싱 실패:`, parseError.message);
-      console.error(`[GPT PDF] 원본 응답 (처음 1000자):`, rawContent?.slice(0, 1000));
+      console.error(`[GPT PDF] 원본 응답 (처음 2000자):`, rawContent?.slice(0, 2000));
       
-      // 리트라이 1회: repairToJson
+      // Structured Outputs 실패는 드물지만, safeJsonParse로 복구 시도
       try {
-        console.log(`[GPT PDF] JSON 복구 시도 (repairToJson)...`);
-        parsedData = await repairToJson(client, model, rawContent);
-        console.log(`[GPT PDF] JSON 복구 성공`);
-      } catch (repairError) {
-        console.error(`[GPT PDF] JSON 복구 실패:`, repairError.message);
-        throw new Error(`GPT 응답이 유효한 JSON이 아닙니다: ${parseError.message}`);
+        console.log(`[GPT PDF] safeJsonParse 복구 시도...`);
+        parsedData = safeJsonParse(rawContent);
+        console.log(`[GPT PDF] safeJsonParse 복구 성공`);
+      } catch (safeError) {
+        console.error(`[GPT PDF] safeJsonParse 실패:`, safeError.message);
+        
+        // 최종 리트라이: repairToJson
+        try {
+          console.log(`[GPT PDF] repairToJson 최종 복구 시도...`);
+          parsedData = await repairToJson(client, extractModel, rawContent);
+          console.log(`[GPT PDF] repairToJson 복구 성공`);
+        } catch (repairError) {
+          console.error(`[GPT PDF] repairToJson 실패:`, repairError.message);
+          throw new Error(`GPT 응답이 유효한 JSON이 아닙니다. finish_reason: ${finishReason}, error: ${parseError.message}`);
+        }
       }
     }
     
