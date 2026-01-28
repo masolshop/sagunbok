@@ -3,6 +3,9 @@ import { loadKey } from "../utils/cryptoStore.js";
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createRequire } from 'module';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 const require = createRequire(import.meta.url);
 const { PDFParse } = require('pdf-parse');
 
@@ -300,7 +303,207 @@ ${brokenText.slice(0, 8000)}`
   }
 }
 
-// 🎯 OpenAI PDF 추출 (Chat Completions + JSON 모드 강화)
+// ============================================================
+// 🎯 자동 분기 헬퍼 함수 (텍스트형 vs 스캔본)
+// ============================================================
+
+// ✅ 텍스트가 "재무표 추출에 쓸만한지" 판별
+function isTextUsable(pdfText) {
+  const trimmed = (pdfText || '').trim();
+  if (trimmed.length < 800) return false;
+  
+  const digits = (trimmed.match(/\d/g) || []).length;
+  if (digits < 30) return false;
+  
+  return true;
+}
+
+// ✅ 재무표 관련 키워드 주변만 발췌 (전체 텍스트 자르기 금지)
+function pickRelevantChunks(pdfText, windowSize = 7000) {
+  const keywords = [
+    '요약 손익계산서', '손익계산서', '포괄손익', '매출액', '당기순이익',
+    '복리후생비', '요약 재무상태표', '재무상태표', '이익잉여금',
+    '미처분이익잉여금', '가지급금', '단위', '(단위', '천원', '백만원',
+    '억원', '대표자', '사업자등록번호', '업종'
+  ];
+  
+  const chunks = [];
+  const text = pdfText || '';
+  
+  for (const kw of keywords) {
+    const idx = text.indexOf(kw);
+    if (idx !== -1) {
+      const start = Math.max(0, idx - Math.floor(windowSize / 2));
+      const end = Math.min(text.length, idx + Math.floor(windowSize / 2));
+      chunks.push(text.slice(start, end));
+    }
+  }
+  
+  // 키워드 히트가 없으면 앞/중간/뒤 3조각
+  if (chunks.length === 0) {
+    const third = Math.floor(text.length / 3);
+    chunks.push(
+      text.slice(0, windowSize),
+      text.slice(third, third + windowSize),
+      text.slice(-windowSize)
+    );
+  }
+  
+  return chunks.join('\n\n=== 다음 섹션 ===\n\n');
+}
+
+// ✅ PDF 파일 입력 → OpenAI Responses API 추출
+async function extractFromPdfFileLLM({ client, extractModel, pdfBuffer }) {
+  let tmpPath = null;
+  let uploadedFile = null;
+  
+  try {
+    console.log('[GPT PDF File] 스캔본 PDF 입력 모드 시작...');
+    
+    // 1) 임시 파일로 저장
+    tmpPath = path.join(os.tmpdir(), `pdf-${Date.now()}.pdf`);
+    fs.writeFileSync(tmpPath, pdfBuffer);
+    console.log(`[GPT PDF File] 임시 파일 저장: ${tmpPath}`);
+    
+    // 2) Files API 업로드
+    uploadedFile = await client.files.create({
+      file: fs.createReadStream(tmpPath),
+      purpose: 'user_data'
+    });
+    console.log(`[GPT PDF File] 파일 업로드 완료: ${uploadedFile.id}`);
+    
+    // 3) Responses API 호출
+    const systemPrompt = `당신은 한국 기업 재무제표 전문 회계사입니다.
+반드시 유효한 JSON 하나의 객체만 출력하세요.
+
+**출력 규칙**:
+1. 출력은 반드시 { 로 시작하고 } 로 끝나야 함
+2. 모든 키는 큰따옴표로 감싸야 함
+3. 문자열 값도 큰따옴표로 감싸야 함
+4. 주석이나 설명 금지
+5. JSON 이외의 텍스트 절대 금지
+6. 숫자에 쉼표(,) 절대 사용 금지
+7. 문자열 내 줄바꿈은 \\n 사용
+8. **6개 지표만 출력** (추가 항목 절대 금지)`;
+    
+    const userPrompt = `PDF 이미지에서 아래 **6개 지표만** 추출해 JSON만 출력하세요.
+
+**기본 정보**:
+- company_name (회사명)
+- ceo_name (대표자명, 못 찾으면 null)
+- business_number (사업자등록번호, 못 찾으면 null)
+- industry (업종, 못 찾으면 null)
+- statement_year (재무제표 연도, YYYY 형식)
+
+**재무 지표 (단위: 원 단위로 환산)**:
+- revenue_won (매출액, 원)
+- net_income_won (당기순이익, 원)
+- retained_earnings_won (이익잉여금, 원)
+- unappropriated_retained_earnings_won (미처분이익잉여금, 원)
+- advances_won (가지급금/단기대여금/대여금/임원대여금, 원)
+- welfare_expense_won (복리후생비, 원)
+
+**증거 (각 지표별 1줄)**:
+- 각 지표에 대한 evidence 1줄씩 (페이지/섹션/원문)
+
+**이상치**:
+- anomalies: 배열 (못 찾은 항목은 "NOT_FOUND:<field>" 추가)
+
+**단위 환산 규칙**:
+- "천원" 단위면 1000 곱해서 원으로 환산
+- "백만원" 단위면 1000000 곱해서 원으로 환산
+- "억원" 단위면 100000000 곱해서 원으로 환산
+- 못 찾으면 null (0 절대 금지)`;
+    
+    const response = await client.responses.create({
+      model: extractModel,
+      max_output_tokens: 2500,
+      temperature: 0.1,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'finance_extract',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['company_name', 'ceo_name', 'business_number', 'industry', 'statement_year', 'metrics', 'evidence', 'anomalies'],
+            properties: {
+              company_name: { type: 'string' },
+              ceo_name: { type: ['string', 'null'] },
+              business_number: { type: ['string', 'null'] },
+              industry: { type: ['string', 'null'] },
+              statement_year: { type: 'string' },
+              metrics: {
+                type: 'object',
+                required: ['revenue_won', 'net_income_won', 'retained_earnings_won', 'unappropriated_retained_earnings_won', 'advances_won', 'welfare_expense_won'],
+                properties: {
+                  revenue_won: { type: ['number', 'null'] },
+                  net_income_won: { type: ['number', 'null'] },
+                  retained_earnings_won: { type: ['number', 'null'] },
+                  unappropriated_retained_earnings_won: { type: ['number', 'null'] },
+                  advances_won: { type: ['number', 'null'] },
+                  welfare_expense_won: { type: ['number', 'null'] }
+                },
+                additionalProperties: false
+              },
+              evidence: {
+                type: 'object',
+                required: ['revenue_won', 'net_income_won', 'retained_earnings_won', 'unappropriated_retained_earnings_won', 'advances_won', 'welfare_expense_won'],
+                properties: {
+                  revenue_won: { type: 'string' },
+                  net_income_won: { type: 'string' },
+                  retained_earnings_won: { type: 'string' },
+                  unappropriated_retained_earnings_won: { type: 'string' },
+                  advances_won: { type: 'string' },
+                  welfare_expense_won: { type: 'string' }
+                },
+                additionalProperties: false
+              },
+              anomalies: {
+                type: 'array',
+                items: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      input: [
+        { type: 'text', text: systemPrompt },
+        { type: 'input_file', input_file: { file_id: uploadedFile.id } },
+        { type: 'text', text: userPrompt }
+      ]
+    });
+    
+    console.log('[GPT PDF File] Responses API 호출 완료');
+    
+    // 4) 응답 추출
+    const outputText = response.output?.[0]?.content?.[0]?.text;
+    if (!outputText) {
+      throw new Error('Responses API에서 응답을 받지 못했습니다.');
+    }
+    
+    console.log('[GPT PDF File] 추출 완료');
+    return outputText;
+    
+  } finally {
+    // 정리
+    if (tmpPath && fs.existsSync(tmpPath)) {
+      fs.unlinkSync(tmpPath);
+      console.log('[GPT PDF File] 임시 파일 삭제');
+    }
+    if (uploadedFile) {
+      try {
+        await client.files.del(uploadedFile.id);
+        console.log('[GPT PDF File] 업로드 파일 삭제');
+      } catch (e) {
+        console.warn('[GPT PDF File] 파일 삭제 실패 (무시):', e.message);
+      }
+    }
+  }
+}
+
+// 🎯 OpenAI PDF 추출 (완전 자동 분기: 텍스트형 vs 스캔본)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
     console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
@@ -311,8 +514,8 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       throw new Error(`업로드된 파일이 PDF가 아닙니다. 헤더=${JSON.stringify(header)} (처음 4바이트). 실제 타입을 확인하세요.`);
     }
     
-    // 2. PDF를 텍스트로 변환 (pdf-parse)
-    console.log(`[GPT PDF] PDF 텍스트 추출 시작...`);
+    // 2. PDF를 텍스트로 변환 시도 (pdf-parse)
+    console.log(`[GPT PDF] PDF 텍스트 추출 시도...`);
     const parser = new PDFParse({ data: pdfBuffer });
     let pdfText = '';
     let numPages = 0;
@@ -321,24 +524,35 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       const pdfData = await parser.getText();
       pdfText = pdfData.text || '';
       numPages = pdfData.total || pdfData.totalPages || pdfData.numpages || 0;
-      console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자)`);
+      
+      const digits = (pdfText.match(/\d/g) || []).length;
+      console.log(`[GPT PDF] 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자, 숫자: ${digits}개)`);
+      console.log(`[GPT PDF] 미리보기 (처음 400자):\n${pdfText.slice(0, 400)}`);
+      
+    } catch (extractError) {
+      console.warn(`[GPT PDF] ⚠️ 텍스트 추출 실패 (스캔본 가능성): ${extractError.message}`);
     } finally {
       await parser.destroy();
     }
     
-    if (!pdfText.trim()) {
-      throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 보호된 PDF일 수 있습니다.');
+    const client = new OpenAI({ apiKey });
+    const extractModel = "gpt-4o-mini";
+    
+    // 3. ✅ 자동 분기: 텍스트형 vs 스캔본
+    const textOk = isTextUsable(pdfText);
+    
+    if (!textOk) {
+      // ❌ 텍스트 없음 → PDF 파일 입력 추출
+      console.log(`[GPT PDF] ⚠️ 텍스트 기반 추출 불가 → PDF 파일 입력 추출로 전환`);
+      return await extractFromPdfFileLLM({ client, extractModel, pdfBuffer });
     }
     
-    const client = new OpenAI({ apiKey });
+    // ✅ 텍스트형 PDF → 키워드 주변 발췌 + Chat Completions
+    console.log(`[GPT PDF] ✅ 텍스트형 PDF → 키워드 주변 발췌`);
+    const focusText = pickRelevantChunks(pdfText);
+    console.log(`[GPT PDF] 발췌 완료: ${focusText.length}자 (원본 ${pdfText.length}자)`);
     
-    // 3. 추출 전용 모델 고정 (Structured Outputs 지원)
-    // ✅ PDF 추출은 gpt-4o-mini로 고정 (안정성 + json_schema 지원)
-    // 컨설팅 해석 단계는 o3/gpt-5 등 자유롭게 사용
-    const extractModel = "gpt-4o-mini";
-    console.log(`[GPT PDF] 추출 전용 모델: ${extractModel} (Structured Outputs 지원)`);
-    
-    // 4. Structured Outputs용 프롬프트 (출력량 최소화)
+    // 4. Structured Outputs용 프롬프트 (6개 지표만)
     const systemPrompt = `너는 한국 재무제표 전문 회계사다. 아래 규칙에 따라 재무제표 PDF 텍스트에서 데이터를 추출해 **반드시 유효한 JSON만** 출력해야 한다.
 
 규칙:
@@ -347,24 +561,25 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
 3. 문자열 값도 큰따옴표로 감싸야 함
 4. 주석이나 설명 금지
 5. JSON 이외의 텍스트 절대 금지
-6. ❗ 출력은 JSON '객체' 하나만. 문장/설명/코드펜스( ``` ) 절대 금지.
+6. ❗ 출력은 JSON '객체' 하나만. 문장/설명/코드펜스( \`\`\` ) 절대 금지.
 7. ❗ JSON 안 문자열에는 줄바꿈 대신 \\n 을 사용하고, 숫자에는 콤마를 넣지 않는다.
 8. ✅ 반드시 아래 6개 지표만 출력한다(추가 항목 금지).
 9. ✅ 각 지표는 evidence 1개만 포함한다(페이지/섹션/원문 1줄).
 10. ✅ 출력은 단일 JSON 객체 1개만(설명/문장/코드펜스 금지).
+11. ✅ 못 찾으면 null로 출력 (0 절대 금지!)
 
 필수 6개 지표:
 - company_name: 회사명
-- ceo_name: 대표자명
-- business_number: 사업자등록번호
-- industry: 업종
+- ceo_name: 대표자명 (못 찾으면 null)
+- business_number: 사업자등록번호 (못 찾으면 null)
+- industry: 업종 (못 찾으면 null)
 - statement_year: 재무제표 연도 (YYYY)
 - metrics: { revenue_won, net_income_won, retained_earnings_won, unappropriated_retained_earnings_won, advances_won, welfare_expense_won }
 - evidence: 각 지표별 근거 1줄
-- anomalies: 이상 항목 배열`;
+- anomalies: 이상 항목 배열 (못 찾은 항목은 "NOT_FOUND:<field>" 추가)`;
 
-    const userPrompt = `=== 재무제표 텍스트 ===
-${pdfText.slice(0, 50000)}
+    const userPrompt = `=== 재무제표 텍스트 (발췌) ===
+${focusText}
 
 위 재무제표에서 아래 **6개 지표만** 추출해 JSON만 출력:
 
@@ -379,72 +594,87 @@ ${pdfText.slice(0, 50000)}
 - welfare_expense_won: 복리후생비 (손익계산서)
 
 evidence: 각 지표별 근거 1줄 (페이지/섹션/원문)
-anomalies: 이상 항목 배열
+anomalies: 이상 항목 배열 (못 찾은 항목은 "NOT_FOUND:<field>" 추가)
 
-❗ 중요: 단위가 '천원'이면 1000 곱해서 원 단위로. evidence는 1줄만. 추가 항목 금지.`;
+❗ 중요: 
+- 단위가 '천원'이면 1000 곱해서 원 단위로
+- evidence는 1줄만
+- 못 찾으면 null (0 절대 금지!)
+- 추가 항목 금지`;
 
-    // ✅ Structured Outputs (json_schema) - 스키마 강제
-    const response = await client.chat.completions.create({
-      model: extractModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "finance_extract",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: ["company_name", "ceo_name", "business_number", "industry", "statement_year", "metrics", "evidence", "anomalies"],
-            properties: {
-              company_name: { type: "string" },
-              ceo_name: { type: "string" },
-              business_number: { type: "string" },
-              industry: { type: "string" },
-              statement_year: { type: "string" },
-              metrics: {
-                type: "object",
-                additionalProperties: false,
-                required: ["revenue_won", "net_income_won", "retained_earnings_won", "unappropriated_retained_earnings_won", "advances_won", "welfare_expense_won"],
-                properties: {
-                  revenue_won: { type: ["number", "null"] },
-                  net_income_won: { type: ["number", "null"] },
-                  retained_earnings_won: { type: ["number", "null"] },
-                  unappropriated_retained_earnings_won: { type: ["number", "null"] },
-                  advances_won: { type: ["number", "null"] },
-                  welfare_expense_won: { type: ["number", "null"] }
+    // 5. ✅ Structured Outputs (json_schema) - 스키마 강제
+    console.log(`[GPT PDF] 추출 전용 모델: ${extractModel} (Structured Outputs)`);
+    
+    let response;
+    try {
+      response = await client.chat.completions.create({
+        model: extractModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "finance_extract",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              required: ["company_name", "ceo_name", "business_number", "industry", "statement_year", "metrics", "evidence", "anomalies"],
+              properties: {
+                company_name: { type: "string" },
+                ceo_name: { type: ["string", "null"] },
+                business_number: { type: ["string", "null"] },
+                industry: { type: ["string", "null"] },
+                statement_year: { type: "string" },
+                metrics: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["revenue_won", "net_income_won", "retained_earnings_won", "unappropriated_retained_earnings_won", "advances_won", "welfare_expense_won"],
+                  properties: {
+                    revenue_won: { type: ["number", "null"] },
+                    net_income_won: { type: ["number", "null"] },
+                    retained_earnings_won: { type: ["number", "null"] },
+                    unappropriated_retained_earnings_won: { type: ["number", "null"] },
+                    advances_won: { type: ["number", "null"] },
+                    welfare_expense_won: { type: ["number", "null"] }
+                  }
+                },
+                evidence: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["revenue_won", "net_income_won", "retained_earnings_won", "unappropriated_retained_earnings_won", "advances_won", "welfare_expense_won"],
+                  properties: {
+                    revenue_won: { type: "string" },
+                    net_income_won: { type: "string" },
+                    retained_earnings_won: { type: "string" },
+                    unappropriated_retained_earnings_won: { type: "string" },
+                    advances_won: { type: "string" },
+                    welfare_expense_won: { type: "string" }
+                  }
+                },
+                anomalies: {
+                  type: "array",
+                  items: { type: "string" }
                 }
-              },
-              evidence: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  revenue: { type: "string" },
-                  net_income: { type: "string" },
-                  retained_earnings: { type: "string" },
-                  unappropriated_retained_earnings: { type: "string" },
-                  advances: { type: "string" },
-                  welfare_expense: { type: "string" }
-                }
-              },
-              anomalies: {
-                type: "array",
-                items: { type: "string" }
               }
             }
           }
-        }
-      },
-      ...buildTokenParams(extractModel, 2500),  // ✅ 출력량 제한 (잘림 방지)
-      ...buildTemperatureParam(extractModel, 0.1)
-    });
+        },
+        ...buildTokenParams(extractModel, 2500),  // ✅ 출력량 제한 (잘림 방지)
+        ...buildTemperatureParam(extractModel, 0.1)
+      });
+    } catch (apiError) {
+      // ⚠️ 텍스트 기반 추출 실패 → PDF 파일 입력으로 재시도
+      console.warn(`[GPT PDF] ⚠️ 텍스트 기반 추출 실패: ${apiError.message}`);
+      console.log(`[GPT PDF] → PDF 파일 입력 추출로 자동 전환`);
+      return await extractFromPdfFileLLM({ client, extractModel, pdfBuffer });
+    }
     
     console.log(`[GPT PDF] 추출 완료 (모델: ${extractModel})`);
     
-    // 5. 응답 추출 및 잘림 확인 (finish_reason 체크)
+    // 6. 응답 추출 및 잘림 확인 (finish_reason 체크)
     const choice = response.choices?.[0];
     const rawContent = choice?.message?.content;
     const finishReason = choice?.finish_reason;
@@ -462,7 +692,7 @@ anomalies: 이상 항목 배열
       throw new Error(`GPT 응답이 비어있습니다. finish_reason: ${finishReason}`);
     }
     
-    // 6. JSON 검증 (Structured Outputs는 거의 파싱 실패 없음)
+    // 7. JSON 검증 (Structured Outputs는 거의 파싱 실패 없음)
     let parsedData;
     try {
       // Structured Outputs는 스키마를 보장하므로 직접 파싱
@@ -493,7 +723,7 @@ anomalies: 이상 항목 배열
     }
     
     // JSON 문자열로 반환 (기존 코드 호환)
-    return JSON.stringify(parsedData)
+    return JSON.stringify(parsedData);
     
   } catch (error) {
     // 에러 타입별 처리
