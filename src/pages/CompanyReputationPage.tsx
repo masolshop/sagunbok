@@ -132,75 +132,75 @@ const CompanyReputationPage: React.FC = () => {
     if (!result) return null;
 
     return (
-      <div className="mt-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl">
-        <h3 className="text-lg font-bold text-blue-900 mb-3">{title}</h3>
+      <div className="mt-8 p-8 bg-blue-50 border-2 border-blue-300 rounded-2xl">
+        <h3 className="text-2xl font-bold text-blue-900 mb-4">{title}</h3>
         {result.success ? (
-          <div className="space-y-2">
-            <p className="text-green-700 font-semibold">✅ {result.message}</p>
+          <div className="space-y-3">
+            <p className="text-green-700 text-lg font-bold">✅ {result.message}</p>
             {result.data && (
-              <pre className="mt-3 p-4 bg-white rounded-lg text-xs overflow-x-auto border border-blue-200">
+              <pre className="mt-4 p-6 bg-white rounded-lg text-base overflow-x-auto border-2 border-blue-200 font-mono">
                 {JSON.stringify(result.data, null, 2)}
               </pre>
             )}
           </div>
         ) : (
-          <p className="text-red-600 font-semibold">❌ {result.message}</p>
+          <p className="text-red-600 text-lg font-bold">❌ {result.message}</p>
         )}
       </div>
     );
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* 헤더 */}
-      <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 shadow-2xl text-white">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl">
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-3xl p-10 shadow-2xl text-white">
+        <div className="flex items-center gap-5 mb-5">
+          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-5xl">
             🔍
           </div>
           <div>
-            <h1 className="text-3xl font-black">기업평판분석</h1>
-            <p className="text-purple-100 text-sm mt-1">구인구직 & 리뷰 데이터 분석</p>
+            <h1 className="text-4xl font-black">기업평판분석</h1>
+            <p className="text-blue-100 text-xl mt-2">구인구직 & 리뷰 데이터 분석</p>
           </div>
         </div>
-        <p className="text-purple-100 leading-relaxed">
+        <p className="text-blue-50 text-lg leading-relaxed">
           사업자등록번호로 회사명을 조회하고, 사람인과 블라인드 등의 플랫폼에서 기업 평판 데이터를 분석합니다.
         </p>
       </div>
 
       {/* 메인 입력 카드 */}
-      <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 p-8">
-        <div className="space-y-6">
+      <div className="bg-white rounded-3xl shadow-2xl border-2 border-blue-100 p-10">
+        <div className="space-y-8">
           {/* 사업자등록번호 */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-lg font-bold text-gray-800 mb-3">
               사업자등록번호 (선택)
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <input
                 type="text"
                 value={businessNumber}
                 onChange={handleBusinessNumberChange}
                 placeholder="1234567890 (10자리)"
                 maxLength={10}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-lg"
+                className="flex-1 px-6 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xl font-semibold"
               />
               <button
                 onClick={handleLookupBusinessNumber}
                 disabled={loading || businessNumber.length !== 10}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-bold rounded-xl transition-all shadow-lg disabled:cursor-not-allowed"
+                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xl font-bold rounded-xl transition-all shadow-lg disabled:cursor-not-allowed"
               >
                 🔍 조회
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-base text-gray-600 mt-3 font-medium">
               * 하이픈 없이 10자리 숫자만 입력하세요
             </p>
           </div>
 
           {/* 회사명 */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-lg font-bold text-gray-800 mb-3">
               회사명 <span className="text-red-500">*</span>
             </label>
             <input
@@ -208,42 +208,42 @@ const CompanyReputationPage: React.FC = () => {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="회사명을 입력하세요"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-lg"
+              className="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xl font-semibold"
             />
           </div>
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 font-semibold">
+            <div className="p-5 bg-red-50 border-2 border-red-300 rounded-xl text-red-700 text-lg font-bold">
               ❌ {error}
             </div>
           )}
 
           {/* 로딩 표시 */}
           {loading && (
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-              <span className="ml-4 text-purple-700 font-semibold">분석 중...</span>
+            <div className="flex items-center justify-center p-10">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+              <span className="ml-5 text-blue-700 text-xl font-bold">분석 중...</span>
             </div>
           )}
 
           {/* 액션 버튼 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4">
             <button
               onClick={handleSaraminAnalysis}
               disabled={loading || !companyName.trim()}
-              className="py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="py-5 px-8 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 text-white text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
-              <span className="text-2xl">💼</span>
+              <span className="text-3xl">💼</span>
               <span>사람인 분석</span>
             </button>
 
             <button
               onClick={handleBlindAnalysis}
               disabled={loading || !companyName.trim()}
-              className="py-4 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="py-5 px-8 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white text-xl font-bold rounded-xl shadow-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
-              <span className="text-2xl">💬</span>
+              <span className="text-3xl">💬</span>
               <span>블라인드 분석</span>
             </button>
           </div>
@@ -256,26 +256,26 @@ const CompanyReputationPage: React.FC = () => {
       {renderResult(blindResult, '블라인드 분석 결과')}
 
       {/* 안내 사항 */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8 border-2 border-blue-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span className="text-2xl">ℹ️</span>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-10 border-2 border-blue-200">
+        <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center gap-3">
+          <span className="text-3xl">ℹ️</span>
           <span>사용 안내</span>
         </h3>
-        <ul className="space-y-2 text-gray-700">
-          <li className="flex items-start gap-2">
-            <span className="text-purple-600 font-bold">1.</span>
-            <span><strong>사업자번호 조회</strong>: 10자리 사업자등록번호를 입력하면 회사명을 자동으로 조회합니다.</span>
+        <ul className="space-y-4 text-gray-700 text-lg">
+          <li className="flex items-start gap-3">
+            <span className="text-blue-600 font-bold text-xl">1.</span>
+            <span><strong className="text-blue-700">사업자번호 조회</strong>: 10자리 사업자등록번호를 입력하면 회사명을 자동으로 조회합니다.</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-purple-600 font-bold">2.</span>
-            <span><strong>사람인 분석</strong>: 해당 회사의 채용 공고, 복지 정보, 기업 정보를 분석합니다.</span>
+          <li className="flex items-start gap-3">
+            <span className="text-blue-600 font-bold text-xl">2.</span>
+            <span><strong className="text-blue-700">사람인 분석</strong>: 해당 회사의 채용 공고, 복지 정보, 기업 정보를 분석합니다.</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-purple-600 font-bold">3.</span>
-            <span><strong>블라인드 분석</strong>: 직원 리뷰, 평점, 회사 분위기 등의 정보를 수집합니다.</span>
+          <li className="flex items-start gap-3">
+            <span className="text-blue-600 font-bold text-xl">3.</span>
+            <span><strong className="text-blue-700">블라인드 분석</strong>: 직원 리뷰, 평점, 회사 분위기 등의 정보를 수집합니다.</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-purple-600 font-bold">4.</span>
+          <li className="flex items-start gap-3">
+            <span className="text-blue-600 font-bold text-xl">4.</span>
             <span>분석 결과는 JSON 형식으로 표시되며, 실시간 데이터를 기반으로 합니다.</span>
           </li>
         </ul>
