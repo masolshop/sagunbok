@@ -240,10 +240,10 @@ function buildTemperatureParam(model, temperature) {
   return { temperature };
 }
 
-// OpenAI PDF 추출 (PDF → Text 변환 후 Chat Completions API)
+// 🎯 OpenAI Responses API 기반 PDF 추출 (PDF 직접 입력)
 async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options = {}) {
   try {
-    console.log(`[GPT PDF] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
+    console.log(`[GPT PDF Responses] 추출 시작... (파일: ${originalFilename}, 크기: ${(pdfBuffer.length / 1024).toFixed(1)} KB)`);
     
     // 1. PDF 파일 헤더 검증 (%PDF로 시작해야 함)
     const header = pdfBuffer.slice(0, 4).toString('utf8');
@@ -251,72 +251,104 @@ async function extractPdfWithOpenAI(apiKey, pdfBuffer, originalFilename, options
       throw new Error(`업로드된 파일이 PDF가 아닙니다. 헤더=${JSON.stringify(header)} (처음 4바이트). 실제 타입을 확인하세요.`);
     }
     
-    // 2. PDF를 텍스트로 변환 (pdf-parse v2 API)
-    console.log(`[GPT PDF] PDF 텍스트 추출 시작...`);
-    const parser = new PDFParse({ data: pdfBuffer });  // ✅ buffer → data
-    let pdfText = '';
-    let numPages = 0;
-    
-    try {
-      const pdfData = await parser.getText();
-      pdfText = pdfData.text || '';
-      numPages = pdfData.total || pdfData.totalPages || pdfData.numpages || 0;
-      console.log(`[GPT PDF] PDF 텍스트 추출 완료 (${numPages}페이지, ${pdfText.length}자)`);
-    } finally {
-      // ✅ v2는 destroy() 권장 (메모리/워커 정리)
-      await parser.destroy();
-    }
-    
-    if (!pdfText.trim()) {
-      throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 이미지 기반 PDF이거나 보호된 PDF일 수 있습니다.');
-    }
-    
     const client = new OpenAI({ apiKey });
     
-    // 3. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
+    // 2. 모델 자동 선택 (재무제표 분석 = FIN_STATEMENT_ANALYSIS)
     const taskType = TASK_TYPES.FIN_STATEMENT_ANALYSIS;
     const model = options.model || await pickBestGPTModel(apiKey, options.plan || 'free', taskType);
-    console.log(`[GPT PDF] 사용 모델: ${model} (Task: ${taskType})`);
+    console.log(`[GPT PDF Responses] 사용 모델: ${model} (Task: ${taskType})`);
     
-    // 4. Chat Completions API로 텍스트 분석
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: '당신은 한국 기업 재무제표 전문 회계사입니다. 주어진 재무제표 텍스트에서 정확하게 데이터를 추출하여 JSON 형식으로 반환합니다.'
-        },
-        {
-          role: 'user',
-          content: `${PDF_EXTRACTION_PROMPT}
-
-=== 재무제표 텍스트 ===
-${pdfText.slice(0, 50000)}
-
-위 재무제표에서 8개 항목을 정확히 추출하여 JSON으로만 답변하세요.`
-        }
-      ],
-      response_format: { type: 'json_object' },
-      ...buildTokenParams(model, 4096),       // ✅ 모델별 자동 토큰 파라미터
-      ...buildTemperatureParam(model, 0.1)    // ✅ reasoning 모델은 temperature 제외
+    // 3. PDF 파일을 Files API에 업로드 (Responses API는 file_id 필요)
+    console.log(`[GPT PDF Responses] PDF 파일 업로드 시작...`);
+    const file = await client.files.create({
+      file: new File([pdfBuffer], originalFilename, { type: 'application/pdf' }),
+      purpose: 'user_data'  // 권장 용도
     });
+    console.log(`[GPT PDF Responses] PDF 파일 업로드 완료 (file_id: ${file.id})`);
     
-    console.log(`[GPT PDF] 추출 완료 (모델: ${model}, Task: ${taskType})`);
-    
-    return response.choices[0].message.content;
+    try {
+      // 4. Responses API로 PDF 직접 분석 (✅ max_output_tokens 사용)
+      const systemPrompt = `너는 한국 재무제표 PDF에서 숫자를 정확히 추출하는 회계 데이터 추출기다.
+
+규칙:
+- (단위: 원/천원/백만원/억원) 감지 후 multiplier_to_won 적용
+- 각 항목: original_text, unit, multiplier_to_won, value_won, pretty_krw, evidence
+- 교차검증: 개요(억원) vs 표(천원) 스케일 불일치시 anomalies 기록
+- 가지급금은 후보 계정(가지급금/단기대여금/대여금/임원대여금) 탐색 후 0 출력 금지 (없으면 "미확인")
+- JSON만 출력
+
+출력 스키마:
+{
+  "company_name": "회사명",
+  "ceo_name": "대표자명",
+  "business_number": "사업자등록번호",
+  "industry": "업종",
+  "statement_year": "재무제표 연도",
+  "revenue": {
+    "original_text": "9,571,217",
+    "unit": "천원",
+    "multiplier_to_won": 1000,
+    "value_won": 9571217000,
+    "pretty_krw": "95억 7천만원",
+    "evidence": "손익계산서 매출액 항목"
+  },
+  "retained_earnings": {...},
+  "loans_to_officers": {...},
+  "welfare_expenses": {...},
+  "anomalies": []
+}`;
+
+      const userPrompt = `이 재무제표 PDF에서 아래 항목을 정확히 추출해 JSON만 출력:
+- 회사명, 대표자명, 사업자등록번호, 업종, 재무제표 연도
+- 매출액, 이익잉여금, 가지급금 (후보: 가지급금/단기대여금/대여금/임원대여금), 복리후생비
++ evidence에 page/section_hint 포함
++ 단위 감지 및 원화 환산 필수`;
+
+      const response = await client.responses.create({
+        model,
+        input: [
+          { type: 'text', text: systemPrompt },
+          { type: 'file', file: file.id },
+          { type: 'text', text: userPrompt }
+        ],
+        max_output_tokens: 4096,  // ✅ Responses API는 max_output_tokens 사용
+        ...buildTemperatureParam(model, 0.1)  // ✅ reasoning 모델은 temperature 제외
+      });
+      
+      console.log(`[GPT PDF Responses] 추출 완료 (모델: ${model})`);
+      
+      // 5. 응답에서 텍스트 추출
+      const outputText = response.output?.[0]?.content?.[0]?.text;
+      if (!outputText) {
+        throw new Error('Responses API에서 응답을 받지 못했습니다.');
+      }
+      
+      return outputText;
+      
+    } finally {
+      // 6. 파일 정리 (Responses API 사용 후 삭제)
+      try {
+        await client.files.del(file.id);
+        console.log(`[GPT PDF Responses] 파일 삭제 완료 (file_id: ${file.id})`);
+      } catch (delError) {
+        console.warn(`[GPT PDF Responses] 파일 삭제 실패 (file_id: ${file.id}):`, delError.message);
+      }
+    }
     
   } catch (error) {
     // 에러 타입별 처리
     if (error.status === 401) {
       throw new Error('GPT API 키가 유효하지 않습니다.');
     } else if (error.status === 403 || error.status === 404) {
-      throw new Error(`선택된 모델을 사용할 권한이 없습니다: ${error.message}`);
+      throw new Error('선택된 모델을 사용할 권한이 없습니다. Responses API는 GPT-5/o3 계열이 필요할 수 있습니다.');
     } else if (error.status === 429) {
       throw new Error('API 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+    } else if (error.code === 'ENOENT' || error.message?.includes('invalid_file_format')) {
+      throw new Error('PDF 파일을 읽을 수 없습니다. 파일이 손상되었거나 이미지 기반 PDF일 수 있습니다.');
     }
     
-    console.error(`[GPT PDF] 추출 실패:`, error.message);
-    throw new Error(`GPT PDF extraction failed: ${error.message}`);
+    console.error(`[GPT PDF Responses] 추출 실패:`, error.message);
+    throw new Error(`GPT PDF Responses extraction failed: ${error.message}`);
   }
 }
 
