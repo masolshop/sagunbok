@@ -1321,7 +1321,9 @@ export const analyzeFinancialStatement = async (req, res) => {
         console.log('[ANALYZE] metrics 변환 완료:', {
           company_name: result.company_name,
           revenue: result.revenue,
-          advances: result.advances
+          net_income: result.net_income,
+          advances: result.advances,
+          welfare_expenses: result.welfare_expenses
         });
         
         return result;
@@ -1508,6 +1510,14 @@ export const analyzeFinancialStatement = async (req, res) => {
         method: 'ai_extraction',
         unit: '원'
       },
+      net_income: {
+        value: String(parseMoney(parsedData.net_income)),
+        confidence: 0.85,
+        page_number: 1,
+        snippet: `당기순이익: ${parseMoney(parsedData.net_income).toLocaleString()}원`,
+        method: 'ai_extraction',
+        unit: '원'
+      },
       retained_earnings: {
         value: String(parseMoney(parsedData.retained_earnings)),
         confidence: 0.85,
@@ -1516,11 +1526,19 @@ export const analyzeFinancialStatement = async (req, res) => {
         method: 'ai_extraction',
         unit: '원'
       },
+      unappropriated_retained_earnings: {
+        value: String(parseMoney(parsedData.unappropriated_retained_earnings)),
+        confidence: 0.85,
+        page_number: 1,
+        snippet: `미처분이익잉여금: ${parseMoney(parsedData.unappropriated_retained_earnings).toLocaleString()}원`,
+        method: 'ai_extraction',
+        unit: '원'
+      },
       loans_to_officers: {
-        value: String(parseMoney(parsedData.loans_to_officers)),
+        value: String(parseMoney(parsedData.advances || parsedData.loans_to_officers)),
         confidence: 0.80,
         page_number: 1,
-        snippet: `가지급금: ${parseMoney(parsedData.loans_to_officers).toLocaleString()}원`,
+        snippet: `가지급금: ${parseMoney(parsedData.advances || parsedData.loans_to_officers).toLocaleString()}원`,
         method: 'ai_extraction',
         unit: '원'
       },
