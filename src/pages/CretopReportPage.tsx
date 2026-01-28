@@ -307,6 +307,21 @@ export default function CretopReportPage() {
   // PDF 파일 처리
   const handleFileSelect = (file: File) => {
     if (!file) return;
+    
+    // 🔑 API 키 로딩 상태 확인
+    if (apiKeysLoading) {
+      alert('⏳ API 키를 불러오는 중입니다...\n잠시 후 다시 PDF를 업로드해주세요.');
+      return;
+    }
+    
+    // Gemini 모델들은 'gemini' 키로 체크
+    const keyType = selectedModel.startsWith('gemini') ? 'gemini' : selectedModel;
+    
+    if (!apiKeys[keyType]) {
+      alert('🔑 API KEY를 먼저 등록해주세요!\n\n💡 GPT 또는 Gemini API 키가 필요합니다.\n상단 "AI API KEY 등록" 섹션에서 키를 입력하고 💾 저장 버튼을 눌러주세요.\n\n📌 API 키 발급:\n• GPT: https://platform.openai.com/api-keys\n• Gemini: https://aistudio.google.com/apikey');
+      return;
+    }
+    
     const validTypes = [
       'application/pdf',
       'application/vnd.ms-excel',
