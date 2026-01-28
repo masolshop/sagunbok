@@ -599,7 +599,7 @@ async function callGemini(apiKey, system, userPrompt, modelType = 'gemini-flash'
   };
   
   const actualModel = modelMap[modelType] || process.env.GEMINI_MODEL || "gemini-1.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/${actualModel}:generateContent?key=${apiKey}`;
 
   const payload = {
     contents: [
