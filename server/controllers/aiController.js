@@ -1565,7 +1565,7 @@ export const analyzeFinancialSnapshot = async (req, res) => {
       const availableModels = modelsList.data.map(m => m.id);
       
       // 재무 분석용 모델 선택
-      const selectedModel = selectGPTModel(
+      const { model: selectedModel } = selectGPTModel(
         availableModels,
         TASK_TYPES.FIN_STATEMENT_ANALYSIS,
         'free',
