@@ -13,6 +13,7 @@ import resourcesRoutes from './routes/resources.js';
 import aiRoutes from './routes/ai.js';
 import apiKeyRoutes from './routes/apiKey.js';
 import crawlRoutes from './routes/crawl.js';
+import externalDataRoutes from './routes/externalData.js';
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use('/api/resources', resourcesRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/consultant/api-key', apiKeyRoutes);
 app.use('/api/crawl', crawlRoutes);
+app.use('/api/external', externalDataRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

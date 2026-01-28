@@ -11,7 +11,9 @@
   "dependencies": {
     "@google/genai": "^1.35.0",
     "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.4",
     "canvas": "^3.2.1",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "multer": "^2.0.2",
@@ -20,7 +22,7 @@
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^5.4.530",
     "playwright": "^1.57.0",
-    "puppeteer": "^24.35.0",
+    "puppeteer": "^24.36.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
