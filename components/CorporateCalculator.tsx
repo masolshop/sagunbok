@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ModuleType, CalculationResult, CompanyContext } from '../types';
 import { KOREA_REGIONS } from '../constants';
+import { analyzeTaxSavings, convertCalculationToAnalysisRequest } from '../services/taxAnalysisService';
 
 interface CorporateCalculatorProps {
   companyContext: CompanyContext;
@@ -18,6 +19,8 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
   calcResults, setCalcResults 
 }) => {
   const [currentModule, setCurrentModule] = useState<ModuleType>(ModuleType.WELFARE_CONVERSION);
+  const [aiAnalysis, setAiAnalysis] = useState<{[key: string]: string}>({});
+  const [isAnalyzing, setIsAnalyzing] = useState<{[key: string]: boolean}>({});
 
   const parseNumber = (val: string | number) => {
     if (typeof val === 'number') return val;
@@ -55,6 +58,50 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
 
   const handleDeleteResult = (timestamp: string) => {
     setCalcResults(prev => prev.filter(r => r.timestamp !== timestamp));
+    // AI 분석 결과도 삭제
+    setAiAnalysis(prev => {
+      const newAnalysis = { ...prev };
+      delete newAnalysis[timestamp];
+      return newAnalysis;
+    });
+  };
+
+  // AI 절세 분석 실행
+  const handleAIAnalysis = async (result: CalculationResult) => {
+    const timestamp = result.timestamp;
+    
+    // 이미 분석 중이면 무시
+    if (isAnalyzing[timestamp]) {
+      return;
+    }
+
+    // 사용자 정보 가져오기
+    const currentUser = JSON.parse(localStorage.getItem('sagunbok_user') || '{}');
+    const userType = currentUser.userType === 'consultant' ? 'consultant' : 'company';
+
+    setIsAnalyzing(prev => ({ ...prev, [timestamp]: true }));
+
+    try {
+      const analysisRequest = convertCalculationToAnalysisRequest(
+        userType,
+        companyContext,
+        result,
+        currentUser
+      );
+
+      const response = await analyzeTaxSavings(analysisRequest);
+
+      if (response.success && response.analysis) {
+        setAiAnalysis(prev => ({ ...prev, [timestamp]: response.analysis! }));
+      } else {
+        alert(response.error || 'AI 분석 중 오류가 발생했습니다.');
+      }
+    } catch (error: any) {
+      console.error('AI 분석 오류:', error);
+      alert(error.message || 'AI 분석 중 오류가 발생했습니다.');
+    } finally {
+      setIsAnalyzing(prev => ({ ...prev, [timestamp]: false }));
+    }
   };
 
   const calculate = () => {
@@ -426,6 +473,50 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* AI 절세 분석 버튼 */}
+            <div className="mt-10 px-4">
+              <button
+                onClick={() => handleAIAnalysis(res)}
+                disabled={isAnalyzing[res.timestamp]}
+                className={`w-full py-6 px-8 rounded-3xl font-black text-xl lg:text-2xl transition-all transform hover:scale-105 ${
+                  isAnalyzing[res.timestamp]
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : aiAnalysis[res.timestamp]
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
+                } shadow-xl`}
+              >
+                {isAnalyzing[res.timestamp] ? (
+                  <span className="flex items-center justify-center gap-3">
+                    <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    AI 분석 중...
+                  </span>
+                ) : aiAnalysis[res.timestamp] ? (
+                  '✅ AI 분석 결과 보기'
+                ) : (
+                  '🤖 AI 절세 분석 시작'
+                )}
+              </button>
+            </div>
+
+            {/* AI 분석 결과 표시 */}
+            {aiAnalysis[res.timestamp] && (
+              <div className="mt-8 bg-gradient-to-br from-purple-50 to-pink-50 border-4 border-purple-200 rounded-[48px] p-10 lg:p-14 space-y-6 animate-in slide-in-from-bottom-4">
+                <div className="flex items-center gap-4 pb-6 border-b-2 border-purple-200">
+                  <span className="text-4xl">🤖</span>
+                  <h3 className="text-2xl lg:text-3xl font-black text-purple-900">AI 절세 컨설팅 분석</h3>
+                </div>
+                <div className="prose prose-lg max-w-none">
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-medium text-lg lg:text-xl">
+                    {aiAnalysis[res.timestamp]}
                   </div>
                 </div>
               </div>
