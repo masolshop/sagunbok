@@ -1,9 +1,14 @@
 /**
  * 절세계산기 AI 분석 서비스
- * 기업/컨설턴트 유형에 따라 적절한 프롬프트로 Gemini API 호출
+ * 기업/컨설턴트 유형에 따라 적절한 프롬프트로 AI API 호출
+ * - 절세계산기: 관리자 OpenAI API 키 사용 (환경 변수)
+ * - 재무제표 분석: 개인 Gemini API 키 사용 (localStorage)
  */
 
 import prompts from '../ai-prompts-config.json';
+
+// 관리자 OpenAI API 키 (환경 변수에서 가져옴)
+const ADMIN_OPENAI_KEY = import.meta.env.VITE_ADMIN_OPENAI_KEY || '';
 
 interface TaxAnalysisRequest {
   userType: 'company' | 'consultant';
@@ -73,6 +78,36 @@ const fillPromptTemplate = (template: string, data: any): string => {
 };
 
 /**
+ * OpenAI API 호출
+ */
+const callOpenAI = async (apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> => {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4096
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'OpenAI API 호출 실패');
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || '';
+};
+
+/**
  * Gemini API 호출
  */
 const callGeminiAPI = async (apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> => {
@@ -114,17 +149,31 @@ const callGeminiAPI = async (apiKey: string, systemPrompt: string, userPrompt: s
 
 /**
  * 절세 분석 실행
+ * - 절세계산기: 관리자 OpenAI API 키 사용 (무료 제공)
+ * - 재무제표 분석: 개인 Gemini API 키 사용 (개인 설정)
  */
 export const analyzeTaxSavings = async (request: TaxAnalysisRequest): Promise<TaxAnalysisResponse> => {
   try {
-    // 1. API 키 가져오기
-    const apiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key');
+    // 1. API 키 선택 로직
+    let apiKey: string;
+    let useOpenAI = false;
     
-    if (!apiKey) {
-      return {
-        success: false,
-        error: 'API 키가 설정되지 않았습니다. 우측 상단 ⚙️ 버튼에서 Gemini API 키를 설정해주세요.'
-      };
+    // 절세계산기는 관리자 OpenAI 키 사용
+    if (ADMIN_OPENAI_KEY) {
+      apiKey = ADMIN_OPENAI_KEY;
+      useOpenAI = true;
+      console.log('💼 관리자 OpenAI API 키 사용 (무료 제공)');
+    } else {
+      // 개인 Gemini 키 사용
+      apiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key') || '';
+      
+      if (!apiKey) {
+        return {
+          success: false,
+          error: 'API 키가 설정되지 않았습니다. 우측 상단 ⚙️ 버튼에서 Gemini API 키를 설정해주세요.'
+        };
+      }
+      console.log('🔑 개인 Gemini API 키 사용');
     }
 
     // 2. 프롬프트 설정 가져오기
@@ -136,20 +185,20 @@ export const analyzeTaxSavings = async (request: TaxAnalysisRequest): Promise<Ta
       request.calculationData
     );
 
-    // 4. Gemini API 호출
+    // 4. AI API 호출
     console.log('🤖 AI 분석 시작:', {
+      provider: useOpenAI ? 'OpenAI' : 'Gemini',
       userType: request.userType,
       promptLength: userPrompt.length,
       company: request.calculationData.company_name
     });
 
-    const analysis = await callGeminiAPI(
-      apiKey,
-      promptConfig.system_prompt,
-      userPrompt
-    );
+    const analysis = useOpenAI
+      ? await callOpenAI(apiKey, promptConfig.system_prompt, userPrompt)
+      : await callGeminiAPI(apiKey, promptConfig.system_prompt, userPrompt);
 
     console.log('✅ AI 분석 완료:', {
+      provider: useOpenAI ? 'OpenAI' : 'Gemini',
       responseLength: analysis.length
     });
 

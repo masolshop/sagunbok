@@ -26,8 +26,18 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
   // API 키 존재 여부 확인
   React.useEffect(() => {
     const checkApiKey = () => {
-      const apiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key');
-      setHasApiKey(!!apiKey);
+      // 관리자 OpenAI 키가 있는지 확인
+      const adminKey = import.meta.env.VITE_ADMIN_OPENAI_KEY;
+      const userGeminiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key');
+      
+      // 관리자 키 또는 개인 Gemini 키 중 하나라도 있으면 OK
+      setHasApiKey(!!(adminKey || userGeminiKey));
+      
+      if (adminKey) {
+        console.log('💼 관리자 OpenAI API 키 사용 가능 (무료 제공)');
+      } else if (userGeminiKey) {
+        console.log('🔑 개인 Gemini API 키 사용 가능');
+      }
     };
     
     checkApiKey();
