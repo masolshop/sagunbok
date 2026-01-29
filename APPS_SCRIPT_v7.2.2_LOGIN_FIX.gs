@@ -679,7 +679,24 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  // e 또는 e.parameter가 없는 경우 에러 처리
+  if (!e || !e.parameter) {
+    Logger.log('doGet 호출 오류: e 또는 e.parameter가 없음');
+    return createResponse({ 
+      success: false, 
+      error: 'Invalid request: missing parameters' 
+    });
+  }
+  
   var action = e.parameter.action;
+  
+  if (!action) {
+    Logger.log('doGet 호출 오류: action 파라미터가 없음');
+    return createResponse({ 
+      success: false, 
+      error: 'Invalid request: missing action parameter' 
+    });
+  }
   
   try {
     // 회원가입
