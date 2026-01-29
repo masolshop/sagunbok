@@ -56,14 +56,20 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     const params = new URLSearchParams({
       action,
       ...data,
-      _t: Date.now() // 캐시 방지 타임스탬프
+      _t: String(Date.now()) // 캐시 방지 타임스탬프 (문자열로 변환)
     });
+    
+    console.log('🔍 callAPI 호출:', { action, data, url: `${API_URL}?${params.toString()}` });
     
     const response = await fetch(`${API_URL}?${params.toString()}`, {
       method: 'GET',
       cache: 'no-cache' // 캐시 사용 안 함
     });
-    return response.json();
+    
+    const result = await response.json();
+    console.log('📦 callAPI 응답:', result);
+    
+    return result;
   };
   
   const handleLogin = async () => {
