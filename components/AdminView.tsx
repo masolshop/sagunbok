@@ -31,7 +31,7 @@ const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
   }, []);
 
   // Apps Script Web App URL (v7.1.2 - 비밀번호 버그 수정)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyvAhqMLf0vAuNi2GtOHyGUIPiIGdIFTo6e6zSwtonR4puobC4ZnFZFsO3j0Y9vFdvuCg/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzSS3tjhVb7q8bTLyy4CFqktHzOpzTg_8of3xg5d7cNfO3MacVyDIk-a5lbxkVsNWM-6g/exec';
 
   const fetchMembers = async () => {
     setLoading(true);

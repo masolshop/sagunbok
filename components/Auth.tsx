@@ -41,7 +41,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [consultantEmail, setConsultantEmail] = useState('');
   const [consultantPassword, setConsultantPassword] = useState('');
   const [consultantPasswordConfirm, setConsultantPasswordConfirm] = useState('');
-  const [position, setPosition] = useState('');
+  const [consultantPosition, setConsultantPosition] = useState('');
   const [region, setRegion] = useState('수도권사업단');
   const [consultantReferrer, setConsultantReferrer] = useState('');
   
@@ -835,8 +835,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
                   <input
                     type="text"
                     placeholder="👔 직함 *"
-                    value={position}
-                    onChange={(e) => setPosition(e.target.value)}
+                    value={consultantPosition}
+                    onChange={(e) => setConsultantPosition(e.target.value)}
                     className="w-full px-4 py-4 bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all hover:border-gray-300 font-medium"
                   />
                   
