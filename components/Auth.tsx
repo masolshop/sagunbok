@@ -8,9 +8,9 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'manager' | 'consultant';
 
-// Apps Script Web App URL (v7.2.1 - doPost 함수 추가, POST 요청 지원)
-// 새 배포: 2026-01-29 (v7.2.1 WITH doPost SUPPORT)
-const API_URL = 'https://script.google.com/macros/s/AKfycbxreP-TEskpL8DnRUrAYi6YJ9nFWhDHrwwQcAer2UBEZp2zrmQlOtp4OOBqeyHcBdYrXA/exec';
+// Apps Script Web App URL (v7.2.3 - doGet null 체크 추가)
+// 새 배포: 2026-01-29 (v7.2.3 WITH NULL CHECK FIX)
+const API_URL = 'https://script.google.com/macros/s/AKfycbzSS3tjhVb7q8bTLyy4CFqktHzOpzTg_8of3xg5d7cNfO3MacVyDIk-a5lbxkVsNWM-6g/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -51,25 +51,48 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [findPhone, setFindPhone] = useState('');
   
   const callAPI = async (action: string, data: any) => {
-    // GET 방식으로 변경 (CORS 우회)
-    // 헤더 없이 요청 (preflight 방지)
-    const params = new URLSearchParams({
-      action,
-      ...data,
-      _t: String(Date.now()) // 캐시 방지 타임스탬프 (문자열로 변환)
-    });
-    
-    console.log('🔍 callAPI 호출:', { action, data, url: `${API_URL}?${params.toString()}` });
-    
-    const response = await fetch(`${API_URL}?${params.toString()}`, {
-      method: 'GET',
-      cache: 'no-cache' // 캐시 사용 안 함
-    });
-    
-    const result = await response.json();
-    console.log('📦 callAPI 응답:', result);
-    
-    return result;
+    try {
+      // GET 방식으로 변경 (CORS 우회)
+      // 헤더 없이 요청 (preflight 방지)
+      const params = new URLSearchParams({
+        action,
+        ...data,
+        _t: String(Date.now()) // 캐시 방지 타임스탬프 (문자열로 변환)
+      });
+      
+      console.log('🔍 callAPI 호출:', { action, data, url: `${API_URL}?${params.toString()}` });
+      
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        method: 'GET',
+        cache: 'no-cache', // 캐시 사용 안 함
+        mode: 'cors', // CORS 명시
+        credentials: 'omit' // 쿠키 전송 안 함
+      });
+      
+      console.log('📊 응답 상태:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📦 callAPI 응답:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ callAPI 오류:', error);
+      console.error('에러 상세:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // 오류를 사용자에게 반환
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.'
+      };
+    }
   };
   
   const handleLogin = async () => {

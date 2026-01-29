@@ -5,316 +5,146 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>사근복 로그인 테스트</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
             padding: 20px;
+            background: #f5f5f5;
         }
         .container {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
+            text-align: center;
         }
         button {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s;
+            color: white;
         }
-        button:hover {
-            transform: translateY(-2px);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .result {
+        .btn-test { background: #4CAF50; }
+        .btn-test:hover { background: #45a049; }
+        #result {
             margin-top: 20px;
             padding: 15px;
-            border-radius: 6px;
-            display: none;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
-        .result.success {
+        .success {
             background: #d4edda;
-            border: 1px solid #c3e6cb;
             color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        .result.error {
+        .error {
             background: #f8d7da;
-            border: 1px solid #f5c6cb;
             color: #721c24;
+            border: 1px solid #f5c6cb;
         }
-        .result.info {
+        .info {
             background: #d1ecf1;
-            border: 1px solid #bee5eb;
             color: #0c5460;
-        }
-        .log {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-        .log-entry {
-            margin-bottom: 8px;
-            padding: 5px;
-            background: white;
-            border-left: 3px solid #667eea;
-            padding-left: 10px;
-        }
-        .log-entry.error {
-            border-left-color: #dc3545;
-        }
-        .log-entry.success {
-            border-left-color: #28a745;
+            border: 1px solid #bee5eb;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 사근복 로그인 테스트</h1>
-        <p class="subtitle">직접 Apps Script API를 테스트합니다</p>
+        <h1>🔍 사근복 로그인 API 테스트</h1>
         
-        <div class="form-group">
-            <label for="userType">회원 구분</label>
-            <select id="userType">
-                <option value="company">기업회원</option>
-                <option value="consultant">사근복 컨설턴트</option>
-            </select>
-        </div>
+        <button class="btn-test" onclick="testLogin()">
+            🧪 로그인 API 테스트 (010-6352-9091 / 12345)
+        </button>
 
-        <div class="form-group">
-            <label for="phone">핸드폰번호 (ID)</label>
-            <input type="text" id="phone" placeholder="01012345678" value="01012345678">
-        </div>
-
-        <div class="form-group">
-            <label for="password">비밀번호</label>
-            <input type="password" id="password" placeholder="비밀번호 입력" value="test1234">
-        </div>
-
-        <button id="loginBtn" onclick="testLogin()">로그인 테스트 시작</button>
-
-        <div id="result" class="result"></div>
-        <div id="log" class="log" style="display:none;"></div>
+        <div id="result"></div>
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = 'http://3.34.186.174/api/auth';
-        
-        let logEntries = [];
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzSS3tjhVb7q8bTLyy4CFqktHzOpzTg_8of3xg5d7cNfO3MacVyDIk-a5lbxkVsNWM-6g/exec';
 
         function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString('ko-KR');
-            logEntries.push({ timestamp, message, type });
-            updateLogDisplay();
-            console.log(`[${timestamp}] ${message}`);
-        }
-
-        function updateLogDisplay() {
-            const logDiv = document.getElementById('log');
-            logDiv.style.display = 'block';
-            logDiv.innerHTML = logEntries.map(entry => 
-                `<div class="log-entry ${entry.type}">[${entry.timestamp}] ${entry.message}</div>`
-            ).join('');
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        function showResult(message, type) {
             const resultDiv = document.getElementById('result');
-            resultDiv.className = `result ${type}`;
-            resultDiv.textContent = message;
-            resultDiv.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            resultDiv.className = type;
+            resultDiv.textContent += `[${timestamp}] ${message}\n`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
         }
 
         async function testLogin() {
-            const userType = document.getElementById('userType').value;
-            const phone = document.getElementById('phone').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '';
+            resultDiv.className = 'info';
 
-            // Reset
-            logEntries = [];
-            showResult('테스트 진행 중...', 'info');
-            loginBtn.disabled = true;
+            log('🚀 로그인 API 테스트 시작...\n');
+            
+            const phone = '01063529091';
+            const password = '12345';
+            
+            log(`📱 전화번호: ${phone}`);
+            log(`🔑 비밀번호: ${password}\n`);
+
+            const url = `${API_URL}?action=loginCompany&phone=${phone}&password=${password}&_t=${Date.now()}`;
+            
+            log(`📡 요청 URL:\n${url}\n`);
+            log('⏳ API 호출 중...\n');
 
             try {
-                log('=== 로그인 테스트 시작 ===', 'info');
-                log(`회원 구분: ${userType === 'company' ? '기업회원' : '사근복 컨설턴트'}`, 'info');
-                log(`핸드폰번호: ${phone}`, 'info');
-                log(`Apps Script URL: ${APPS_SCRIPT_URL}`, 'info');
-
-                const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
-                const requestData = {
-                    action: action,
-                    phone: phone,
-                    password: password
-                };
-
-                log('POST 요청 준비...', 'info');
-                log(`요청 데이터: ${JSON.stringify(requestData, null, 2)}`, 'info');
-
-                const startTime = Date.now();
-                log('서버로 요청 전송 중...', 'info');
-
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData),
-                    mode: 'cors'
+                const response = await fetch(url, {
+                    method: 'GET',
+                    cache: 'no-cache'
                 });
 
-                const endTime = Date.now();
-                const duration = endTime - startTime;
+                log(`📊 응답 상태: ${response.status} ${response.statusText}`);
+                log(`📝 응답 헤더: ${response.headers.get('content-type')}\n`);
 
-                log(`응답 수신 완료 (${duration}ms)`, 'success');
-                log(`HTTP 상태 코드: ${response.status}`, response.ok ? 'success' : 'error');
-                log(`응답 상태: ${response.statusText}`, response.ok ? 'success' : 'error');
+                const data = await response.json();
+                
+                log('=' .repeat(60));
+                log('📦 API 응답 데이터:');
+                log('=' .repeat(60));
+                log(JSON.stringify(data, null, 2));
+                log('=' .repeat(60) + '\n');
 
-                if (!response.ok) {
-                    throw new Error(`HTTP 오류! 상태: ${response.status}`);
-                }
-
-                const contentType = response.headers.get('content-type');
-                log(`Content-Type: ${contentType}`, 'info');
-
-                const responseText = await response.text();
-                log('응답 본문 수신 완료', 'success');
-                log(`응답 길이: ${responseText.length} bytes`, 'info');
-
-                try {
-                    const data = JSON.parse(responseText);
-                    log('JSON 파싱 성공!', 'success');
-                    log(`응답 데이터: ${JSON.stringify(data, null, 2)}`, 'success');
-
-                    if (data.success) {
-                        showResult(`✅ 로그인 성공!\n사용자: ${data.user.name}\n회사: ${data.user.companyName || '컨설턴트'}\n\n메인 페이지로 이동합니다...`, 'success');
-                        log('=== 로그인 성공! ===', 'success');
-                        log(`사용자 정보: ${JSON.stringify(data.user, null, 2)}`, 'success');
-                        
-                        // 사용자 정보를 localStorage에 저장
-                        localStorage.setItem('sagunbok_user', JSON.stringify(data.user));
-                        localStorage.setItem('sagunbok_logged_in', 'true');
-                        
-                        // 2초 후 계산기 페이지로 이동
-                        setTimeout(() => {
-                            window.location.href = '/calculator.html';
-                        }, 2000);
-                    } else {
-                        showResult(`⚠️ 로그인 실패\n${data.error}`, 'error');
-                        log('=== 로그인 실패 ===', 'error');
-                        log(`오류 메시지: ${data.error}`, 'error');
-                    }
-                } catch (parseError) {
-                    log('JSON 파싱 실패! HTML 응답을 받았을 가능성이 있습니다.', 'error');
-                    log(`파싱 오류: ${parseError.message}`, 'error');
-                    log(`응답 미리보기: ${responseText.substring(0, 500)}...`, 'error');
-                    
-                    showResult('❌ 오류: Apps Script가 HTML 페이지를 반환했습니다.\n배포 설정을 확인해주세요.', 'error');
+                if (data.success) {
+                    log('✅ 로그인 성공!', 'success');
+                    log(`\n👤 사용자 정보:`);
+                    log(`   - 회사명: ${data.userData.companyName}`);
+                    log(`   - 이름: ${data.userData.name}`);
+                    log(`   - 전화번호: ${data.userData.phone}`);
+                    log(`   - 이메일: ${data.userData.email}`);
+                    log(`   - 슈퍼어드민: ${data.userData.isSuperAdmin ? '✅ YES' : '❌ NO'}`);
+                    log(`   - 회원타입: ${data.userData.userType}`);
+                } else {
+                    log(`❌ 로그인 실패: ${data.error}`, 'error');
                 }
 
             } catch (error) {
-                log('=== 치명적 오류 발생 ===', 'error');
-                log(`오류 타입: ${error.name}`, 'error');
-                log(`오류 메시지: ${error.message}`, 'error');
+                log('=' .repeat(60), 'error');
+                log('❌ API 호출 오류 발생!', 'error');
+                log('=' .repeat(60), 'error');
+                log(`에러 타입: ${error.name}`, 'error');
+                log(`에러 메시지: ${error.message}`, 'error');
+                log(`에러 스택:\n${error.stack}`, 'error');
+                log('=' .repeat(60), 'error');
                 
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    showResult('❌ CORS 오류 발생!\nApps Script 배포 설정에서 "액세스 권한: 모든 사용자"를 확인해주세요.', 'error');
-                    log('CORS 오류로 추정됩니다. Apps Script 배포 설정을 확인하세요.', 'error');
-                } else {
-                    showResult(`❌ 오류 발생: ${error.message}`, 'error');
-                }
-            } finally {
-                loginBtn.disabled = false;
-                log('=== 테스트 종료 ===', 'info');
+                log('\n💡 가능한 원인:', 'error');
+                log('1. CORS 문제 (Apps Script 배포 설정 확인 필요)', 'error');
+                log('2. 잘못된 배포 URL', 'error');
+                log('3. Apps Script가 비활성 상태', 'error');
+                log('4. 네트워크 연결 문제', 'error');
             }
         }
-
-        // 컨설턴트 선택 시 기본값 변경
-        document.getElementById('userType').addEventListener('change', function(e) {
-            if (e.target.value === 'consultant') {
-                document.getElementById('phone').value = '01087654321';
-                document.getElementById('password').value = '12345';
-            } else {
-                document.getElementById('phone').value = '01012345678';
-                document.getElementById('password').value = 'test1234';
-            }
-        });
-
-        // Enter 키로 로그인
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                testLogin();
-            }
-        });
-
-        // 페이지 로드 시 환경 정보 출력
-        window.addEventListener('load', function() {
-            console.log('=== 사근복 로그인 테스트 페이지 ===');
-            console.log('Apps Script URL:', APPS_SCRIPT_URL);
-            console.log('브라우저:', navigator.userAgent);
-            console.log('현재 URL:', window.location.href);
-        });
     </script>
 </body>
 </html>
