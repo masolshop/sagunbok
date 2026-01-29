@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사근복 로그인 디버깅</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .info-box {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #0284c7;
+        }
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #0284c7;
+            font-size: 16px;
+        }
+        .info-box p {
+            margin: 5px 0;
+            color: #0c4a6e;
+            font-size: 14px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+        }
+        .log.show {
+            display: block;
+        }
+        .log-line {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #60a5fa; }
+        .log-warn { color: #fbbf24; }
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+            display: block;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 사근복 로그인 디버깅 도구</h1>
+        
+        <div class="info-box">
+            <h3>📋 테스트 계정 정보</h3>
+            <p><strong>전화번호:</strong> 010-6352-9091 (정규화: 01063529091)</p>
+            <p><strong>비밀번호:</strong> 12345</p>
+            <p><strong>권한:</strong> 슈퍼어드민</p>
+            <p><strong>API URL:</strong> Apps Script Web App</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="runDebugLogin()">
+            🚀 디버깅 로그인 실행
+        </button>
+
+        <div id="status" class="status"></div>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxreP-TEskpL8DnRUrAYi6YJ9nFWhDHrwwQcAer2UBEZp2zrmQlOtp4OOBqeyHcBdYrXA/exec';
+        const SAGUNBOK_URL = 'https://sagunbok.com';
+        const TEST_PHONE = '010-6352-9091';
+        const TEST_PASSWORD = '12345';
+
+        let logEl = document.getElementById('log');
+        let statusEl = document.getElementById('status');
+
+        function clearLog() {
+            logEl.innerHTML = '';
+            logEl.classList.add('show');
+        }
+
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = 'log-line log-' + type;
+            line.textContent = message;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        function normalizePhone(phone) {
+            return phone.replace(/[^0-9]/g, '');
+        }
+
+        async function runDebugLogin() {
+            clearLog();
+            showStatus('🔄 디버깅 시작...', 'loading');
+
+            addLog('='.repeat(60), 'info');
+            addLog('🔍 사근복 로그인 디버깅 시작', 'info');
+            addLog('='.repeat(60), 'info');
+            addLog('');
+
+            // Step 1: 입력 데이터 검증
+            addLog('📋 Step 1: 입력 데이터 검증', 'info');
+            addLog('  📱 입력 전화번호: ' + TEST_PHONE, 'info');
+            
+            const normalizedPhone = normalizePhone(TEST_PHONE);
+            addLog('  📱 정규화된 전화번호: ' + normalizedPhone, 'success');
+            
+            addLog('  🔑 입력 비밀번호: ' + TEST_PASSWORD, 'info');
+            addLog('  🔑 비밀번호 길이: ' + TEST_PASSWORD.length, 'info');
+            addLog('  🔑 비밀번호 타입: ' + typeof TEST_PASSWORD, 'info');
+            addLog('  🔑 비밀번호 trim: "' + TEST_PASSWORD.trim() + '"', 'info');
+            addLog('');
+
+            // Step 2: API URL 생성
+            const apiUrl = `${API_URL}?action=loginCompany&phone=${normalizedPhone}&password=${encodeURIComponent(TEST_PASSWORD)}&_t=${Date.now()}`;
+            addLog('📡 Step 2: API 호출 준비', 'info');
+            addLog('  🌐 API URL:', 'info');
+            addLog('  ' + apiUrl, 'warn');
+            addLog('');
+
+            // Step 3: API 호출
+            try {
+                addLog('⏳ Step 3: API 호출 중...', 'info');
+                showStatus('⏳ API 호출 중...', 'loading');
+
+                const startTime = Date.now();
+                const response = await fetch(apiUrl);
+                const responseTime = Date.now() - startTime;
+
+                addLog('  ✅ 응답 받음 (' + responseTime + 'ms)', 'success');
+                addLog('  📊 HTTP Status: ' + response.status + ' ' + response.statusText, 'info');
+                addLog('');
+
+                // Step 4: 응답 파싱
+                addLog('📦 Step 4: 응답 데이터 파싱', 'info');
+                const data = await response.json();
+
+                addLog('  📋 응답 데이터:', 'info');
+                addLog('  ' + JSON.stringify(data, null, 2), 'warn');
+                addLog('');
+
+                // Step 5: 응답 분석
+                addLog('🔍 Step 5: 응답 분석', 'info');
+                addLog('  success: ' + data.success, data.success ? 'success' : 'error');
+
+                if (data.success) {
+                    addLog('  ✅ 로그인 성공!', 'success');
+                    addLog('');
+                    addLog('👤 사용자 정보:', 'success');
+                    addLog('  회사명: ' + data.userData.companyName, 'success');
+                    addLog('  이름: ' + data.userData.name, 'success');
+                    addLog('  전화번호: ' + data.userData.phone, 'success');
+                    addLog('  이메일: ' + data.userData.email, 'success');
+                    addLog('  슈퍼어드민: ' + data.userData.isSuperAdmin, data.userData.isSuperAdmin ? 'success' : 'warn');
+                    addLog('');
+
+                    showStatus('✅ 로그인 성공! 사근복 사이트를 엽니다...', 'success');
+
+                    // Step 6: localStorage 저장 준비
+                    addLog('💾 Step 6: 로그인 정보 준비', 'info');
+                    const user = data.userData;
+                    user.userType = 'company';
+                    const userDataStr = JSON.stringify(user);
+                    addLog('  localStorage 키: sagunbok_user', 'info');
+                    addLog('  저장할 데이터: ' + userDataStr, 'info');
+                    addLog('');
+
+                    // Step 7: 사근복 사이트 열기
+                    addLog('🌐 Step 7: 사근복 사이트 열기', 'info');
+                    addLog('  URL: ' + SAGUNBOK_URL, 'info');
+                    addLog('');
+                    addLog('='.repeat(60), 'success');
+                    addLog('✅ 디버깅 완료! 모든 단계가 성공했습니다!', 'success');
+                    addLog('='.repeat(60), 'success');
+                    addLog('');
+                    addLog('📝 다음 단계:', 'warn');
+                    addLog('  1) 3초 후 사근복 사이트가 열립니다', 'warn');
+                    addLog('  2) 사근복 사이트에서 로그인 버튼을 클릭하세요', 'warn');
+                    addLog('  3) 전화번호: 010-6352-9091, 비밀번호: 12345 입력', 'warn');
+                    addLog('  4) 로그인이 안 되면 이 로그를 공유해주세요!', 'warn');
+
+                    setTimeout(() => {
+                        window.open(SAGUNBOK_URL, '_blank');
+                    }, 3000);
+
+                } else {
+                    addLog('  ❌ 로그인 실패', 'error');
+                    addLog('  에러: ' + data.error, 'error');
+                    addLog('');
+                    addLog('='.repeat(60), 'error');
+                    addLog('❌ 로그인 실패!', 'error');
+                    addLog('='.repeat(60), 'error');
+                    addLog('');
+                    addLog('🔍 가능한 원인:', 'warn');
+                    addLog('  1) Google Sheets의 전화번호가 ' + normalizedPhone + '과 다름', 'warn');
+                    addLog('  2) Google Sheets의 비밀번호가 "12345"와 다름', 'warn');
+                    addLog('  3) 승인 상태가 "승인"이 아님 (슈퍼어드민은 예외)', 'warn');
+                    addLog('');
+                    addLog('📋 Google Sheets 확인 필요:', 'warn');
+                    addLog('  https://docs.google.com/spreadsheets/d/1NzBVwAjDTSQWznBapoD1fGspUvXpvQsozdJVSEF5Atc', 'warn');
+
+                    showStatus('❌ 로그인 실패: ' + data.error, 'error');
+                }
+
+            } catch (error) {
+                addLog('  ❌ API 호출 오류', 'error');
+                addLog('  에러 메시지: ' + error.message, 'error');
+                addLog('  에러 스택: ' + error.stack, 'error');
+                addLog('');
+                addLog('='.repeat(60), 'error');
+                addLog('❌ 치명적 오류 발생!', 'error');
+                addLog('='.repeat(60), 'error');
+
+                showStatus('❌ 오류: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
