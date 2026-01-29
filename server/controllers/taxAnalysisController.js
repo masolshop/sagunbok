@@ -12,12 +12,34 @@ const __dirname = path.dirname(__filename);
  */
 
 // AI 프롬프트 설정 로드
-const promptConfigPath = path.join(__dirname, '../../ai-prompts-config.json');
+// 절대 경로 사용하거나 상대 경로를 명확히 처리
 let promptConfig;
+let promptConfigPath;
+
 try {
-  promptConfig = JSON.parse(fs.readFileSync(promptConfigPath, 'utf8'));
+  // 먼저 현재 디렉토리 기준으로 시도
+  promptConfigPath = path.join(__dirname, '../ai-prompts-config.json');
+  let fullPath = path.resolve(promptConfigPath);
+  
+  console.log('[Tax Analysis] 🔍 디버깅 정보:');
+  console.log('[Tax Analysis] __dirname:', __dirname);
+  console.log('[Tax Analysis] promptConfigPath:', promptConfigPath);
+  console.log('[Tax Analysis] fullPath (resolve):', fullPath);
+  
+  // 파일이 없으면 다른 경로 시도
+  if (!fs.existsSync(fullPath)) {
+    console.log('[Tax Analysis] ⚠️  첫 번째 경로에 파일 없음, 대체 경로 시도...');
+    // PM2 cwd 기준으로 시도
+    promptConfigPath = path.join(process.cwd(), '../ai-prompts-config.json');
+    fullPath = path.resolve(promptConfigPath);
+    console.log('[Tax Analysis] process.cwd():', process.cwd());
+    console.log('[Tax Analysis] 대체 fullPath:', fullPath);
+  }
+  
+  promptConfig = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+  console.log('[Tax Analysis] ✅ 프롬프트 설정 로드 성공!');
 } catch (error) {
-  console.error('[Tax Analysis] 프롬프트 설정 로드 실패:', error.message);
+  console.error('[Tax Analysis] ❌ 프롬프트 설정 로드 실패:', error.message);
   promptConfig = null;
 }
 
