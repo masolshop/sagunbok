@@ -1,0 +1,83 @@
+{
+  "simulation_id": "sim_20260129_001",
+  "created_at": "2026-01-29T00:30:00Z",
+  "user_type": "company",
+  "company_info": {
+    "business_number": "220-81-62708",
+    "company_name": "에스텍시스템",
+    "company_type": "법인",
+    "industry": "IT서비스"
+  },
+  "simulation_data": {
+    "total_employees": 10,
+    "ceo_info": {
+      "annual_salary": 120000000,
+      "executive_bonus": 30000000,
+      "stock_options": 0
+    },
+    "employees": [
+      {
+        "position": "팀장",
+        "annual_salary": 60000000,
+        "count": 2
+      },
+      {
+        "position": "대리",
+        "annual_salary": 45000000,
+        "count": 3
+      },
+      {
+        "position": "사원",
+        "annual_salary": 35000000,
+        "count": 5
+      }
+    ],
+    "total_labor_cost": 465000000,
+    "corporate_tax_scenario": {
+      "revenue": 2000000000,
+      "operating_expenses": 1200000000,
+      "labor_cost": 465000000,
+      "net_income_before_tax": 335000000,
+      "corporate_tax_rate": 0.22,
+      "corporate_tax": 73700000
+    }
+  },
+  "net_pay_analysis": {
+    "ceo": {
+      "gross_annual": 120000000,
+      "income_tax": 28500000,
+      "local_tax": 2850000,
+      "national_pension": 2388000,
+      "health_insurance": 3456000,
+      "long_term_care": 432000,
+      "employment_insurance": 900000,
+      "total_deductions": 38526000,
+      "net_annual": 81474000,
+      "net_monthly": 6789500,
+      "actual_tax_rate": 0.321
+    },
+    "employees_summary": {
+      "total_gross": 345000000,
+      "total_deductions": 95000000,
+      "total_net": 250000000,
+      "average_tax_rate": 0.275
+    }
+  },
+  "tax_optimization_opportunities": {
+    "welfare_benefits": {
+      "current": 0,
+      "potential": 50000000,
+      "tax_saving": 11000000
+    },
+    "research_deduction": {
+      "current": 0,
+      "potential": 100000000,
+      "tax_saving": 22000000
+    },
+    "retirement_pension": {
+      "current": 23250000,
+      "potential": 46500000,
+      "tax_saving": 5115000
+    }
+  }
+}

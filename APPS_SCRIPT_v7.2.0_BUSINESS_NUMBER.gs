@@ -652,6 +652,13 @@ function getAllMembers() {
 // doGet - 메인 핸들러
 // ========================================
 
+/**
+ * POST 요청 처리
+ */
+function doPost(e) {
+  return doGet(e);
+}
+
 function doGet(e) {
   var action = e.parameter.action;
   
