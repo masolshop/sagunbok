@@ -72,8 +72,20 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
       return;
     }
     
+    // 🔍 디버깅: 입력값 확인
+    console.log('='.repeat(60));
+    console.log('🔍 로그인 시도 - 디버깅 정보');
+    console.log('='.repeat(60));
+    console.log('📋 userType:', userType);
+    console.log('📱 입력 전화번호 (원본):', loginPhone);
+    console.log('🔑 입력 비밀번호 (원본):', loginPassword);
+    console.log('🔑 비밀번호 길이:', loginPassword.length);
+    console.log('🔑 비밀번호 타입:', typeof loginPassword);
+    
     // 전화번호 정규화
     const normalizedPhone = normalizePhoneNumber(loginPhone);
+    console.log('📱 정규화된 전화번호:', normalizedPhone);
+    
     if (!normalizedPhone) {
       alert('올바른 전화번호 형식이 아닙니다.');
       return;
@@ -82,10 +94,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     try {
       const action = userType === 'company' ? 'loginCompany' : 'loginConsultant';
+      console.log('📡 API 액션:', action);
+      console.log('📡 전송 데이터:', { phone: normalizedPhone, password: loginPassword });
+      
       const result = await callAPI(action, {
         phone: normalizedPhone,
         password: loginPassword,
       });
+      
+      console.log('📦 API 응답:', result);
+      console.log('='.repeat(60));
       
       if (result.success) {
         // Apps Script는 userData 필드로 반환
