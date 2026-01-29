@@ -174,20 +174,28 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
     
     setLookupLoading(true);
     try {
-      const response = await fetch('/api/external-data/lookup-business-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ businessNumber }),
+      // 국세청 API를 통한 사업자번호 조회 (Apps Script 경유)
+      const url = `${API_URL}?action=lookupBusinessNumber&businessNumber=${encodeURIComponent(businessNumber)}&_t=${Date.now()}`;
+      
+      console.log('🔍 사업자번호 조회:', { businessNumber, url });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-cache'
       });
       
       const result = await response.json();
       
+      console.log('📊 조회 결과:', result);
+      
       if (result.success) {
-        setCompanyName(result.companyName || '');
-        setCeoName(result.ceoName || ''); // 대표자명 설정
-        alert(`✅ 조회 성공!\n\n회사명: ${result.companyName || '알 수 없음'}\n대표자명: ${result.ceoName || '알 수 없음'}`);
+        // 국세청 API는 회사명/대표자명을 제공하지 않으므로, 
+        // 사업자번호 유효성만 확인
+        if (result.status === '계속사업자') {
+          alert(`✅ 사업자번호 조회 성공!\n\n사업자번호: ${businessNumber}\n상태: ${result.status}\n과세유형: ${result.taxType || '정보 없음'}\n\n※ 회사명과 대표자명은 직접 입력해주세요.`);
+        } else {
+          alert(`⚠️ 사업자번호 조회 성공\n\n사업자번호: ${businessNumber}\n상태: ${result.status}\n\n※ 사업자 상태를 확인해주세요.`);
+        }
       } else {
         alert(result.message || '사업자번호 조회에 실패했습니다.');
       }
