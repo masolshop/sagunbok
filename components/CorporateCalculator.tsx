@@ -21,6 +21,24 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
   const [currentModule, setCurrentModule] = useState<ModuleType>(ModuleType.WELFARE_CONVERSION);
   const [aiAnalysis, setAiAnalysis] = useState<{[key: string]: string}>({});
   const [isAnalyzing, setIsAnalyzing] = useState<{[key: string]: boolean}>({});
+  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
+
+  // API 키 존재 여부 확인
+  React.useEffect(() => {
+    const checkApiKey = () => {
+      const apiKey = localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key');
+      setHasApiKey(!!apiKey);
+    };
+    
+    checkApiKey();
+    
+    // storage 이벤트 리스너 추가 (다른 탭에서 API 키 설정 시)
+    window.addEventListener('storage', checkApiKey);
+    
+    return () => {
+      window.removeEventListener('storage', checkApiKey);
+    };
+  }, []);
 
   const parseNumber = (val: string | number) => {
     if (typeof val === 'number') return val;
@@ -479,23 +497,36 @@ const CorporateCalculator: React.FC<CorporateCalculatorProps> = ({
             )}
             
             {/* AI 절세 분석 버튼 */}
-            <div className="mt-10 px-4">
+            <div className="mt-10 px-4 space-y-4">
+              {!hasApiKey && (
+                <div className="bg-yellow-50 border-4 border-yellow-200 rounded-2xl p-6">
+                  <p className="text-yellow-800 font-bold text-lg flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span>AI 분석을 사용하려면 먼저 <strong>우측 상단 ⚙️ 버튼</strong>을 클릭하여 <strong>Gemini API 키</strong>를 설정해주세요.</span>
+                  </p>
+                  <p className="text-yellow-700 text-sm mt-2">
+                    💡 API 키는 Google AI Studio에서 무료로 발급받을 수 있습니다: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-800">발급 받기</a>
+                  </p>
+                </div>
+              )}
               <button
                 onClick={() => handleAIAnalysis(res)}
-                disabled={isAnalyzing[res.timestamp]}
-                className={`w-full py-6 px-8 rounded-3xl font-black text-xl lg:text-2xl transition-all transform hover:scale-105 ${
-                  isAnalyzing[res.timestamp]
+                disabled={!hasApiKey || isAnalyzing[res.timestamp]}
+                className={`w-full py-6 px-8 rounded-3xl font-black text-xl lg:text-2xl transition-all transform ${
+                  !hasApiKey || isAnalyzing[res.timestamp]
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : aiAnalysis[res.timestamp]
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
+                    ? 'bg-green-500 text-white hover:bg-green-600 hover:scale-105'
+                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 hover:scale-105'
                 } shadow-xl`}
               >
-                {isAnalyzing[res.timestamp] ? (
+                {!hasApiKey ? (
+                  '🔒 API 키 설정 필요'
+                ) : isAnalyzing[res.timestamp] ? (
                   <span className="flex items-center justify-center gap-3">
                     <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 4 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     AI 분석 중...
                   </span>
