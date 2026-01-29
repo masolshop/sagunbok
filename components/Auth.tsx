@@ -8,9 +8,9 @@ interface AuthProps {
 type AuthMode = 'login' | 'register' | 'findId' | 'findPassword';
 type UserType = 'company' | 'manager' | 'consultant';
 
-// Apps Script Web App URL (v7.2.0 - 사업자번호/대표자명/직함 추가)
-// 새 배포: 2026-01-28 (v7.2.0 BUSINESS NUMBER SUPPORT)
-const API_URL = 'https://script.google.com/macros/s/AKfycbx4xklQ9c4nfeCHNvWn4LZt-E_-Q4UkuMHp55sktumvloM3nt7a397KJLxXTk8bwa5VTw/exec';
+// Apps Script Web App URL (v7.2.1 - doPost 함수 추가, POST 요청 지원)
+// 새 배포: 2026-01-29 (v7.2.1 WITH doPost SUPPORT)
+const API_URL = 'https://script.google.com/macros/s/AKfycbxreP-TEskpL8DnRUrAYi6YJ9nFWhDHrwwQcAer2UBEZp2zrmQlOtp4OOBqeyHcBdYrXA/exec';
 
 const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
