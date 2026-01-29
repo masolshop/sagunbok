@@ -94,8 +94,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
         // userType 추가 (프론트엔드에서 사용)
         user.userType = userType;
         
-        // 슈퍼관리자 여부 추가 (전화번호 01063529091 체크)
-        user.isSuperAdmin = user.phone === '01063529091';
+        // 슈퍼관리자 여부 추가 (전화번호 체크)
+        // 정규화된 전화번호로 비교 (하이픈 제거)
+        const adminPhones = ['01063529091', '010-6352-9091'];
+        const normalizedUserPhone = user.phone?.replace(/[^0-9]/g, '');
+        user.isSuperAdmin = adminPhones.some(p => p.replace(/[^0-9]/g, '') === normalizedUserPhone);
         
         localStorage.setItem('sagunbok_user', JSON.stringify(user));
         onLoginSuccess(user);
