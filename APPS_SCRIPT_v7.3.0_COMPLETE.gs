@@ -942,6 +942,21 @@ function doGet(e) {
   }
   
   try {
+    // 🆕 사업자등록번호 조회 (v7.3.0)
+    if (action === 'lookupBusinessNumber') {
+      return createResponse(lookupBusinessNumber(e.parameter.businessNumber));
+    }
+    
+    // 🆕 사람인 분석 (v7.3.0)
+    if (action === 'analyzeJobSites') {
+      return createResponse(analyzeJobSites(e.parameter.companyName));
+    }
+    
+    // 🆕 블라인드 분석 (v7.3.0)
+    if (action === 'analyzeReviewSites') {
+      return createResponse(analyzeReviewSites(e.parameter.companyName));
+    }
+    
     // 회원가입
     if (action === 'registerCompany') {
       return createResponse(registerCompany(e.parameter));
@@ -993,10 +1008,16 @@ function doGet(e) {
 }
 
 /**
- * 응답 생성
+ * 응답 생성 (v7.3.0: CORS 헤더 추가)
  */
 function createResponse(data) {
   var output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
+  
+  // CORS 허용
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
   return output;
 }

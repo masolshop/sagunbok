@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+// Apps Script API URL
+const API_URL = 'https://script.google.com/macros/s/AKfycbzSS3tjhVb7q8bTLyy4CFqktHzOpzTg_8of3xg5d7cNfO3MacVyDIk-a5lbxkVsNWM-6g/exec';
+
 interface ReputationResult {
   success: boolean;
   message?: string;
@@ -40,13 +43,19 @@ const CompanyReputationPage: React.FC = () => {
     setLookupResult(null);
 
     try {
-      const response = await fetch('/api/external-data/lookup-business-number', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessNumber })
+      const url = `${API_URL}?action=lookupBusinessNumber&businessNumber=${encodeURIComponent(businessNumber)}&_t=${Date.now()}`;
+      
+      console.log('🔍 사업자번호 조회:', { url, businessNumber });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-cache'
       });
 
       const data = await response.json();
+      
+      console.log('✅ 사업자번호 조회 응답:', data);
+      
       setLookupResult(data);
 
       if (data.success && data.companyName) {
@@ -56,7 +65,7 @@ const CompanyReputationPage: React.FC = () => {
         setError(data.message || '회사명을 찾을 수 없습니다.');
       }
     } catch (err) {
-      console.error('사업자번호 조회 실패:', err);
+      console.error('❌ 사업자번호 조회 실패:', err);
       setError('사업자번호 조회 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -75,20 +84,26 @@ const CompanyReputationPage: React.FC = () => {
     setSaraminResult(null);
 
     try {
-      const response = await fetch('/api/external-data/job-sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName })
+      const url = `${API_URL}?action=analyzeJobSites&companyName=${encodeURIComponent(companyName)}&_t=${Date.now()}`;
+      
+      console.log('💼 사람인 분석:', { url, companyName });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-cache'
       });
 
       const data = await response.json();
+      
+      console.log('✅ 사람인 분석 응답:', data);
+      
       setSaraminResult(data);
 
       if (!data.success) {
         setError(data.message || '사람인 분석 중 오류가 발생했습니다.');
       }
     } catch (err) {
-      console.error('사람인 분석 실패:', err);
+      console.error('❌ 사람인 분석 실패:', err);
       setError('사람인 분석 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -107,20 +122,26 @@ const CompanyReputationPage: React.FC = () => {
     setBlindResult(null);
 
     try {
-      const response = await fetch('/api/external-data/review-sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName })
+      const url = `${API_URL}?action=analyzeReviewSites&companyName=${encodeURIComponent(companyName)}&_t=${Date.now()}`;
+      
+      console.log('💬 블라인드 분석:', { url, companyName });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-cache'
       });
 
       const data = await response.json();
+      
+      console.log('✅ 블라인드 분석 응답:', data);
+      
       setBlindResult(data);
 
       if (!data.success) {
         setError(data.message || '블라인드 분석 중 오류가 발생했습니다.');
       }
     } catch (err) {
-      console.error('블라인드 분석 실패:', err);
+      console.error('❌ 블라인드 분석 실패:', err);
       setError('블라인드 분석 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
