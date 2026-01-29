@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사근복 자동 로그인</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+        .btn-secondary:hover {
+            background: #c7d2fe;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+            display: block;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+        .info {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #0284c7;
+        }
+        .info h3 {
+            margin: 0 0 10px 0;
+            color: #0284c7;
+        }
+        .info p {
+            margin: 5px 0;
+            color: #0c4a6e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 사근복 자동 로그인</h1>
+        
+        <div class="info">
+            <h3>📋 로그인 정보</h3>
+            <p><strong>전화번호:</strong> 010-6352-9091</p>
+            <p><strong>비밀번호:</strong> 12345</p>
+            <p><strong>권한:</strong> 슈퍼어드민</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="autoLogin()">
+            ✨ 자동 로그인 & 사근복 열기
+        </button>
+
+        <button class="btn btn-secondary" onclick="checkLoginStatus()">
+            🔍 현재 로그인 상태 확인
+        </button>
+
+        <button class="btn btn-secondary" onclick="goToSagunbok()">
+            🌐 사근복 사이트 열기
+        </button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxreP-TEskpL8DnRUrAYi6YJ9nFWhDHrwwQcAer2UBEZp2zrmQlOtp4OOBqeyHcBdYrXA/exec';
+        const SAGUNBOK_URL = 'https://sagunbok.com';
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+
+        async function autoLogin() {
+            showStatus('🔄 로그인 중...', 'loading');
+
+            try {
+                const response = await fetch(`${API_URL}?action=loginCompany&phone=01063529091&password=12345&_t=${Date.now()}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const user = data.userData;
+                    user.userType = 'company';
+
+                    // localStorage는 같은 도메인에서만 접근 가능하므로
+                    // 사근복 사이트를 열고 거기서 저장해야 함
+                    const userData = JSON.stringify(user);
+                    
+                    // 새 창에서 사근복 사이트 열기 + localStorage 저장
+                    const loginScript = `
+                        localStorage.setItem('sagunbok_user', '${userData.replace(/'/g, "\\'")}');
+                        window.location.reload();
+                    `;
+                    
+                    showStatus('✅ 로그인 성공! 사근복 사이트를 엽니다...', 'success');
+                    
+                    setTimeout(() => {
+                        const win = window.open(SAGUNBOK_URL, '_blank');
+                        if (win) {
+                            // 새 창이 로드되면 스크립트 실행
+                            setTimeout(() => {
+                                try {
+                                    win.eval(loginScript);
+                                } catch (e) {
+                                    alert('사근복 사이트가 열렸습니다. F12를 눌러 Console에서 다음을 실행하세요:\n\nlocalStorage.setItem("sagunbok_user", \'' + userData + '\');\nlocation.reload();');
+                                }
+                            }, 2000);
+                        }
+                    }, 1000);
+                } else {
+                    showStatus('❌ 로그인 실패: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ 오류: ' + error.message, 'error');
+            }
+        }
+
+        function checkLoginStatus() {
+            showStatus('🔍 사근복 사이트를 열어 로그인 상태를 확인하세요.', 'loading');
+            
+            setTimeout(() => {
+                window.open(SAGUNBOK_URL, '_blank');
+                showStatus('💡 사근복 사이트가 열렸습니다. F12 → Console에서:\nlocalStorage.getItem("sagunbok_user")', 'success');
+            }, 1000);
+        }
+
+        function goToSagunbok() {
+            showStatus('🌐 사근복 사이트를 엽니다...', 'loading');
+            setTimeout(() => {
+                window.open(SAGUNBOK_URL, '_blank');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
