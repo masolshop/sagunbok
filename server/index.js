@@ -14,6 +14,7 @@ import aiRoutes from './routes/ai.js';
 import apiKeyRoutes from './routes/apiKey.js';
 import crawlRoutes from './routes/crawl.js';
 import externalDataRoutes from './routes/externalData.js';
+import taxAnalysisRoutes from './routes/taxAnalysis.js';
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/consultant/api-key', apiKeyRoutes);
 app.use('/api/crawl', crawlRoutes);
 app.use('/api/external', externalDataRoutes);
+app.use('/api/tax-analysis', taxAnalysisRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
